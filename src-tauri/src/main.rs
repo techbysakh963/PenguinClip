@@ -76,7 +76,7 @@ fn show_window_at_cursor(window: &WebviewWindow) {
 
     // Try to get cursor position - this may fail on Wayland
     let cursor_result = window.cursor_position();
-    
+
     match cursor_result {
         Ok(cursor_pos) => {
             // X11 or XWayland - we can position at cursor

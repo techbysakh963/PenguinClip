@@ -9,7 +9,7 @@ export function DragHandle() {
   const handleMouseDown = async (e: React.MouseEvent) => {
     // Only handle left mouse button
     if (e.button !== 0) return
-    
+
     try {
       await getCurrentWindow().startDragging()
     } catch (error) {
@@ -25,9 +25,9 @@ export function DragHandle() {
       className="w-full flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing select-none"
       onMouseDown={handleMouseDown}
     >
-      <div 
+      <div
         data-tauri-drag-region
-        className="w-16 h-1 rounded-full dark:bg-white/20 bg-black/20 pointer-events-none" 
+        className="w-16 h-1 rounded-full dark:bg-white/20 bg-black/20 pointer-events-none"
       />
     </div>
   )
