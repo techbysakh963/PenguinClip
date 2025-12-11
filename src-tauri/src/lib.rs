@@ -5,4 +5,4 @@ pub mod clipboard_manager;
 pub mod hotkey_manager;
 
 pub use clipboard_manager::{ClipboardContent, ClipboardItem, ClipboardManager};
-pub use hotkey_manager::HotkeyManager;
+pub use hotkey_manager::{HotkeyAction, HotkeyManager};

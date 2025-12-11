@@ -6,6 +6,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 
+/// Actions triggered by hotkeys
+#[derive(Debug, Clone, Copy)]
+pub enum HotkeyAction {
+    Toggle,
+    Close,
+}
+
 /// Manages global hotkey listening
 pub struct HotkeyManager {
     running: Arc<AtomicBool>,
@@ -16,7 +23,7 @@ impl HotkeyManager {
     /// Create a new hotkey manager with a callback for when the hotkey is pressed
     pub fn new<F>(callback: F) -> Self
     where
-        F: Fn() + Send + Sync + 'static,
+        F: Fn(HotkeyAction) + Send + Sync + 'static,
     {
         let running = Arc::new(AtomicBool::new(true));
         let running_clone = running.clone();
@@ -52,6 +59,9 @@ impl HotkeyManager {
                             Key::Alt | Key::AltGr => {
                                 alt_clone.store(true, Ordering::SeqCst);
                             }
+                            Key::Escape => {
+                                callback_clone(HotkeyAction::Close);
+                            }
                             Key::KeyV => {
                                 // Check for Super+V (Windows-like) or Ctrl+Alt+V (fallback)
                                 let super_down = super_clone.load(Ordering::SeqCst);
@@ -59,7 +69,7 @@ impl HotkeyManager {
                                 let alt_down = alt_clone.load(Ordering::SeqCst);
 
                                 if super_down || (ctrl_down && alt_down) {
-                                    callback_clone();
+                                    callback_clone(HotkeyAction::Toggle);
                                 }
                             }
                             _ => {}

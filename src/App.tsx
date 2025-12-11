@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { clsx } from 'clsx'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useClipboardHistory } from './hooks/useClipboardHistory'
 import { useDarkMode } from './hooks/useDarkMode'
 import { HistoryItem } from './components/HistoryItem'
@@ -18,6 +19,23 @@ function App() {
 
   const { history, isLoading, clearHistory, deleteItem, togglePin, pasteItem } =
     useClipboardHistory()
+
+  // Handle ESC key to close/hide window
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        try {
+          await getCurrentWindow().hide()
+        } catch (err) {
+          console.error('Failed to hide window:', err)
+        }
+      }
+    }
+
+    globalThis.addEventListener('keydown', handleKeyDown)
+    return () => globalThis.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Handle tab change
   const handleTabChange = useCallback((tab: ActiveTab) => {

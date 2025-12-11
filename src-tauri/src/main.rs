@@ -10,7 +10,7 @@ use tauri::{
     AppHandle, Emitter, Manager, State, WebviewWindow,
 };
 use win11_clipboard_history_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
-use win11_clipboard_history_lib::hotkey_manager::HotkeyManager;
+use win11_clipboard_history_lib::hotkey_manager::{HotkeyAction, HotkeyManager};
 
 /// Application state shared across all handlers
 pub struct AppState {
@@ -153,8 +153,15 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
 fn start_hotkey_listener(app: AppHandle) -> HotkeyManager {
     let app_clone = app.clone();
 
-    HotkeyManager::new(move || {
-        toggle_window(&app_clone);
+    HotkeyManager::new(move |action| match action {
+        HotkeyAction::Toggle => toggle_window(&app_clone),
+        HotkeyAction::Close => {
+            if let Some(window) = app_clone.get_webview_window("main") {
+                if window.is_visible().unwrap_or(false) {
+                    let _ = window.hide();
+                }
+            }
+        }
     })
 }
 
