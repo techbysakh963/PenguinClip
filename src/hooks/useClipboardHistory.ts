@@ -87,8 +87,8 @@ export function useClipboardHistory() {
           // This handles race conditions between fetchHistory and events
           const unpinnedItems = prev.filter((i) => !i.pinned)
           const isDuplicate = unpinnedItems.slice(0, 5).some((i) => {
-            if (i.content.type === 'text' && newItem.content.type === 'text') {
-              return i.content.text === newItem.content.text
+            if (i.content.type === 'Text' && newItem.content.type === 'Text') {
+              return i.content.data === newItem.content.data
             }
             return false
           })
