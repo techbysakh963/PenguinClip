@@ -22,14 +22,14 @@ command -v curl >/dev/null 2>&1 || error "curl is required but not installed."
 # Get latest release tag
 log "Fetching latest release version..."
 LATEST_RELEASE_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
-VERSION=$(curl -s "$LATEST_RELEASE_URL" | grep '"tag_name":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' | tr -cd '[:alnum:]._-')
+RELEASE_TAG=$(curl -s "$LATEST_RELEASE_URL" | grep '"tag_name":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' | tr -cd '[:alnum:]._-')
 
-if [ -z "$VERSION" ]; then
+if [ -z "$RELEASE_TAG" ]; then
     error "Failed to fetch latest version. Please check your internet connection."
 fi
 
-CLEAN_VERSION="${VERSION#v}"
-log "Latest version: $VERSION"
+CLEAN_VERSION="${RELEASE_TAG#v}"
+log "Latest version: $RELEASE_TAG"
 
 # Detect Architecture
 ARCH=$(uname -m)
@@ -67,7 +67,7 @@ download_and_install() {
     eval "$install_cmd"
 }
 
-BASE_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/$VERSION"
+BASE_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/$RELEASE_TAG"
 
 case "$DISTRO" in
     ubuntu|debian|linuxmint|pop|kali|neon)
