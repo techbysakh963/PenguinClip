@@ -235,7 +235,7 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
                         last_text_hash = Some(text_hash);
                         // Clear image hash when text is copied
                         last_image_hash = None;
-                        
+
                         // add_text handles duplicate detection internally
                         if let Some(item) = manager.add_text(text) {
                             // Emit event to frontend
