@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux#readme
+    about: Read the README for installation and usage instructions
+  - name: 💬 Discussions
+    url: https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/discussions
+    about: Ask questions and share ideas in GitHub Discussions

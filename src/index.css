@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+:root {
+  font-family:
+    'Segoe UI Variable',
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+  color-scheme: light dark;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset for Tauri */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Transparent background for Tauri window */
+body {
+  background: transparent;
+}
+
+/* Make the app draggable from certain areas */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+/* Disable text selection */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Custom scrollbar for Windows 11 style */
+@layer components {
+  .scrollbar-win11 {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  .scrollbar-win11::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-win11::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-win11::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+
+  .scrollbar-win11::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  /* Light mode scrollbar */
+  @media (prefers-color-scheme: light) {
+    .scrollbar-win11 {
+      scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    }
+
+    .scrollbar-win11::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .scrollbar-win11::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.35);
+    }
+  }
+}
+
+/* Glassmorphism / Acrylic effect */
+@layer components {
+  .glass-effect {
+    @apply backdrop-blur-acrylic;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.25),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-effect-light {
+    @apply backdrop-blur-acrylic;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.85) 0%,
+      rgba(255, 255, 255, 0.75) 100%
+    );
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.15),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-150 ease-out;
+  }
+
+  .card-hover:hover {
+    @apply scale-[1.01];
+  }
+
+  .card-hover:active {
+    @apply scale-[0.99];
+  }
+}
+
+/* Animations */
+@layer utilities {
+  .animate-in {
+    animation: fadeSlideIn 0.2s ease-out forwards;
+  }
+
+  @keyframes fadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Focus styles for accessibility */
+@layer components {
+  .focus-ring {
+    @apply outline-none ring-2 ring-win11-bg-accent ring-offset-2 ring-offset-transparent;
+  }
+}
