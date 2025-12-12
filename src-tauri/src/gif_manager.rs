@@ -85,31 +85,17 @@ pub fn download_gif_to_file(url: &str) -> Result<PathBuf, String> {
 fn copy_gif_to_clipboard_wayland(gif_path: &Path) -> Result<(), String> {
     eprintln!("[GifManager] Copying GIF using wl-copy (Wayland) with text/uri-list...");
 
-    // Get Wayland environment variables - these may not be inherited when running as root/sudo
-    let wayland_display =
-        std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
-    let xdg_runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| {
-        // Try to find the runtime dir for the actual user (not root)
-        if let Ok(sudo_user) = std::env::var("SUDO_USER") {
-            format!("/run/user/{}", get_uid_for_user(&sudo_user).unwrap_or(1000))
-        } else if let Ok(user) = std::env::var("USER") {
-            if user == "root" {
-                // If running as root, try to find the first non-root user's runtime dir
-                "/run/user/1000".to_string()
-            } else {
-                format!("/run/user/{}", get_uid_for_user(&user).unwrap_or(1000))
-            }
-        } else {
-            "/run/user/1000".to_string()
-        }
-    });
+    let wayland_display = std::env::var("WAYLAND_DISPLAY")
+        .map_err(|_| "WAYLAND_DISPLAY not set; Wayland clipboard not available".to_string())?;
+
+    let xdg_runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+        .map_err(|_| "XDG_RUNTIME_DIR not set; Wayland clipboard not available".to_string())?;
 
     eprintln!(
         "[GifManager] Using WAYLAND_DISPLAY={}, XDG_RUNTIME_DIR={}",
         wayland_display, xdg_runtime_dir
     );
 
-    // Use text/uri-list format - more universally accepted
     let file_uri = format!("file://{}\n", gif_path.to_string_lossy());
 
     let mut child = Command::new("wl-copy")
@@ -121,88 +107,62 @@ fn copy_gif_to_clipboard_wayland(gif_path: &Path) -> Result<(), String> {
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| {
-            format!(
-                "Failed to spawn wl-copy: {}. Make sure wl-clipboard is installed.",
-                e
-            )
-        })?;
+        .map_err(|e| format!("Failed to spawn wl-copy: {e}. Make sure wl-clipboard is installed."))?;
 
     if let Some(mut stdin) = child.stdin.take() {
         stdin
             .write_all(file_uri.as_bytes())
-            .map_err(|e| format!("Failed to write to wl-copy: {}", e))?;
+            .map_err(|e| format!("Failed to write to wl-copy: {e}"))?;
     }
 
     let output = child
         .wait_with_output()
-        .map_err(|e| format!("Failed to wait for wl-copy: {}", e))?;
+        .map_err(|e| format!("Failed to wait for wl-copy: {e}"))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("wl-copy failed: {}", stderr));
+        return Err(format!("wl-copy failed: {stderr}"));
     }
 
     eprintln!("[GifManager] Successfully set Wayland clipboard to text/uri-list");
     Ok(())
 }
 
-/// Get UID for a username
-fn get_uid_for_user(username: &str) -> Option<u32> {
-    let output = Command::new("id").arg("-u").arg(username).output().ok()?;
-
-    if output.status.success() {
-        String::from_utf8_lossy(&output.stdout).trim().parse().ok()
-    } else {
-        None
-    }
-}
-
 /// Copy GIF to clipboard using xclip (X11) with text/uri-list format
 fn copy_gif_to_clipboard_x11(gif_path: &Path) -> Result<(), String> {
     eprintln!("[GifManager] Copying GIF using xclip (X11) with text/uri-list...");
 
-    let display = std::env::var("DISPLAY").unwrap_or_else(|_| ":0".to_string());
+    let display = std::env::var("DISPLAY")
+        .map_err(|_| "DISPLAY not set; X11 clipboard not available".to_string())?;
+
     let file_uri = format!("file://{}", gif_path.to_string_lossy());
 
-    // Kill any existing xclip processes we may have spawned before
-    let _ = Command::new("pkill")
-        .arg("-f")
-        .arg("xclip -selection clipboard -t text/uri-list")
-        .status();
-
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // Use setsid to fully detach xclip from our process tree
-    // Use text/uri-list format for better compatibility
-    let status = Command::new("setsid")
-        .arg("-f") // Fork before setsid
-        .arg("sh")
-        .arg("-c")
-        .arg("printf %s \"$1\" | DISPLAY=\"$2\" xclip -selection clipboard -t text/uri-list -loops 0")
-        .arg("xclip_worker") // $0
-        .arg(&file_uri)      // $1
-        .arg(&display)       // $2
-        .stdin(Stdio::null())
+    let mut child = Command::new("xclip")
+        .env("DISPLAY", &display)
+        .arg("-selection")
+        .arg("clipboard")
+        .arg("-t")
+        .arg("text/uri-list")
+        .arg("-loops")
+        .arg("0")
+        .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status()
-        .map_err(|e| {
-            format!(
-                "Failed to spawn xclip: {}. Make sure xclip is installed.",
-                e
-            )
-        })?;
+        .spawn()
+        .map_err(|e| format!("Failed to spawn xclip: {e}. Make sure xclip is installed."))?;
 
-    if !status.success() {
-        return Err(format!("setsid command failed with status: {}", status));
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(file_uri.as_bytes())
+            .map_err(|e| format!("Failed to write to xclip: {e}"))?;
     }
 
-    eprintln!("[GifManager] xclip started via setsid with text/uri-list");
+    // Detach xclip process so it can serve clipboard requests
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
 
-    // Give xclip a moment to register with the clipboard
-    std::thread::sleep(std::time::Duration::from_millis(200));
-
+    eprintln!("[GifManager] xclip started with text/uri-list");
     Ok(())
 }
 
@@ -219,6 +179,15 @@ pub fn copy_url_to_clipboard(url: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Set clipboard from a local GIF file path
+fn set_gif_clipboard_from_file(path: &Path, is_wayland: bool) -> Result<(), String> {
+    if is_wayland {
+        copy_gif_to_clipboard_wayland(path)
+    } else {
+        copy_gif_to_clipboard_x11(path)
+    }
+}
+
 /// Main function: Download GIF and prepare for pasting
 pub fn paste_gif_to_clipboard(url: &str) -> Result<(), String> {
     let is_wayland = is_wayland_session();
@@ -227,32 +196,22 @@ pub fn paste_gif_to_clipboard(url: &str) -> Result<(), String> {
         if is_wayland { "Wayland" } else { "X11" }
     );
 
-    // Try to download the GIF file
-    match download_gif_to_file(url) {
-        Ok(gif_path) => {
-            // Copy as image/gif using the appropriate clipboard tool
-            let result = if is_wayland {
-                copy_gif_to_clipboard_wayland(&gif_path)
-            } else {
-                copy_gif_to_clipboard_x11(&gif_path)
-            };
-
-            if result.is_ok() {
-                eprintln!("[GifManager] Successfully set clipboard to GIF");
-                return Ok(());
-            }
-            eprintln!(
-                "[GifManager] Clipboard copy failed: {:?}, falling back to URL",
-                result.err()
-            );
+    // Try to download and set clipboard
+    let result = download_gif_to_file(url).and_then(|gif_path| {
+        let res = set_gif_clipboard_from_file(&gif_path, is_wayland);
+        if res.is_ok() {
+            eprintln!("[GifManager] Successfully set clipboard to GIF");
         }
+        res
+    });
+
+    match result {
+        Ok(()) => Ok(()),
         Err(e) => {
-            eprintln!("[GifManager] Download failed: {}, falling back to URL", e);
+            eprintln!("[GifManager] GIF clipboard failed ({e}), falling back to URL");
+            copy_url_to_clipboard(url)
         }
     }
-
-    // Fallback: just copy the URL
-    copy_url_to_clipboard(url)
 }
 
 #[cfg(test)]
@@ -260,8 +219,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_download_gif() {
-        let test_url = "https://media.tenor.com/images/test.gif";
-        let _ = download_gif_to_file(test_url);
+    fn test_get_gif_cache_dir() {
+        let result = get_gif_cache_dir();
+        assert!(result.is_ok());
+        let path = result.unwrap();
+        assert!(path.ends_with("win11-clipboard-history/gifs"));
+    }
+
+    #[test]
+    fn test_is_wayland_session() {
+        // This test just ensures the function doesn't panic
+        let _ = is_wayland_session();
     }
 }
