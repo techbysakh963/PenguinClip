@@ -151,9 +151,8 @@ async fn paste_emoji(
 }
 
 /// Paste a GIF from URL
-/// Pipeline: Download GIF -> Extract first frame -> Copy to clipboard -> Hide window -> Restore focus -> Simulate Ctrl+V
 #[tauri::command]
-async fn paste_gif_from_url(app: AppHandle, url: String) -> Result<(), String> {
+async fn paste_gif_from_url(_app: AppHandle, url: String) -> Result<(), String> {
     eprintln!("[PasteGif] Starting paste for URL: {}", url);
 
     // Step 1: Download and copy to clipboard (blocking operation, run in spawn_blocking)
@@ -163,6 +162,12 @@ async fn paste_gif_from_url(app: AppHandle, url: String) -> Result<(), String> {
         .map_err(|e| format!("Task join error: {}", e))?
         .map_err(|e| format!("Failed to paste GIF: {}", e))?;
 
+    Ok(())
+}
+
+/// Finish the paste sequence: Hide window -> Restore focus -> Simulate Ctrl+V
+#[tauri::command]
+async fn finish_paste(app: AppHandle) -> Result<(), String> {
     // Step 2: Hide window
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
@@ -179,7 +184,7 @@ async fn paste_gif_from_url(app: AppHandle, url: String) -> Result<(), String> {
     // Step 5: Simulate Ctrl+V
     simulate_paste_keystroke()?;
 
-    eprintln!("[PasteGif] Paste complete");
+    eprintln!("[PasteGif] Paste sequence complete");
     Ok(())
 }
 
@@ -516,6 +521,7 @@ fn main() {
             get_recent_emojis,
             paste_emoji,
             paste_gif_from_url,
+            finish_paste,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

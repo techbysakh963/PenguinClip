@@ -117,8 +117,16 @@ function EmptyState({ message, isError }: EmptyStateProps) {
 }
 
 export function GifPicker() {
-  const { searchQuery, setSearchQuery, gifs, isLoading, error, pasteGif, refreshTrending } =
-    useGifPicker()
+  const {
+    searchQuery,
+    setSearchQuery,
+    gifs,
+    isLoading,
+    isPasting,
+    error,
+    pasteGif,
+    refreshTrending,
+  } = useGifPicker()
 
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -231,7 +239,19 @@ export function GifPicker() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden relative">
+      {/* Loading Overlay */}
+      {isPasting && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[1px]">
+          <div className="bg-win11Light-bg-card dark:bg-win11-bg-card p-4 rounded-xl shadow-lg flex flex-col items-center gap-3 border border-win11Light-border-subtle dark:border-win11-border-subtle">
+            <div className="w-8 h-8 border-4 border-win11-bg-accent border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm font-medium text-win11Light-text-primary dark:text-win11-text-primary">
+              Pasting GIF...
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="px-3 pt-3 pb-2 flex-shrink-0">
         <div className="relative">

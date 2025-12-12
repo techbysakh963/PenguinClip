@@ -17,6 +17,7 @@ export function useGifPicker() {
   const [searchQuery, setSearchQuery] = useState('')
   const [gifs, setGifs] = useState<Gif[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isPasting, setIsPasting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Debounce timer ref
@@ -81,12 +82,41 @@ export function useGifPicker() {
     [fetchGifs]
   )
 
+  // Reset pasting state on window focus/blur to ensure clean state
+  useEffect(() => {
+    const resetState = () => setIsPasting(false)
+
+    window.addEventListener('focus', resetState)
+    window.addEventListener('blur', resetState)
+
+    return () => {
+      window.removeEventListener('focus', resetState)
+      window.removeEventListener('blur', resetState)
+    }
+  }, [])
+
   // Paste a GIF
   const pasteGif = useCallback(async (gif: Gif) => {
+    setIsPasting(true)
     try {
+      // 1. Download and copy to clipboard
       await invoke('paste_gif_from_url', { url: gif.fullUrl })
+
+      // 2. Reset loading state BEFORE hiding window
+      setIsPasting(false)
+
+      // 3. Finish paste sequence (hide window, simulate Ctrl+V)
+      // We use a small timeout to ensure the UI update has painted
+      setTimeout(async () => {
+        try {
+          await invoke('finish_paste')
+        } catch (err) {
+          console.error('Failed to finish paste:', err)
+        }
+      }, 100)
     } catch (err) {
       console.error('Failed to paste GIF:', err)
+      setIsPasting(false)
     }
   }, [])
 
@@ -101,6 +131,7 @@ export function useGifPicker() {
     setSearchQuery: handleSearchChange,
     gifs,
     isLoading,
+    isPasting,
     error,
     pasteGif,
     refreshTrending,

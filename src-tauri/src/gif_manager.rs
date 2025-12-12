@@ -38,8 +38,15 @@ fn get_gif_cache_dir() -> Result<PathBuf, String> {
 pub fn download_gif_to_file(url: &str) -> Result<PathBuf, String> {
     eprintln!("[GifManager] Downloading GIF from: {}", url);
 
-    let response =
-        reqwest::blocking::get(url).map_err(|e| format!("Failed to download GIF: {}", e))?;
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let response = client
+        .get(url)
+        .send()
+        .map_err(|e| format!("Failed to download GIF: {}", e))?;
 
     if !response.status().is_success() {
         return Err(format!("HTTP error: {}", response.status()));
