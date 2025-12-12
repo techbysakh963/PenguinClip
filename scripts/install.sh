@@ -387,17 +387,3 @@ else
     echo -e "${GREEN}║     ✓ Installed! Find 'Clipboard History' in your app menu.   ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 fi
-
-echo ""
-echo "To uninstall:"
-case "$DISTRO" in
-    ubuntu|debian|linuxmint|pop|kali|neon)
-        echo "  sudo apt remove win11-clipboard-history"
-        ;;
-    fedora|rhel|centos|almalinux|rocky)
-        echo "  sudo dnf remove win11-clipboard-history"
-        ;;
-    *)
-        echo "  rm -rf ~/.local/lib/win11-clipboard-history ~/.local/bin/win11-clipboard-history ~/.config/autostart/win11-clipboard-history.desktop"
-        ;;
-esac

@@ -151,7 +151,11 @@ async fn paste_emoji(
 
 /// Paste a GIF from URL
 #[tauri::command]
-async fn paste_gif_from_url(_app: AppHandle, state: State<'_, AppState>, url: String) -> Result<(), String> {
+async fn paste_gif_from_url(
+    _app: AppHandle,
+    state: State<'_, AppState>,
+    url: String,
+) -> Result<(), String> {
     eprintln!("[PasteGif] Starting paste for URL: {}", url);
 
     // Step 1: Download and copy to clipboard (blocking operation, run in spawn_blocking)
@@ -159,9 +163,9 @@ async fn paste_gif_from_url(_app: AppHandle, state: State<'_, AppState>, url: St
     let file_uri = tokio::task::spawn_blocking(move || {
         win11_clipboard_history_lib::gif_manager::paste_gif_to_clipboard_with_uri(&url_clone)
     })
-        .await
-        .map_err(|e| format!("Task join error: {}", e))?
-        .map_err(|e| format!("Failed to paste GIF: {}", e))?;
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
+    .map_err(|e| format!("Failed to paste GIF: {}", e))?;
 
     // Step 2: Mark the file URI as pasted so clipboard watcher ignores it
     if let Some(uri) = file_uri {
