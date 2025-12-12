@@ -46,14 +46,14 @@ const GifCell = memo(function GifCell({ gif, onSelect, style }: GifCellProps) {
         {!isLoaded && !hasError && (
           <div className="absolute inset-0 animate-pulse dark:bg-win11-bg-tertiary bg-win11Light-bg-tertiary" />
         )}
-        
+
         {/* Error state */}
         {hasError && (
           <div className="absolute inset-0 flex items-center justify-center text-xs dark:text-win11-text-disabled text-win11Light-text-disabled">
             Failed
           </div>
         )}
-        
+
         {/* GIF Image */}
         <img
           src={gif.previewUrl}
@@ -117,15 +117,8 @@ function EmptyState({ message, isError }: EmptyStateProps) {
 }
 
 export function GifPicker() {
-  const {
-    searchQuery,
-    setSearchQuery,
-    gifs,
-    isLoading,
-    error,
-    pasteGif,
-    refreshTrending,
-  } = useGifPicker()
+  const { searchQuery, setSearchQuery, gifs, isLoading, error, pasteGif, refreshTrending } =
+    useGifPicker()
 
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -209,15 +202,15 @@ export function GifPicker() {
     if (isLoading && gifs.length === 0) {
       return <LoadingSkeleton />
     }
-    
+
     if (error) {
       return <EmptyState message={error} isError />
     }
-    
+
     if (gifs.length === 0) {
       return <EmptyState message="No GIFs found. Try a different search!" />
     }
-    
+
     if (dimensions.width > 0 && dimensions.height > 0) {
       return (
         <Grid
@@ -233,7 +226,7 @@ export function GifPicker() {
         </Grid>
       )
     }
-    
+
     return null
   }
 
@@ -310,9 +303,7 @@ export function GifPicker() {
               <span>Trending GIFs</span>
             </>
           )}
-          {isLoading && (
-            <RefreshCw size={12} className="animate-spin ml-auto" />
-          )}
+          {isLoading && <RefreshCw size={12} className="animate-spin ml-auto" />}
         </div>
       </div>
 

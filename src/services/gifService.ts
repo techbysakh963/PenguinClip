@@ -74,13 +74,13 @@ export async function fetchTrendingGifs(limit: number = DEFAULT_LIMIT): Promise<
   })
 
   const response = await fetch(`${TENOR_API_BASE}/trending?${params}`)
-  
+
   if (!response.ok) {
     throw new Error(`Tenor API error: ${response.status} ${response.statusText}`)
   }
 
   const data: TenorV1Response = await response.json()
-  
+
   return data.results
     .map((result) => {
       try {
@@ -109,13 +109,13 @@ export async function searchGifs(query: string, limit: number = DEFAULT_LIMIT): 
   })
 
   const response = await fetch(`${TENOR_API_BASE}/search?${params}`)
-  
+
   if (!response.ok) {
     throw new Error(`Tenor API error: ${response.status} ${response.statusText}`)
   }
 
   const data: TenorV1Response = await response.json()
-  
+
   return data.results
     .map((result) => {
       try {

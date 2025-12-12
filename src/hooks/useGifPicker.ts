@@ -18,7 +18,7 @@ export function useGifPicker() {
   const [gifs, setGifs] = useState<Gif[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Debounce timer ref
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Track if component is mounted
@@ -33,7 +33,7 @@ export function useGifPicker() {
       const results = query.trim()
         ? await searchGifs(query, GIF_LIMIT)
         : await fetchTrendingGifs(GIF_LIMIT)
-      
+
       if (isMountedRef.current) {
         setGifs(results)
       }
@@ -54,7 +54,7 @@ export function useGifPicker() {
   useEffect(() => {
     isMountedRef.current = true
     fetchGifs('')
-    
+
     return () => {
       isMountedRef.current = false
       if (debounceTimerRef.current) {
@@ -64,19 +64,22 @@ export function useGifPicker() {
   }, [fetchGifs])
 
   // Debounced search handler
-  const handleSearchChange = useCallback((query: string) => {
-    setSearchQuery(query)
+  const handleSearchChange = useCallback(
+    (query: string) => {
+      setSearchQuery(query)
 
-    // Clear existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current)
-    }
+      // Clear existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
 
-    // Set new debounced search
-    debounceTimerRef.current = setTimeout(() => {
-      fetchGifs(query)
-    }, SEARCH_DEBOUNCE_MS)
-  }, [fetchGifs])
+      // Set new debounced search
+      debounceTimerRef.current = setTimeout(() => {
+        fetchGifs(query)
+      }, SEARCH_DEBOUNCE_MS)
+    },
+    [fetchGifs]
+  )
 
   // Paste a GIF
   const pasteGif = useCallback(async (gif: Gif) => {

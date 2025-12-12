@@ -12,6 +12,23 @@ NC='\033[0m'
 
 echo -e "${BLUE}Setting up Windows 11 Clipboard History...${NC}"
 
+# Install clipboard tools for GIF paste support
+install_clipboard_tools() {
+    echo -e "${BLUE}Installing clipboard tools for GIF support...${NC}"
+    if command -v apt-get &> /dev/null; then
+        apt-get install -y xclip wl-clipboard 2>/dev/null || true
+    elif command -v dnf &> /dev/null; then
+        dnf install -y xclip wl-clipboard 2>/dev/null || true
+    elif command -v pacman &> /dev/null; then
+        pacman -S --needed --noconfirm xclip wl-clipboard 2>/dev/null || true
+    elif command -v zypper &> /dev/null; then
+        zypper install -y xclip wl-clipboard 2>/dev/null || true
+    fi
+    echo -e "${GREEN}✓${NC} Clipboard tools installed"
+}
+
+install_clipboard_tools
+
 # Create wrapper script to handle Snap environment conflicts
 BINARY_PATH="/usr/bin/win11-clipboard-history"
 LIB_DIR="/usr/lib/win11-clipboard-history"
