@@ -36,6 +36,60 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
     error "Invalid version format: $VERSION (expected: X.Y.Z or X.Y.Z-suffix)"
 fi
 
+# Ask about release type
+echo ""
+echo "Select release type:"
+echo "  1) Stable      - Full release for all users (default)"
+echo "                   → GitHub Release + Cloudsmith + AUR"
+echo "  2) Pre-release - Testing version for early adopters"
+echo "                   → GitHub Release only (won't affect apt upgrade)"
+echo ""
+read -p "Release type [1/2]: " -n 1 -r RELEASE_TYPE
+echo ""
+
+case "$RELEASE_TYPE" in
+    2)
+        IS_PRERELEASE=true
+        # Ask for pre-release suffix type
+        echo ""
+        echo "Pre-release suffix:"
+        echo "  1) beta   - e.g., v${VERSION}-beta.1"
+        echo "  2) rc     - e.g., v${VERSION}-rc.1 (release candidate)"
+        echo "  3) alpha  - e.g., v${VERSION}-alpha.1"
+        echo "  4) dev    - e.g., v${VERSION}-dev"
+        read -p "Suffix type [1/2/3/4]: " -n 1 -r SUFFIX_TYPE
+        echo ""
+        
+        case "$SUFFIX_TYPE" in
+            2) SUFFIX="rc" ;;
+            3) SUFFIX="alpha" ;;
+            4) SUFFIX="dev" ;;
+            *) SUFFIX="beta" ;;
+        esac
+        
+        if [[ "$SUFFIX" == "dev" ]]; then
+            VERSION="${VERSION}-dev"
+        else
+            read -p "${SUFFIX^} number (e.g., 1 for v${VERSION}-${SUFFIX}.1): " SUFFIX_NUM
+            VERSION="${VERSION}-${SUFFIX}.${SUFFIX_NUM:-1}"
+        fi
+        
+        warn "Creating PRE-RELEASE v$VERSION"
+        warn "→ Will be uploaded to GitHub Releases ONLY"
+        warn "→ Will NOT be pushed to Cloudsmith (no apt upgrade)"
+        warn "→ Will NOT update AUR"
+        ;;
+    *)
+        IS_PRERELEASE=false
+        # Stable releases should NOT have pre-release suffixes
+        if [[ "$VERSION" =~ -(alpha|beta|dev|rc) ]]; then
+            error "Stable releases cannot have pre-release suffixes. Use version X.Y.Z"
+        fi
+        success "Creating STABLE release v$VERSION"
+        log "→ GitHub Release + Cloudsmith + AUR"
+        ;;
+esac
+
 # Check for uncommitted changes
 if [ -n "$(git status --porcelain)" ]; then
     warn "You have uncommitted changes:"
@@ -80,10 +134,14 @@ log "Updating Cargo.toml..."
 sed -i '0,/^version = "[^"]*"/s//version = "'"$VERSION"'"/' src-tauri/Cargo.toml
 success "Cargo.toml updated"
 
-# Update AUR PKGBUILD
-log "Updating aur/PKGBUILD..."
-sed -i "s/^pkgver=.*/pkgver=$VERSION/" aur/PKGBUILD
-success "aur/PKGBUILD updated"
+# Update AUR PKGBUILD (only for stable releases)
+if [ "$IS_PRERELEASE" = true ]; then
+    log "Skipping aur/PKGBUILD (pre-release)"
+else
+    log "Updating aur/PKGBUILD..."
+    sed -i "s/^pkgver=.*/pkgver=$VERSION/" aur/PKGBUILD
+    success "aur/PKGBUILD updated"
+fi
 
 # Update Cargo.lock
 log "Updating Cargo.lock..."
@@ -129,14 +187,27 @@ git push origin "v$VERSION"
 success "Pushed to origin"
 
 echo ""
-echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  🚀 Release v$VERSION initiated!                              ${NC}"
-echo -e "${GREEN}╠════════════════════════════════════════════════════════════════╣${NC}"
-echo -e "${GREEN}║  GitHub Actions will now:                                      ${NC}"
-echo -e "${GREEN}║  • Build .deb, .rpm, and .AppImage                            ${NC}"
-echo -e "${GREEN}║  • Create GitHub Release                                       ${NC}"
-echo -e "${GREEN}║  • Upload to Cloudsmith                                        ${NC}"
-echo -e "${GREEN}║  • Update AUR package                                          ${NC}"
-echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+if [ "$IS_PRERELEASE" = true ]; then
+    echo -e "${YELLOW}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║  🧪 Pre-release v$VERSION initiated!${NC}"
+    echo -e "${YELLOW}╠════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${YELLOW}║  GitHub Actions will now:                                      ${NC}"
+    echo -e "${YELLOW}║  • Build .deb, .rpm, and .AppImage                            ${NC}"
+    echo -e "${YELLOW}║  • Create GitHub Pre-release                                  ${NC}"
+    echo -e "${YELLOW}║                                                                ${NC}"
+    echo -e "${YELLOW}║  ⚠️  Cloudsmith and AUR will NOT be updated                    ${NC}"
+    echo -e "${YELLOW}║  ⚠️  Users won't receive this via apt upgrade                  ${NC}"
+    echo -e "${YELLOW}╚════════════════════════════════════════════════════════════════╝${NC}"
+else
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  🚀 Stable release v$VERSION initiated!${NC}"
+    echo -e "${GREEN}╠════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${GREEN}║  GitHub Actions will now:                                      ${NC}"
+    echo -e "${GREEN}║  • Build .deb, .rpm, and .AppImage                            ${NC}"
+    echo -e "${GREEN}║  • Create GitHub Release                                       ${NC}"
+    echo -e "${GREEN}║  • Upload to Cloudsmith (enables apt upgrade)                  ${NC}"
+    echo -e "${GREEN}║  • Update AUR package                                          ${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+fi
 echo ""
 echo "Track progress: https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/actions"

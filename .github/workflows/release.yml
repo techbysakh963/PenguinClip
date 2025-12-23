@@ -86,7 +86,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
           draft: false
-          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'dev') }}
           files: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
@@ -134,14 +134,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload to Cloudsmith
-        if: env.CLOUDSMITH_API_KEY != ''
+      - name: Upload to Cloudsmith (stable releases only)
+        if: ${{ env.CLOUDSMITH_API_KEY != '' && !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev') }}
         continue-on-error: true
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         run: |
           pip install cloudsmith-cli
           VERSION=${{ steps.get_version.outputs.VERSION }}
+          
+          echo "Uploading STABLE release v$VERSION to Cloudsmith..."
           
           # Upload .deb
           cloudsmith push deb gustavosett/clipboard-manager/any-distro/any-version \
@@ -154,7 +156,7 @@ jobs:
             --api-key $CLOUDSMITH_API_KEY || echo "Cloudsmith .rpm upload failed (may already exist)"
 
       - name: Update AUR Package
-        if: ${{ !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') }}
+        if: ${{ !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev') }}
         continue-on-error: true
         env:
           AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
