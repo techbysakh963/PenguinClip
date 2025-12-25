@@ -19,6 +19,7 @@ Terminal=false
 Categories=Utility;
 StartupNotify=false
 X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
 "#;
 
 /// Get the path to the autostart directory

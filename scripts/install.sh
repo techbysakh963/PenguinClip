@@ -333,6 +333,12 @@ install_appimage() {
     # Wrapper script
     cat > "$HOME/.local/bin/win11-clipboard-history" << 'EOF'
 #!/bin/bash
+# Clean up environment to avoid Snap/Flatpak library conflicts
+unset LD_LIBRARY_PATH
+unset LD_PRELOAD
+unset GTK_PATH
+unset GIO_MODULE_DIR
+
 export GDK_SCALE="${GDK_SCALE:-1}"
 export GDK_DPI_SCALE="${GDK_DPI_SCALE:-1}"
 export GDK_BACKEND="x11"
