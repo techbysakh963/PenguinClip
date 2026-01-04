@@ -48,4 +48,9 @@ export TAURI_TRAY="${TAURI_TRAY:-libayatana-appindicator3}"
 # Disable AT-SPI to prevent accessibility bus warnings/delays
 export NO_AT_BRIDGE=1
 
+# Force software rendering in virtualized environments to avoid GPU issues
+if systemd-detect-virt -q; then
+    export LIBGL_ALWAYS_SOFTWARE=1
+fi
+
 exec "$BINARY" "$@"
