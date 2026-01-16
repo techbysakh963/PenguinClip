@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   max_history_size: 50,
   custom_kaomojis: [],
   ui_scale: 1,
+  auto_delete_interval: 0,
+  auto_delete_unit: 'hours',
 }
 
 type ThemeMode = 'system' | 'dark' | 'light'
@@ -205,6 +207,23 @@ function SettingsApp() {
   // Handle dark opacity change (visual only, no disk I/O)
   const handleDarkOpacityChange = (value: number) => {
     setSettings((prev) => ({ ...prev, dark_background_opacity: value }))
+  }
+
+  const handleAutoDeleteValueChange = (value: string) => {
+    // Only allow positive integers or 0
+    const num = Number.parseInt(value)
+    if (value === '' || (Number.isInteger(num) && num >= 0)) {
+      const interval = value === '' ? 0 : num
+      const newSettings = { ...settings, auto_delete_interval: interval }
+      setSettings(newSettings)
+      saveSettings(newSettings)
+    }
+  }
+
+  const handleAutoDeleteUnitChange = (unit: UserSettings['auto_delete_unit']) => {
+    const newSettings = { ...settings, auto_delete_unit: unit }
+    setSettings(newSettings)
+    saveSettings(newSettings)
   }
 
   // Handle light opacity change (visual only, no disk I/O)
@@ -403,6 +422,100 @@ function SettingsApp() {
                 </div>
               </button>
             ))}
+          </div>
+        </section>
+
+        {/* Auto Delete Section */}
+        <section
+          className={clsx(
+            'rounded-xl p-6 border shadow-sm transition-all',
+            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+          )}
+        >
+          <div className="flex items-center gap-3 mb-5">
+            <div className={clsx('p-2 rounded-lg', isDark ? 'bg-white/5' : 'bg-gray-100')}>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                <line x1="10" x2="10" y1="11" y2="17" />
+                <line x1="14" x2="14" y1="11" y2="17" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold">Auto-delete History</h2>
+              <p className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                Automatically clear old clipboard items (except pinned)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 flex flex-col gap-2">
+              <label className="text-xs font-medium opacity-60 ml-1">Time value</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={settings.auto_delete_interval || ''}
+                  placeholder="0 (Disabled)"
+                  onChange={(e) => handleAutoDeleteValueChange(e.target.value)}
+                  className={clsx(
+                    'w-full px-4 py-2.5 rounded-lg border outline-none transition-all font-medium',
+                    isDark
+                      ? 'bg-white/5 border-white/10 focus:border-win11-bg-accent text-white'
+                      : 'bg-gray-50 border-gray-200 focus:border-win11-bg-accent text-gray-800'
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col gap-2">
+              <label className="text-xs font-medium opacity-60 ml-1">Time unit</label>
+              <div className="flex gap-2">
+                {(['minutes', 'hours', 'days', 'weeks'] as const).map((unit) => (
+                  <button
+                    key={unit}
+                    onClick={() => handleAutoDeleteUnitChange(unit)}
+                    className={clsx(
+                      'flex-1 py-2.5 rounded-lg border transition-all text-xs font-semibold capitalize',
+                      settings.auto_delete_unit === unit
+                        ? 'bg-win11-bg-accent text-white border-win11-bg-accent'
+                        : isDark
+                          ? 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    )}
+                  >
+                    {unit}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 rounded-lg bg-win11-bg-accent/5 border border-win11-bg-accent/10">
+            <p className="text-[11px] leading-relaxed opacity-70">
+              {settings.auto_delete_interval === 0 ? (
+                <span className="font-medium">Auto-delete is currently disabled.</span>
+              ) : (
+                <>
+                  Clipboard history items will be deleted after{' '}
+                  <span className="font-bold text-win11-bg-accent">
+                    {settings.auto_delete_interval} {settings.auto_delete_unit}
+                  </span>
+                  . Pinned items are never deleted.
+                </>
+              )}
+            </p>
           </div>
         </section>
 

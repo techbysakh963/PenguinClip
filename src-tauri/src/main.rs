@@ -310,6 +310,20 @@ impl WindowController {
                 if let Some(tab_name) = tab {
                     let _ = app.emit("switch-tab", tab_name);
                 }
+
+                // Immediate cleanup of outdated items before showing
+                if let Some(state) = app.try_state::<AppState>() {
+                    let settings = UserSettingsManager::new().load();
+                    let interval_in_minutes = settings.auto_delete_interval_in_minutes();
+
+                    let mut manager = state.clipboard_manager.lock();
+                    if manager.cleanup_old_items(interval_in_minutes) {
+                        // Mirror background cleanup: persist history explicitly, then emit event
+                        manager.save_history();
+                        let _ = app.emit("history-cleared", ());
+                    }
+                }
+
                 Self::position_and_show(&window, app);
             }
         }
@@ -592,10 +606,25 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
     std::thread::spawn(move || {
         let mut last_text_hash: Option<u64> = None;
         let mut last_image_hash: Option<u64> = None;
+        let mut cleanup_counter = 0;
 
         loop {
             std::thread::sleep(Duration::from_millis(500));
+            cleanup_counter += 1;
+
             let mut manager = clipboard_manager.lock();
+
+            // Background cleanup every ~30 seconds (60 * 500ms)
+            if cleanup_counter >= 60 {
+                cleanup_counter = 0;
+                let settings = UserSettingsManager::new().load();
+                let interval_in_minutes = settings.auto_delete_interval_in_minutes();
+
+                if interval_in_minutes > 0 && manager.cleanup_old_items(interval_in_minutes) {
+                    println!("[Watcher] Background cleanup triggered sync");
+                    let _ = app.emit("history-cleared", ());
+                }
+            }
 
             // Text
             if let Ok(text) = manager.get_current_text() {
