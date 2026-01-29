@@ -7,6 +7,7 @@ import { clsx } from 'clsx'
 
 import type { UserSettings, CustomKaomoji, BooleanSettingKey } from './types/clipboard'
 import { FeaturesSection } from './components/FeaturesSection'
+import { Switch } from './components/Switch'
 import { useSystemThemePreference } from './utils/systemTheme'
 
 const MIN_HISTORY_SIZE = 1
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   light_background_opacity: 0.7,
   enable_smart_actions: true,
   enable_ui_polish: true,
+  enable_dynamic_tray_icon: true,
   max_history_size: 50,
   custom_kaomojis: [],
   ui_scale: 1,
@@ -422,6 +424,24 @@ function SettingsApp() {
                 </div>
               </button>
             ))}
+          </div>
+
+          <div
+            className={clsx('mt-6 pt-6 border-t', isDark ? 'border-white/5' : 'border-gray-100')}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium">Dynamic Tray Icon</div>
+                <div className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  Adapt tray icon color to system theme.
+                </div>
+              </div>
+              <Switch
+                checked={settings.enable_dynamic_tray_icon}
+                onChange={() => handleToggle('enable_dynamic_tray_icon')}
+                isDark={isDark}
+              />
+            </div>
           </div>
         </section>
 

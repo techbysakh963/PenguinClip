@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{
-    image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, Monitor, PhysicalPosition, PhysicalSize, State, WebviewWindow,
@@ -107,6 +106,17 @@ fn set_user_settings(
     // Emit event to notify all windows that settings have changed
     app.emit("app-settings-changed", &new_settings)
         .map_err(|e| format!("Failed to emit settings changed event: {}", e))?;
+
+    // Refresh tray icon immediately to reflect possible dynamic setting change
+    #[cfg(target_os = "linux")]
+    theme_manager::update_dynamic_tray_flag(new_settings.enable_dynamic_tray_icon);
+
+    let app_for_tray = app.clone();
+    let settings_for_tray = new_settings.clone();
+    tauri::async_runtime::spawn(async move {
+        #[cfg(target_os = "linux")]
+        theme_manager::refresh_tray_icon(&app_for_tray, &settings_for_tray).await;
+    });
 
     Ok(())
 }
@@ -583,21 +593,21 @@ impl SettingsController {
 fn handle_window_moved_for_wayland(
     window: &WebviewWindow,
     state: &State<AppState>,
-    pos: &PhysicalPosition<i32>,
+    _pos: &PhysicalPosition<i32>,
 ) {
     if !is_wayland() || !window.is_visible().unwrap_or(false) {
         return;
     }
 
-    let monitor_name = window
+    let _monitor_name = window
         .current_monitor()
         .ok()
         .flatten()
         .and_then(|m| m.name().map(|n| n.to_string()));
 
-    let mut config = state.config_manager.lock();
+    let _config = state.config_manager.lock();
     // UPDATE MEMORY ONLY (No Disk I/O here)
-    config.update_state(monitor_name, pos.x, pos.y);
+    // config.update_state(monitor_name, pos.x, pos.y);
 }
 
 // --- Background Listeners ---
@@ -790,14 +800,25 @@ fn main() {
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &settings, &quit])?;
 
-            let icon = Image::from_bytes(include_bytes!("../icons/icon.png")).unwrap();
+
 
             // Get temp directory for tray icon (avoids permission issues with XDG_RUNTIME_DIR)
             let temp_dir = std::env::temp_dir().join("win11-clipboard-history");
             std::fs::create_dir_all(&temp_dir).ok();
 
-            let _tray = TrayIconBuilder::new()
+            // Initial Dynamic Icon Setup
+            let settings_manager = UserSettingsManager::new();
+            let settings = settings_manager.load();
+
+            // Initialize atomic flag for the listener loop
+            #[cfg(target_os = "linux")]
+            theme_manager::update_dynamic_tray_flag(settings.enable_dynamic_tray_icon);
+
+            let (icon, use_template_icon) = theme_manager::initial_tray_icon(&settings);
+
+            let _tray = TrayIconBuilder::with_id("main-tray")
                 .icon(icon)
+                .icon_as_template(use_template_icon)
                 .tooltip("Clipboard History")
                 .temp_dir_path(temp_dir)
                 .menu(&menu)
@@ -817,6 +838,16 @@ fn main() {
                     }
                 })
                 .build(app)?;
+
+            // Update icon asynchronously if dynamic is enabled (to fix the initial default icon)
+            if settings.enable_dynamic_tray_icon {
+                 let app_handle_bg = app.handle().clone();
+                 let settings_bg = settings.clone();
+                 tauri::async_runtime::spawn(async move {
+                    #[cfg(target_os = "linux")]
+                    theme_manager::refresh_tray_icon(&app_handle_bg, &settings_bg).await;
+                 });
+            }
 
             // Verify that settings window was created from config
             if app.get_webview_window("settings").is_none() {
