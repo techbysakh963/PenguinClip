@@ -1,20 +1,20 @@
 #!/bin/bash
-# Post-installation script for win11-clipboard-history
+# Post-installation script for PenguinClip
 # Only system-level tasks. NON-INTERACTIVE.
 set -e
 
-log() { echo "[win11-clipboard] $1"; }
+log() { echo "[penguinclip] $1"; }
 
 # 1. Ensure uinput module loads on boot
-if [ -f /etc/modules-load.d/win11-clipboard.conf ]; then
+if [ -f /etc/modules-load.d/penguinclip.conf ]; then
     # File exists - ensure it contains uinput
-    if ! grep -qx "uinput" /etc/modules-load.d/win11-clipboard.conf 2>/dev/null; then
-        echo "uinput" >> /etc/modules-load.d/win11-clipboard.conf
+    if ! grep -qx "uinput" /etc/modules-load.d/penguinclip.conf 2>/dev/null; then
+        echo "uinput" >> /etc/modules-load.d/penguinclip.conf
         log "Appended uinput to existing config"
     fi
 else
     # File doesn't exist - create it
-    echo "uinput" > /etc/modules-load.d/win11-clipboard.conf
+    echo "uinput" > /etc/modules-load.d/penguinclip.conf
     log "Configured uinput to load on boot"
 fi
 

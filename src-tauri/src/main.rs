@@ -11,19 +11,19 @@ use tauri::{
     AppHandle, Emitter, Manager, Monitor, PhysicalPosition, PhysicalSize, State, WebviewWindow,
     WindowEvent,
 };
-use win11_clipboard_history_lib::autostart_manager;
-use win11_clipboard_history_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
-use win11_clipboard_history_lib::config_manager::{resolve_window_position, ConfigManager};
-use win11_clipboard_history_lib::emoji_manager::{EmojiManager, EmojiUsage};
+use penguinclip_lib::autostart_manager;
+use penguinclip_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
+use penguinclip_lib::config_manager::{resolve_window_position, ConfigManager};
+use penguinclip_lib::emoji_manager::{EmojiManager, EmojiUsage};
 #[cfg(target_os = "linux")]
-use win11_clipboard_history_lib::focus_manager::x11_robust_activate;
-use win11_clipboard_history_lib::focus_manager::{restore_focused_window, save_focused_window};
-use win11_clipboard_history_lib::input_simulator::simulate_paste_keystroke;
-use win11_clipboard_history_lib::permission_checker;
-use win11_clipboard_history_lib::session::is_wayland;
-use win11_clipboard_history_lib::shortcut_setup;
-use win11_clipboard_history_lib::theme_manager::{self, ThemeInfo};
-use win11_clipboard_history_lib::user_settings::{UserSettings, UserSettingsManager};
+use penguinclip_lib::focus_manager::x11_robust_activate;
+use penguinclip_lib::focus_manager::{restore_focused_window, save_focused_window};
+use penguinclip_lib::input_simulator::simulate_paste_keystroke;
+use penguinclip_lib::permission_checker;
+use penguinclip_lib::session::is_wayland;
+use penguinclip_lib::shortcut_setup;
+use penguinclip_lib::theme_manager::{self, ThemeInfo};
+use penguinclip_lib::user_settings::{UserSettings, UserSettingsManager};
 
 /// Global flag to track if we started in background mode
 /// This is used to block the initial window show
@@ -226,7 +226,7 @@ async fn paste_gif_from_url(
     // 1. Download (Blocking) - Window stays open to show loading if UI supports it
     let url_clone = url.clone();
     let file_uri = tokio::task::spawn_blocking(move || {
-        win11_clipboard_history_lib::gif_manager::paste_gif_to_clipboard_with_uri(&url_clone)
+        penguinclip_lib::gif_manager::paste_gif_to_clipboard_with_uri(&url_clone)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -640,7 +640,7 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
             if let Ok(text) = manager.get_current_text() {
                 if !text.is_empty() {
                     let text_hash =
-                        win11_clipboard_history_lib::clipboard_manager::calculate_hash(&text);
+                        penguinclip_lib::clipboard_manager::calculate_hash(&text);
 
                     if Some(text_hash) != last_text_hash {
                         last_text_hash = Some(text_hash);
@@ -679,16 +679,16 @@ fn main() {
 
     // Handle --version / -v
     if args.iter().any(|arg| arg == "--version" || arg == "-v") {
-        println!("win11-clipboard-history {}", VERSION);
+        println!("penguinclip {}", VERSION);
         return;
     }
 
     // Handle --help / -h
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
-        println!("win11-clipboard-history {}", VERSION);
+        println!("penguinclip {}", VERSION);
         println!();
         println!("USAGE:");
-        println!("    win11-clipboard-history [OPTIONS]");
+        println!("    penguinclip [OPTIONS]");
         println!();
         println!("OPTIONS:");
         println!("    -h, --help       Show this help message");
@@ -721,12 +721,12 @@ fn main() {
     let start_in_background_clone = start_in_background;
     let open_emoji_on_start_clone = open_emoji_on_start;
 
-    win11_clipboard_history_lib::session::init();
+    penguinclip_lib::session::init();
 
     let is_mouse_inside = Arc::new(AtomicBool::new(false));
     let base_dir = dirs::data_local_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join("win11-clipboard-history");
+        .join("penguinclip");
 
     // Ensure base directory exists
     if let Err(e) = std::fs::create_dir_all(&base_dir) {
@@ -803,7 +803,7 @@ fn main() {
 
 
             // Get temp directory for tray icon (avoids permission issues with XDG_RUNTIME_DIR)
-            let temp_dir = std::env::temp_dir().join("win11-clipboard-history");
+            let temp_dir = std::env::temp_dir().join("penguinclip");
             std::fs::create_dir_all(&temp_dir).ok();
 
             // Initial Dynamic Icon Setup
@@ -926,7 +926,7 @@ fn main() {
             std::thread::spawn(|| {
                 // Give the desktop environment a moment to settle
                 std::thread::sleep(std::time::Duration::from_secs(2));
-                win11_clipboard_history_lib::linux_shortcut_manager::register_global_shortcut();
+                penguinclip_lib::linux_shortcut_manager::register_global_shortcut();
             });
 
             // If --settings flag was passed on first startup, open the settings window

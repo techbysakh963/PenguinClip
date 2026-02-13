@@ -192,6 +192,15 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       // Refresh conflict status
       await checkConflicts()
       await checkShortcutTools()
+      // After resolving conflicts, automatically register the shortcut
+      // so the user doesn't have to click a separate button
+      try {
+        await invoke<string>('register_de_shortcut')
+        setShortcutRegistered(true)
+      } catch (regErr) {
+        console.error('Auto-register after conflict fix failed:', regErr)
+        // Not fatal — user can still click "Register Automatically"
+      }
     } catch (e) {
       console.error('Failed to resolve conflicts:', e)
       setConflictError(String(e))
@@ -484,7 +493,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       {conflictsResolved && (
         <div className={clsx('mb-4', statusCardClass('success'))}>
           <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <span>Conflicts resolved! Super+V is now available.</span>
+          <span>{shortcutRegistered ? 'Conflicts resolved and shortcut registered! Super+V is ready.' : 'Conflicts resolved! Super+V is now available.'}</span>
         </div>
       )}
 
@@ -517,7 +526,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           </div>
           <Button
             id="copy-path"
-            onClick={() => copyToClipboard('/usr/bin/win11-clipboard-history')}
+            onClick={() => copyToClipboard('/usr/bin/penguinclip')}
           >
             <span className="flex items-center justify-center gap-2">
               <Copy className="w-4 h-4" />

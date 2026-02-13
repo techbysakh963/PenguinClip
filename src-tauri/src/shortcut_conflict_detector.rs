@@ -299,7 +299,7 @@ fn detect_cosmic_conflicts() -> Vec<ShortcutConflict> {
         // Check for Super+V bindings
         if content.to_lowercase().contains("super")
             && content.to_lowercase().contains("\"v\"")
-            && !content.contains("win11-clipboard-history")
+            && !content.contains("penguinclip")
         {
             conflicts.push(ShortcutConflict {
                 binding: "Super+V".to_string(),
@@ -485,7 +485,7 @@ Found in: {}
 
 **Then add:**
 ```
-bindsym $mod+v exec win11-clipboard-history
+bindsym $mod+v exec penguinclip
 ```
 
 4. Reload i3: Press $mod+Shift+r"#,
@@ -559,7 +559,7 @@ Found in: {}
 
 **Then add:**
 ```
-bindsym $mod+v exec win11-clipboard-history
+bindsym $mod+v exec penguinclip
 ```
 
 4. Reload Sway: Press $mod+Shift+c"#,
@@ -633,7 +633,7 @@ Found in: {}
 
 **Then add:**
 ```
-bind = SUPER, V, exec, win11-clipboard-history
+bind = SUPER, V, exec, penguinclip
 ```
 
 4. The config auto-reloads, or reload manually"#,

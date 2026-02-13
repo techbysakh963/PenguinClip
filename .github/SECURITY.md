@@ -17,7 +17,7 @@ We take security seriously. If you discover a security vulnerability, please fol
 
 Instead, please report security issues via one of these methods:
 
-1. **GitHub Security Advisory**: Use [GitHub's private vulnerability reporting](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/security/advisories/new)
+1. **GitHub Security Advisory**: Use [GitHub's private vulnerability reporting](https://github.com/techbysakh963/PenguinClip/security/advisories/new)
 
 2. **Email**: gustaavoribeeiro@hotmail.com
 
@@ -50,7 +50,7 @@ We appreciate security researchers who help keep our project safe. With your per
 
 ## Security Best Practices
 
-When using Windows 11 Clipboard History For Linux:
+When using PenguinClip:
 
 1. **Keep Updated**: Always use the latest version
 2. **Build from Source**: When possible, verify the source code
@@ -78,4 +78,4 @@ On Wayland, clipboard access follows the compositor's security model, which may 
 
 ---
 
-Thank you for helping keep Windows 11 Clipboard History For Linux secure! 🔐
+Thank you for helping keep PenguinClip secure! 🔐

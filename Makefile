@@ -1,4 +1,4 @@
-# Windows 11 Clipboard History For Linux - Makefile
+# PenguinClip - Makefile
 # Cross-distro build and install for Ubuntu, Debian, Fedora, and Arch Linux
 #
 # Note: PREFIX defaults to /usr/local for manual installs (Linux convention).
@@ -6,7 +6,7 @@
 #       To install system-wide like a package: sudo make install PREFIX=/usr
 
 SHELL := /bin/bash
-APP_NAME := win11-clipboard-history
+APP_NAME := penguinclip
 PREFIX ?= /usr/local
 LIBDIR := $(PREFIX)/lib
 BINDIR := $(PREFIX)/bin
@@ -49,7 +49,7 @@ endif
 
 help:
 	@echo -e "$(CYAN)╔════════════════════════════════════════════════════════════════╗$(RESET)"
-	@echo -e "$(CYAN)║     Windows 11 Clipboard History For Linux - Build Commands                   ║$(RESET)"
+	@echo -e "$(CYAN)║     PenguinClip - Build Commands                              ║$(RESET)"
 	@echo -e "$(CYAN)╚════════════════════════════════════════════════════════════════╝$(RESET)"
 	@echo ""
 	@echo -e "$(GREEN)Setup:$(RESET)"
@@ -248,10 +248,10 @@ install:
 	install -Dm644 src-tauri/icons/icon.png $(DESTDIR)$(DATADIR)/icons/hicolor/256x256/apps/$(APP_NAME).png
 	@# Create udev rules for input devices and uinput
 	@mkdir -p $(DESTDIR)/etc/udev/rules.d
-	install -Dm644 src-tauri/bundle/linux/99-win11-clipboard-input.rules $(DESTDIR)/etc/udev/rules.d/
-	@# Ensure uinput loads on boot (use same filename as postinst/postrm)
+	install -Dm644 src-tauri/bundle/linux/99-penguinclip-input.rules $(DESTDIR)/etc/udev/rules.d/
+	@# Ensure uinput loads on boot
 	@mkdir -p $(DESTDIR)/etc/modules-load.d
-	@echo "uinput" > $(DESTDIR)/etc/modules-load.d/win11-clipboard.conf
+	@echo "uinput" > $(DESTDIR)/etc/modules-load.d/penguinclip.conf
 	@# Load module and reload udev only when installing on live system (not in DESTDIR/fakeroot)
 	@if [ -z "$$(printf '%s' "$(DESTDIR)")" ]; then \
 		modprobe uinput 2>/dev/null || true; \
@@ -279,7 +279,7 @@ install:
 	@echo -e "$(GREEN)✓ Installed successfully$(RESET)"
 	@echo ""
 	@echo -e "$(GREEN)╔════════════════════════════════════════════════════════════════╗$(RESET)"
-	@echo -e "$(GREEN)║     ✓ Installed! Find 'Clipboard History' in your app menu.    ║$(RESET)"
+	@echo -e "$(GREEN)║     ✓ Installed! Find 'PenguinClip' in your app menu.         ║$(RESET)"
 	@echo -e "$(GREEN)╚════════════════════════════════════════════════════════════════╝$(RESET)"
 	@echo ""
 	@echo "The app will guide you through setup on first run."
@@ -316,9 +316,12 @@ uninstall:
 	@# Clean desktop entries from all common paths
 	rm -f $(DESTDIR)/usr/local/share/applications/$(APP_NAME).desktop 2>/dev/null || true
 	rm -f $(DESTDIR)/usr/share/applications/$(APP_NAME).desktop 2>/dev/null || true
-	rm -f $(DESTDIR)/etc/udev/rules.d/99-win11-clipboard-input.rules
+	rm -f $(DESTDIR)/etc/udev/rules.d/99-penguinclip-input.rules
+	@# Clean up old name artifacts if present
+	rm -f $(DESTDIR)/etc/udev/rules.d/99-win11-clipboard-input.rules 2>/dev/null || true
 	rm -f $(DESTDIR)/etc/modules-load.d/uinput.conf
-	rm -f $(DESTDIR)/etc/modules-load.d/win11-clipboard.conf
+	rm -f $(DESTDIR)/etc/modules-load.d/penguinclip.conf
+	rm -f $(DESTDIR)/etc/modules-load.d/win11-clipboard.conf 2>/dev/null || true
 	@# Remove autostart entry for the user
 	@if [ -n "$$SUDO_USER" ]; then \
 		AUTOSTART_FILE=$$(getent passwd $$SUDO_USER | cut -d: -f6)/.config/autostart/$(APP_NAME).desktop; \
@@ -354,7 +357,7 @@ format:
 
 clean-first-run:
 	@echo -e "$(CYAN)Cleaning first-run config...$(RESET)"
-	@rm -f ~/.config/win11-clipboard-history/setup.json
+	@rm -f ~/.config/penguinclip/setup.json
 	@echo -e "$(GREEN)✓ First-run config cleaned (Setup Wizard will show on next launch)$(RESET)"
 
 clean: clean-first-run

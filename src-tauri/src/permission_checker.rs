@@ -1,4 +1,4 @@
-//! Permission checker module for Windows 11 Clipboard History
+//! Permission checker module for PenguinClip
 //! Handles uinput permission verification and fixing
 
 use std::fs::OpenOptions;
@@ -19,7 +19,7 @@ fn get_config_dir() -> PathBuf {
         .unwrap_or_else(|| {
             PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".to_string())).join(".config")
         })
-        .join("win11-clipboard-history")
+        .join("penguinclip")
 }
 
 /// Get the config file path
@@ -78,6 +78,20 @@ pub fn fix_permissions_now() -> Result<String, String> {
     }
 
     let username = whoami::username().map_err(|e| format!("Failed to get username: {}", e))?;
+
+    // SECURITY: Validate username to prevent ACL format injection.
+    // Valid Linux usernames match: [a-z_][a-z0-9_-]*[$]?
+    if username.is_empty()
+        || username.len() > 256
+        || !username
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+    {
+        return Err(format!(
+            "Username contains unexpected characters: {}",
+            username
+        ));
+    }
 
     // Use pkexec for graphical password prompt
     let status = Command::new("pkexec")

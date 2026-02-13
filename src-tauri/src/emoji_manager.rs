@@ -163,7 +163,7 @@ impl Default for EmojiManager {
     fn default() -> Self {
         let data_dir = dirs::data_local_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("win11-clipboard-history");
+            .join("penguinclip");
         Self::new(data_dir)
     }
 }

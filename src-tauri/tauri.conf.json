@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "win11-clipboard-history",
-  "version": "0.5.3",
-  "identifier": "dev.gustavosett.clipboard-history",
+  "productName": "penguinclip",
+  "version": "0.6.0",
+  "identifier": "org.penguinclip.clipboard-history",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -17,7 +17,7 @@
     },
     "windows": [
       {
-        "title": "Clipboard History",
+        "title": "PenguinClip",
         "label": "main",
         "width": 360,
         "height": 480,
@@ -32,7 +32,7 @@
         "focus": true
       },
       {
-        "title": "Settings - Clipboard History",
+        "title": "Settings - PenguinClip",
         "label": "settings",
         "width": 480,
         "height": 520,
@@ -47,7 +47,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' https://media.tenor.com https://media1.tenor.com data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://g.tenor.com https://api.tenor.com; font-src 'self' data:"
     }
   },
   "bundle": {
@@ -63,8 +63,8 @@
       "icons/icon.png"
     ],
     "category": "Utility",
-    "shortDescription": "Windows 11-style Clipboard History Manager",
-    "longDescription": "A modern, beautiful clipboard history manager for Linux that mimics the Windows 11 Win+V clipboard experience. Built with Tauri, React, and Rust.",
+    "shortDescription": "Secure Clipboard History Manager for Linux",
+    "longDescription": "PenguinClip is a security-hardened clipboard history manager for Linux. A hardened fork of Windows-11-Clipboard-History-For-Linux, built with Tauri, React, and Rust.",
     "linux": {
       "deb": {
         "depends": [
@@ -79,12 +79,11 @@
           "libayatana-appindicator3-1 | libappindicator3-1"
         ],
         "files": {
-          "/usr/bin/win11-clipboard-history": "bundle/linux/wrapper.sh",
-          "/etc/udev/rules.d/99-win11-clipboard-input.rules": "bundle/linux/99-win11-clipboard-input.rules",
-          "/usr/share/applications/win11-clipboard-history.desktop": "bundle/linux/win11-clipboard-history.desktop",
-          "/usr/share/icons/hicolor/128x128/apps/win11-clipboard-history.png": "icons/128x128.png",
-          "/usr/share/icons/hicolor/256x256/apps/win11-clipboard-history.png": "icons/icon.png",
-          "/usr/share/icons/hicolor/scalable/apps/win11-clipboard-history.svg": "icons/icon.svg"
+          "/usr/bin/penguinclip": "bundle/linux/wrapper.sh",
+          "/etc/udev/rules.d/99-penguinclip-input.rules": "bundle/linux/99-penguinclip-input.rules",
+          "/usr/share/applications/penguinclip.desktop": "bundle/linux/penguinclip.desktop",
+          "/usr/share/icons/hicolor/128x128/apps/penguinclip.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/256x256/apps/penguinclip.png": "icons/icon.png"
         },
         "postInstallScript": "bundle/linux/postinst.sh",
         "preRemoveScript": "bundle/linux/postrm.sh"
@@ -104,6 +103,6 @@
         "preRemoveScript": "bundle/linux/postrm.sh"
       }
     },
-    "resources": ["bundle/linux/99-win11-clipboard-input.rules"]
+    "resources": ["bundle/linux/99-penguinclip-input.rules"]
   }
 }

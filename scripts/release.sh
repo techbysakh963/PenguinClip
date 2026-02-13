@@ -1,7 +1,7 @@
 #!/bin/bash
-# release.sh - Automated release script
-# Usage: ./scripts/release.sh 0.5.0
-#    or: make release VERSION=0.5.0
+# release.sh - Automated release script for PenguinClip
+# Usage: ./scripts/release.sh 0.6.0
+#    or: make release VERSION=0.6.0
 
 set -e
 
@@ -22,7 +22,7 @@ VERSION="${1:-}"
 
 if [ -z "$VERSION" ]; then
     echo "Usage: $0 <version>"
-    echo "Example: $0 0.5.0"
+    echo "Example: $0 0.6.0"
     echo ""
     echo "Current versions:"
     echo "  package.json:      $(grep '"version"' package.json | head -1 | sed 's/.*: "\(.*\)".*/\1/')"
@@ -40,9 +40,9 @@ fi
 echo ""
 echo "Select release type:"
 echo "  1) Stable      - Full release for all users (default)"
-echo "                   → GitHub Release + Cloudsmith + AUR"
+echo "                   → GitHub Release"
 echo "  2) Pre-release - Testing version for early adopters"
-echo "                   → GitHub Release only (won't affect apt upgrade)"
+echo "                   → GitHub Pre-release only"
 echo ""
 read -p "Release type [1/2]: " -n 1 -r RELEASE_TYPE
 echo ""
@@ -59,25 +59,23 @@ case "$RELEASE_TYPE" in
         echo "  4) dev    - e.g., v${VERSION}-dev"
         read -p "Suffix type [1/2/3/4]: " -n 1 -r SUFFIX_TYPE
         echo ""
-        
+
         case "$SUFFIX_TYPE" in
             2) SUFFIX="rc" ;;
             3) SUFFIX="alpha" ;;
             4) SUFFIX="dev" ;;
             *) SUFFIX="beta" ;;
         esac
-        
+
         if [[ "$SUFFIX" == "dev" ]]; then
             VERSION="${VERSION}-dev"
         else
             read -p "${SUFFIX^} number (e.g., 1 for v${VERSION}-${SUFFIX}.1): " SUFFIX_NUM
             VERSION="${VERSION}-${SUFFIX}.${SUFFIX_NUM:-1}"
         fi
-        
+
         warn "Creating PRE-RELEASE v$VERSION"
         warn "→ Will be uploaded to GitHub Releases ONLY"
-        warn "→ Will NOT be pushed to Cloudsmith (no apt upgrade)"
-        warn "→ Will NOT update AUR"
         ;;
     *)
         IS_PRERELEASE=false
@@ -86,7 +84,7 @@ case "$RELEASE_TYPE" in
             error "Stable releases cannot have pre-release suffixes. Use version X.Y.Z"
         fi
         success "Creating STABLE release v$VERSION"
-        log "→ GitHub Release + Cloudsmith + AUR"
+        log "→ GitHub Release + AUR"
         ;;
 esac
 
@@ -145,7 +143,7 @@ fi
 
 # Update Cargo.lock
 log "Updating Cargo.lock..."
-cd src-tauri && cargo update -p win11-clipboard-history-lib --precise "$VERSION" 2>/dev/null || cargo check 2>/dev/null || true
+cd src-tauri && cargo update -p penguinclip-lib --precise "$VERSION" 2>/dev/null || cargo check 2>/dev/null || true
 cd ..
 success "Cargo.lock updated"
 
@@ -189,25 +187,21 @@ success "Pushed to origin"
 echo ""
 if [ "$IS_PRERELEASE" = true ]; then
     echo -e "${YELLOW}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${YELLOW}║  🧪 Pre-release v$VERSION initiated!${NC}"
+    echo -e "${YELLOW}║  Pre-release v$VERSION initiated!${NC}"
     echo -e "${YELLOW}╠════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${YELLOW}║  GitHub Actions will now:                                      ${NC}"
-    echo -e "${YELLOW}║  • Build .deb, .rpm, and .AppImage                            ${NC}"
-    echo -e "${YELLOW}║  • Create GitHub Pre-release                                  ${NC}"
-    echo -e "${YELLOW}║                                                                ${NC}"
-    echo -e "${YELLOW}║  ⚠️  Cloudsmith and AUR will NOT be updated                    ${NC}"
-    echo -e "${YELLOW}║  ⚠️  Users won't receive this via apt upgrade                  ${NC}"
+    echo -e "${YELLOW}║  - Build .deb, .rpm, and .AppImage                            ${NC}"
+    echo -e "${YELLOW}║  - Create GitHub Pre-release                                  ${NC}"
     echo -e "${YELLOW}╚════════════════════════════════════════════════════════════════╝${NC}"
 else
     echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║  🚀 Stable release v$VERSION initiated!${NC}"
+    echo -e "${GREEN}║  Stable release v$VERSION initiated!${NC}"
     echo -e "${GREEN}╠════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${GREEN}║  GitHub Actions will now:                                      ${NC}"
-    echo -e "${GREEN}║  • Build .deb, .rpm, and .AppImage                            ${NC}"
-    echo -e "${GREEN}║  • Create GitHub Release                                       ${NC}"
-    echo -e "${GREEN}║  • Upload to Cloudsmith (enables apt upgrade)                  ${NC}"
-    echo -e "${GREEN}║  • Update AUR package                                          ${NC}"
+    echo -e "${GREEN}║  - Build .deb, .rpm, and .AppImage                            ${NC}"
+    echo -e "${GREEN}║  - Create GitHub Release                                       ${NC}"
+    echo -e "${GREEN}║  - Update AUR package                                          ${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 fi
 echo ""
-echo "Track progress: https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/actions"
+echo "Track progress at: https://github.com/techbysakh963/PenguinClip/actions"

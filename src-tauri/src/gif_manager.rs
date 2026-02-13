@@ -17,10 +17,18 @@ use std::time::Duration;
 
 // --- Constants ---
 
-const APP_CACHE_DIR: &str = "win11-clipboard-history/gifs";
+const APP_CACHE_DIR: &str = "penguinclip/gifs";
 const MIME_URI_LIST: &str = "text/uri-list";
 const DOWNLOAD_TIMEOUT: u64 = 10;
 const WL_COPY_SETTLE_TIME: u64 = 150;
+
+/// SECURITY: Allowed domains for GIF downloads.
+/// Only URLs from these domains are permitted to prevent SSRF attacks.
+const ALLOWED_GIF_DOMAINS: &[&str] = &[
+    "media.tenor.com",
+    "media1.tenor.com",
+    "c.tenor.com",
+];
 
 // --- Cache Management ---
 
@@ -56,8 +64,39 @@ impl GifCache {
 struct Downloader;
 
 impl Downloader {
+    /// Validate that a URL is safe to download from.
+    /// Only HTTPS URLs from whitelisted domains are allowed.
+    fn validate_url(url: &str) -> Result<(), String> {
+        // Must be HTTPS
+        if !url.starts_with("https://") {
+            return Err(format!("Only HTTPS URLs are allowed, got: {}", url));
+        }
+
+        // Extract hostname from URL
+        let without_scheme = &url[8..]; // skip "https://"
+        let host = without_scheme
+            .split('/')
+            .next()
+            .unwrap_or("")
+            .split(':')
+            .next()
+            .unwrap_or("");
+
+        // Check against whitelist
+        if !ALLOWED_GIF_DOMAINS.iter().any(|&domain| host == domain) {
+            return Err(format!(
+                "Domain '{}' is not in the allowed list. Allowed: {:?}",
+                host, ALLOWED_GIF_DOMAINS
+            ));
+        }
+
+        Ok(())
+    }
+
     /// Downloads a URL to a local file.
+    /// SECURITY: Only allows HTTPS URLs from whitelisted domains.
     pub fn download(url: &str, destination: &Path) -> Result<(), String> {
+        Self::validate_url(url)?;
         eprintln!("[GifManager] Downloading: {}", url);
 
         let client = reqwest::blocking::Client::builder()
@@ -282,7 +321,7 @@ mod tests {
     fn test_cache_resolution() {
         let dir = GifCache::get_dir();
         assert!(dir.is_ok());
-        assert!(dir.unwrap().ends_with("win11-clipboard-history/gifs"));
+        assert!(dir.unwrap().ends_with("penguinclip/gifs"));
     }
 
     #[test]
