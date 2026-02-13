@@ -2,28 +2,18 @@
 //! Tracks and restores window focus for proper paste injection on X11.
 //! Also provides X11 window activation using EWMH protocols.
 
-#[cfg(target_os = "linux")]
 use std::sync::atomic::{AtomicU32, Ordering};
-#[cfg(target_os = "linux")]
 use std::thread;
-#[cfg(target_os = "linux")]
 use std::time::{Duration, Instant};
-#[cfg(target_os = "linux")]
 use x11rb::connection::Connection;
-#[cfg(target_os = "linux")]
 use x11rb::protocol::xproto::{AtomEnum, ClientMessageEvent, ConnectionExt, EventMask, InputFocus};
 
 /// Time to wait after restoring focus before allowing the paste to proceed
-#[cfg(target_os = "linux")]
 const FOCUS_RESTORE_DELAY: Duration = Duration::from_millis(150);
 
 /// Stores the ID of the window that had focus before we opened
-#[cfg(target_os = "linux")]
 static LAST_FOCUSED_WINDOW: AtomicU32 = AtomicU32::new(0);
 
-// --- Linux Implementation ---
-
-#[cfg(target_os = "linux")]
 pub fn save_focused_window() {
     match get_x11_connection() {
         Ok(conn) => match conn.get_input_focus() {
@@ -41,7 +31,6 @@ pub fn save_focused_window() {
     }
 }
 
-#[cfg(target_os = "linux")]
 pub fn restore_focused_window() -> Result<(), String> {
     let window_id = LAST_FOCUSED_WINDOW.load(Ordering::SeqCst);
 
@@ -65,7 +54,6 @@ pub fn restore_focused_window() -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(target_os = "linux")]
 pub fn get_focused_window() -> Option<u32> {
     let conn = get_x11_connection().ok()?;
 
@@ -77,7 +65,6 @@ pub fn get_focused_window() -> Option<u32> {
 }
 
 /// Helper to establish X11 connection
-#[cfg(target_os = "linux")]
 fn get_x11_connection() -> Result<impl Connection, String> {
     x11rb::connect(None)
         .map(|(conn, _)| conn)
@@ -89,11 +76,9 @@ fn get_x11_connection() -> Result<impl Connection, String> {
 // =============================================================================
 
 /// Maximum time to wait for window to be mapped
-#[cfg(target_os = "linux")]
 const WINDOW_MAP_TIMEOUT: Duration = Duration::from_millis(500);
 
 /// Polling interval when waiting for window
-#[cfg(target_os = "linux")]
 const WINDOW_MAP_POLL_INTERVAL: Duration = Duration::from_millis(10);
 
 /// Activates an X11 window using the EWMH _NET_ACTIVE_WINDOW protocol.
@@ -106,7 +91,6 @@ const WINDOW_MAP_POLL_INTERVAL: Duration = Duration::from_millis(10);
 /// # Returns
 /// * `Ok(())` if the activation message was sent successfully
 /// * `Err(String)` if there was an error
-#[cfg(target_os = "linux")]
 pub fn x11_activate_window_by_id(window_id: u32) -> Result<(), String> {
     let (conn, screen_num) =
         x11rb::connect(None).map_err(|e| format!("X11 connect failed: {}", e))?;
@@ -169,7 +153,6 @@ pub fn x11_activate_window_by_id(window_id: u32) -> Result<(), String> {
 /// # Returns
 /// * `Some(window_id)` if found within timeout
 /// * `None` if timeout exceeded
-#[cfg(target_os = "linux")]
 pub fn wait_for_window_by_title(title: &str, timeout: Duration) -> Option<u32> {
     let start = Instant::now();
 
@@ -192,7 +175,6 @@ pub fn wait_for_window_by_title(title: &str, timeout: Duration) -> Option<u32> {
 
 /// Finds a window by its title using X11 primitives.
 /// This is more reliable than xdotool as it directly queries the X server.
-#[cfg(target_os = "linux")]
 fn find_window_by_title(title: &str) -> Option<u32> {
     let (conn, screen_num) = x11rb::connect(None).ok()?;
     let screen = conn.setup().roots.get(screen_num)?;
@@ -271,7 +253,6 @@ fn find_window_by_title(title: &str) -> Option<u32> {
 /// # Returns
 /// * `Ok(())` if activation was successful
 /// * `Err(String)` if window not found or activation failed
-#[cfg(target_os = "linux")]
 pub fn x11_activate_window_by_title(title: &str) -> Result<(), String> {
     let window_id = wait_for_window_by_title(title, WINDOW_MAP_TIMEOUT)
         .ok_or_else(|| format!("Window '{}' not found within timeout", title))?;
@@ -286,7 +267,6 @@ pub fn x11_activate_window_by_title(title: &str) -> Result<(), String> {
 
 /// Alternative activation that sets input focus directly.
 /// Use this as a fallback if _NET_ACTIVE_WINDOW doesn't work.
-#[cfg(target_os = "linux")]
 pub fn x11_force_input_focus(window_id: u32) -> Result<(), String> {
     let (conn, _) = x11rb::connect(None).map_err(|e| format!("X11 connect failed: {}", e))?;
 
@@ -302,7 +282,6 @@ pub fn x11_force_input_focus(window_id: u32) -> Result<(), String> {
 
 /// Combined activation strategy that tries multiple methods.
 /// This is the most robust approach for X11 focus acquisition.
-#[cfg(target_os = "linux")]
 pub fn x11_robust_activate(title: &str) -> Result<(), String> {
     // Step 1: Wait for window to appear in _NET_CLIENT_LIST
     let window_id = wait_for_window_by_title(title, WINDOW_MAP_TIMEOUT)

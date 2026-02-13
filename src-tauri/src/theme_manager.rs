@@ -62,7 +62,6 @@ pub struct ThemeInfo {
 
 /// Query the XDG Desktop Portal for the system color scheme.
 /// This works with COSMIC, GNOME, KDE, and other portal-compliant DEs.
-#[cfg(target_os = "linux")]
 pub async fn get_system_color_scheme() -> ThemeInfo {
     // Try to get cached value first
     let cache = SYSTEM_THEME.get_or_init(|| RwLock::new(None));
@@ -121,7 +120,6 @@ pub async fn get_system_color_scheme() -> ThemeInfo {
 
 /// Refresh the tray icon manually (e.g. after settings change).
 /// Accepts settings to avoid reloading them.
-#[cfg(target_os = "linux")]
 pub async fn refresh_tray_icon(
     app_handle: &tauri::AppHandle,
     settings: &crate::user_settings::UserSettings,
@@ -131,7 +129,6 @@ pub async fn refresh_tray_icon(
 }
 
 /// Query the XDG Desktop Portal via D-Bus
-#[cfg(target_os = "linux")]
 async fn query_portal_color_scheme() -> Result<ColorScheme, Box<dyn std::error::Error + Send + Sync>>
 {
     use zbus::zvariant::Value;
@@ -175,7 +172,6 @@ async fn query_portal_color_scheme() -> Result<ColorScheme, Box<dyn std::error::
 
 /// Fallback: Read COSMIC's theme config file directly
 /// Path: ~/.config/cosmic/com.system76.CosmicTheme.Mode/v1/is_dark
-#[cfg(target_os = "linux")]
 fn read_cosmic_theme_file() -> Result<bool, Box<dyn std::error::Error>> {
     let home = dirs::home_dir().ok_or("Could not find home directory")?;
     let config_path = home.join(".config/cosmic/com.system76.CosmicTheme.Mode/v1/is_dark");
@@ -205,7 +201,6 @@ fn read_cosmic_theme_file() -> Result<bool, Box<dyn std::error::Error>> {
 }
 
 /// Clear the cached theme value (useful when system theme changes)
-#[cfg(target_os = "linux")]
 pub async fn clear_theme_cache() {
     if let Some(cache) = SYSTEM_THEME.get() {
         *cache.write().await = None;
@@ -214,7 +209,6 @@ pub async fn clear_theme_cache() {
 
 /// Start listening for theme changes via D-Bus signals
 /// This is more efficient than polling as it reacts to actual system changes
-#[cfg(target_os = "linux")]
 pub async fn start_theme_listener(
     app_handle: tauri::AppHandle,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -295,7 +289,6 @@ pub fn update_tray_icon_with_settings(
 }
 
 /// Listen for SettingChanged signals from the XDG Desktop Portal
-#[cfg(target_os = "linux")]
 async fn listen_for_theme_changes(
     app_handle: tauri::AppHandle,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -380,7 +373,6 @@ async fn listen_for_theme_changes(
 }
 
 /// Check if the event listener is running
-#[cfg(target_os = "linux")]
 pub fn is_event_listener_running() -> bool {
     EVENT_LISTENER_RUNNING.load(Ordering::SeqCst)
 }

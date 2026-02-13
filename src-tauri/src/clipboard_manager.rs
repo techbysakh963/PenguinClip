@@ -703,9 +703,7 @@ impl ClipboardManager {
         // Trigger keystroke
         crate::input_simulator::simulate_paste_keystroke()?;
 
-        // Linux X11/Wayland often needs a moment to process the paste
         // before the clipboard ownership changes or the app reads it.
-        #[cfg(target_os = "linux")]
         thread::sleep(Duration::from_millis(250));
 
         Ok(())

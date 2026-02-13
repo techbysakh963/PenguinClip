@@ -15,7 +15,6 @@ use win11_clipboard_history_lib::autostart_manager;
 use win11_clipboard_history_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
 use win11_clipboard_history_lib::config_manager::{resolve_window_position, ConfigManager};
 use win11_clipboard_history_lib::emoji_manager::{EmojiManager, EmojiUsage};
-#[cfg(target_os = "linux")]
 use win11_clipboard_history_lib::focus_manager::x11_robust_activate;
 use win11_clipboard_history_lib::focus_manager::{restore_focused_window, save_focused_window};
 use win11_clipboard_history_lib::input_simulator::simulate_paste_keystroke;
@@ -108,13 +107,11 @@ fn set_user_settings(
         .map_err(|e| format!("Failed to emit settings changed event: {}", e))?;
 
     // Refresh tray icon immediately to reflect possible dynamic setting change
-    #[cfg(target_os = "linux")]
     theme_manager::update_dynamic_tray_flag(new_settings.enable_dynamic_tray_icon);
 
     let app_for_tray = app.clone();
     let settings_for_tray = new_settings.clone();
     tauri::async_runtime::spawn(async move {
-        #[cfg(target_os = "linux")]
         theme_manager::refresh_tray_icon(&app_for_tray, &settings_for_tray).await;
     });
 
@@ -365,11 +362,7 @@ impl WindowController {
             Self::position_for_non_wayland(window);
         }
 
-        #[cfg(target_os = "linux")]
         let is_wayland_session = is_wayland();
-
-        #[cfg(not(target_os = "linux"))]
-        let is_wayland_session = false;
 
         if is_wayland_session {
             // Wayland needs to be born "On Top" to be visible
@@ -388,7 +381,6 @@ impl WindowController {
         std::thread::spawn(move || {
             // For Wayland, we still need a small delay for the compositor
             // For X11, we use polling-based wait instead of fixed sleep
-            #[cfg(target_os = "linux")]
             if is_wayland_session {
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 let _ = window_clone.set_always_on_top(false);
@@ -409,7 +401,6 @@ impl WindowController {
     }
 
     /// Activate window on X11 using xdotool (fallback method)
-    #[cfg(target_os = "linux")]
     fn x11_activate_window_xdotool() -> Result<(), String> {
         use std::process::Command;
 
@@ -498,7 +489,6 @@ impl WindowController {
             return Some((pos.x as i32, pos.y as i32));
         }
 
-        #[cfg(target_os = "linux")]
         {
             if let Some(p) = Self::get_cursor_xdotool() {
                 return Some(p);
@@ -511,7 +501,6 @@ impl WindowController {
         None
     }
 
-    #[cfg(target_os = "linux")]
     fn get_cursor_xdotool() -> Option<(i32, i32)> {
         let output = std::process::Command::new("xdotool")
             .args(["getmouselocation", "--shell"])
@@ -535,7 +524,6 @@ impl WindowController {
         x.zip(y)
     }
 
-    #[cfg(target_os = "linux")]
     fn get_cursor_x11() -> Option<(i32, i32)> {
         use x11rb::connection::Connection;
         use x11rb::protocol::xproto::ConnectionExt;
@@ -816,7 +804,6 @@ fn main() {
             let settings = settings_manager.load();
 
             // Initialize atomic flag for the listener loop
-            #[cfg(target_os = "linux")]
             theme_manager::update_dynamic_tray_flag(settings.enable_dynamic_tray_icon);
 
             let (icon, use_template_icon) = theme_manager::initial_tray_icon(&settings);
@@ -849,7 +836,6 @@ fn main() {
                  let app_handle_bg = app.handle().clone();
                  let settings_bg = settings.clone();
                  tauri::async_runtime::spawn(async move {
-                    #[cfg(target_os = "linux")]
                     theme_manager::refresh_tray_icon(&app_handle_bg, &settings_bg).await;
                  });
             }
@@ -913,7 +899,6 @@ fn main() {
             start_clipboard_watcher(app_handle.clone(), clipboard_manager.clone());
 
             // Start theme change listener (D-Bus event-based, more efficient than polling)
-            #[cfg(target_os = "linux")]
             {
                 let app_handle_for_theme = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
@@ -927,7 +912,6 @@ fn main() {
 
             // Register global shortcut (Super+V) with the desktop environment
             // This runs in a background thread to avoid blocking startup
-            #[cfg(target_os = "linux")]
             std::thread::spawn(|| {
                 // Give the desktop environment a moment to settle
                 std::thread::sleep(std::time::Duration::from_secs(2));
