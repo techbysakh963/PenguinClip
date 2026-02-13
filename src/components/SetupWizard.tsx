@@ -517,7 +517,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           </div>
           <Button
             id="copy-path"
-            onClick={() => copyToClipboard('/usr/bin/win11-clipboard-history')}
+            onClick={() => copyToClipboard('/usr/bin/penguinclip')}
           >
             <span className="flex items-center justify-center gap-2">
               <Copy className="w-4 h-4" />

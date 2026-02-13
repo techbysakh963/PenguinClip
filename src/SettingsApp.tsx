@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   ui_scale: 1,
   auto_delete_interval: 0,
   auto_delete_unit: 'hours',
+  tenor_api_key: '',
 }
 
 type ThemeMode = 'system' | 'dark' | 'light'
@@ -114,7 +115,7 @@ const ResetIcon = () => (
 )
 
 /**
- * Settings App Component - Configuration UI for Win11 Clipboard History
+ * Settings App Component - Configuration UI for PenguinClip
  */
 function SettingsApp() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
@@ -808,6 +809,65 @@ function SettingsApp() {
           </div>
         </section>
 
+        {/* GIF Integration Section */}
+        <section
+          className={clsx(
+            'rounded-xl border shadow-sm overflow-hidden',
+            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+          )}
+        >
+          <div className="p-6 border-b border-inherit">
+            <h2 className="text-base font-semibold mb-1">GIF Integration</h2>
+            <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+              Search and paste GIFs using Tenor API (optional)
+            </p>
+          </div>
+
+          <div className="p-6 space-y-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="tenor-api-key" className="text-sm font-medium">
+                Tenor API Key
+              </label>
+              <input
+                id="tenor-api-key"
+                type="password"
+                value={settings.tenor_api_key}
+                onChange={(e) => updateSettings({ tenor_api_key: e.target.value })}
+                placeholder="Enter your Tenor API key to enable GIFs"
+                className={clsx(
+                  'w-full px-4 py-2.5 rounded-lg border outline-none transition-all font-mono text-sm',
+                  isDark
+                    ? 'bg-white/5 border-white/10 focus:border-win11-bg-accent text-white placeholder-gray-600'
+                    : 'bg-gray-50 border-gray-200 focus:border-win11-bg-accent text-gray-800 placeholder-gray-400'
+                )}
+              />
+            </div>
+
+            <div className={clsx(
+              'p-3 rounded-lg text-[11px] leading-relaxed',
+              isDark ? 'bg-white/5' : 'bg-gray-50'
+            )}>
+              <p className="opacity-70">
+                {settings.tenor_api_key ? (
+                  <span className="text-green-500 font-medium">GIF integration is enabled.</span>
+                ) : (
+                  <>GIF integration is <span className="font-medium">disabled</span>. To enable it:</>
+                )}
+              </p>
+              {!settings.tenor_api_key && (
+                <ol className="mt-2 space-y-1 opacity-60 list-decimal list-inside">
+                  <li>Get a free API key from developers.google.com/tenor</li>
+                  <li>Enter the key above</li>
+                  <li>The GIFs tab will become active</li>
+                </ol>
+              )}
+              <p className="mt-2 opacity-50">
+                When enabled, search queries are sent to Google's Tenor API. Your IP and search terms are visible to Google.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Features Section */}
         <FeaturesSection settings={settings} isDark={isDark} onToggle={handleToggle} />
 
@@ -837,10 +897,13 @@ function SettingsApp() {
       {/* Footer */}
       <footer
         className={clsx(
-          'px-8 py-5 border-t flex justify-end',
+          'px-8 py-5 border-t flex items-center justify-between',
           isDark ? 'border-white/5 bg-win11-bg-secondary/50' : 'border-gray-200 bg-gray-50'
         )}
       >
+        <span className={clsx('text-[10px]', isDark ? 'text-gray-600' : 'text-gray-400')}>
+          PenguinClip — Developed by SAKH
+        </span>
         <button
           onClick={handleClose}
           className="px-8 py-2.5 bg-win11-bg-accent hover:opacity-90 active:scale-95 text-white rounded-lg text-sm font-semibold shadow-sm transition-all"

@@ -1,5 +1,5 @@
-//! Windows 11 Clipboard History For Linux Library
-//! This module re-exports the core functionality for use as a library
+//! PenguinClip - Security-hardened clipboard history manager for Linux
+//! Forked from Windows 11 Clipboard History For Linux
 
 pub mod autostart_manager;
 pub mod clipboard_manager;

@@ -55,6 +55,11 @@ pub struct UserSettings {
     /// UI scale factor for the clipboard window (0.5 to 2.0, default 1.0)
     #[serde(default = "default_ui_scale")]
     pub ui_scale: f32,
+
+    // --- GIF Integration ---
+    /// Tenor API key for GIF search (empty = disabled, user must provide their own)
+    #[serde(default)]
+    pub tenor_api_key: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -99,6 +104,7 @@ impl Default for UserSettings {
             auto_delete_unit: "hours".to_string(),
             custom_kaomojis: Vec::new(),
             ui_scale: default_ui_scale(),
+            tenor_api_key: String::new(),
         }
     }
 }
@@ -150,11 +156,11 @@ pub struct UserSettingsManager {
 
 impl UserSettingsManager {
     /// Creates a new UserSettingsManager
-    /// Uses the OS-appropriate config directory (e.g., ~/.config/win11-clipboard-history/)
+    /// Uses the OS-appropriate config directory (e.g., ~/.config/penguinclip/)
     pub fn new() -> Self {
         let config_dir = dirs::config_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("win11-clipboard-history");
+            .join("penguinclip");
 
         Self { config_dir }
     }

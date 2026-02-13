@@ -1,12 +1,47 @@
 /**
  * GIF Service
  * Handles fetching GIFs from Tenor API v1
+ *
+ * SECURITY NOTE: GIF integration is an optional feature that communicates
+ * with Google's Tenor API. Search queries and your IP address are visible
+ * to Tenor/Google. This feature is disabled by default and requires the
+ * user to provide their own API key.
+ *
+ * To enable: Settings > GIF Integration > Enter your Tenor API key
+ * Get a key at: https://developers.google.com/tenor/guides/quickstart
  */
 import type { Gif } from '../types/gif'
 
-const TENOR_API_KEY = 'LIVDSRZULELA'
+// SECURITY: No hardcoded API key. Users must provide their own.
+// This prevents credential leakage and ensures users consciously opt-in
+// to external API communication.
+let _tenorApiKey: string | null = null
 const TENOR_API_BASE = 'https://g.tenor.com/v1'
 const DEFAULT_LIMIT = 30
+
+/**
+ * Set the Tenor API key. Must be called before any GIF fetching.
+ * The key is stored in memory only and not persisted by this module.
+ */
+export function setTenorApiKey(key: string | null) {
+  _tenorApiKey = key && key.trim() ? key.trim() : null
+}
+
+/**
+ * Check if GIF integration is configured (API key provided)
+ */
+export function isGifEnabled(): boolean {
+  return _tenorApiKey !== null && _tenorApiKey.length > 0
+}
+
+function getApiKey(): string {
+  if (!_tenorApiKey) {
+    throw new Error(
+      'GIF integration is not configured. Please provide a Tenor API key in Settings.',
+    )
+  }
+  return _tenorApiKey
+}
 
 interface TenorV1MediaFormat {
   url: string
@@ -68,7 +103,7 @@ function transformTenorResult(result: TenorV1Result): Gif {
  */
 export async function fetchTrendingGifs(limit: number = DEFAULT_LIMIT): Promise<Gif[]> {
   const params = new URLSearchParams({
-    key: TENOR_API_KEY,
+    key: getApiKey(),
     limit: String(limit),
     media_filter: 'minimal',
   })
@@ -102,7 +137,7 @@ export async function searchGifs(query: string, limit: number = DEFAULT_LIMIT): 
   }
 
   const params = new URLSearchParams({
-    key: TENOR_API_KEY,
+    key: getApiKey(),
     q: query.trim(),
     limit: String(limit),
     media_filter: 'minimal',

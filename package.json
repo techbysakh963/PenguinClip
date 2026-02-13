@@ -1,22 +1,23 @@
 {
-  "name": "win11-clipboard-history",
+  "name": "penguinclip",
   "private": true,
-  "version": "0.5.3",
+  "version": "0.6.0",
   "type": "module",
-  "description": "A Windows 11-style Clipboard History Manager for Linux built with Tauri",
-  "author": "gustavosett",
+  "description": "PenguinClip - A security-hardened clipboard history manager for Linux. Developed by SAKH. Fork of Windows-11-Clipboard-History-For-Linux.",
+  "author": "SAKH (techbysakh963)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux"
+    "url": "https://github.com/techbysakh963/PenguinClip"
   },
   "keywords": [
     "clipboard",
     "linux",
     "tauri",
-    "windows-11",
     "clipboard-manager",
-    "rust"
+    "rust",
+    "security",
+    "privacy"
   ],
   "scripts": {
     "dev": "vite",

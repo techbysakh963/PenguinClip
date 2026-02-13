@@ -18,7 +18,7 @@ use uuid::Uuid;
 
 pub const DEFAULT_MAX_HISTORY_SIZE: usize = 50;
 const PREVIEW_TEXT_MAX_LEN: usize = 100;
-const GIF_CACHE_MARKER: &str = "win11-clipboard-history/gifs/";
+const GIF_CACHE_MARKER: &str = "penguinclip/gifs/";
 const FILE_URI_PREFIX: &str = "file://";
 
 // --- Helper Functions ---

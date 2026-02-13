@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug or issue with Windows 11 Clipboard History For Linux
+about: Report a bug or issue with PenguinClip
 title: '[BUG] '
 labels: ['bug', 'triage']
 assignees: ''

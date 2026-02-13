@@ -202,7 +202,7 @@ fn get_manual_instructions(de: &str) -> String {
 1. Open Settings → Keyboard → Keyboard Shortcuts → Custom Shortcuts
 2. Click "+" to add a new shortcut
 3. Name: "Clipboard History"
-4. Command: `win11-clipboard-history`
+4. Command: `penguinclip`
 5. Shortcut: Press Super+V
 
 **⚠️ Note:** GNOME uses Super+V for the Notification Center by default.
@@ -214,7 +214,7 @@ gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super><Shift>v
 
         "Pop!_OS" => r#"**Pop!_OS / Pop Shell:**
 1. Open Settings → Keyboard → Keyboard Shortcuts → Custom Shortcuts
-2. Add a new shortcut with command: `win11-clipboard-history`
+2. Add a new shortcut with command: `penguinclip`
 3. Set the shortcut to Super+V
 
 **⚠️ Note:** Pop!_OS inherits GNOME's Super+V for Notification Center.
@@ -232,7 +232,7 @@ Settings → Keyboard → Customize Shortcuts → Pop Shell"#
 2. Click "Edit" → "New" → "Global Shortcut" → "Command/URL"
 3. Name: "Clipboard History"
 4. Trigger: Click and press Meta+V
-5. Action: `win11-clipboard-history`
+5. Action: `penguinclip`
 
 **⚠️ Note:** If Klipper (KDE's clipboard) uses Meta+V:
 1. Right-click Klipper in system tray → Configure
@@ -243,14 +243,14 @@ Settings → Keyboard → Customize Shortcuts → Pop Shell"#
 1. Open System Settings → Keyboard → Shortcuts → Custom Shortcuts
 2. Click "Add custom shortcut"
 3. Name: "Clipboard History"
-4. Command: `win11-clipboard-history`
+4. Command: `penguinclip`
 5. Click on the shortcut area and press Super+V"#
             .to_string(),
 
         "XFCE" => r#"**XFCE Settings:**
 1. Open Settings → Keyboard → Application Shortcuts
 2. Click "Add"
-3. Command: `win11-clipboard-history`
+3. Command: `penguinclip`
 4. Press Super+V when prompted"#
             .to_string(),
 
@@ -258,7 +258,7 @@ Settings → Keyboard → Customize Shortcuts → Pop Shell"#
 1. Open Control Center → Keyboard Shortcuts
 2. Click "Add"
 3. Name: "Clipboard History"
-4. Command: `win11-clipboard-history`
+4. Command: `penguinclip`
 5. Click on the shortcut and press Super+V"#
             .to_string(),
 
@@ -266,7 +266,7 @@ Settings → Keyboard → Customize Shortcuts → Pop Shell"#
 1. Open LXQt Configuration → Shortcut Keys
 2. Click "Add"
 3. Description: "Clipboard History"
-4. Command: `win11-clipboard-history`
+4. Command: `penguinclip`
 5. Set shortcut to Meta+V"#
             .to_string(),
 
@@ -276,7 +276,7 @@ Settings → Keyboard → Customize Shortcuts → Pop Shell"#
 
 <keybind key="Super_L+v">
   <action name="Execute">
-    <command>win11-clipboard-history</command>
+    <command>penguinclip</command>
   </action>
 </keybind>
 
@@ -286,7 +286,7 @@ Settings → Keyboard → Customize Shortcuts → Pop Shell"#
         "COSMIC" => r#"**COSMIC Settings:**
 1. Open Settings → Keyboard → Custom Shortcuts
 2. Add new shortcut
-3. Command: `win11-clipboard-history`
+3. Command: `penguinclip`
 4. Binding: Super+V
 
 **Note:** If there's a conflict, check System shortcuts for Super+V bindings."#
@@ -297,13 +297,13 @@ Settings → Keyboard → Customize Shortcuts → Pop Shell"#
 2. Comment out or remove any existing `bindsym $mod+v` line
 3. Add this line:
 ```
-bindsym $mod+v exec win11-clipboard-history
+bindsym $mod+v exec penguinclip
 ```
 4. Reload i3: Press $mod+Shift+r
 
 **Alternative shortcut:**
 ```
-bindsym Ctrl+Mod1+v exec win11-clipboard-history
+bindsym Ctrl+Mod1+v exec penguinclip
 ```"#
             .to_string(),
 
@@ -312,13 +312,13 @@ bindsym Ctrl+Mod1+v exec win11-clipboard-history
 2. Comment out or remove any existing `bindsym $mod+v` line
 3. Add this line:
 ```
-bindsym $mod+v exec win11-clipboard-history
+bindsym $mod+v exec penguinclip
 ```
 4. Reload Sway: Press $mod+Shift+c
 
 **Alternative shortcut:**
 ```
-bindsym Ctrl+Mod1+v exec win11-clipboard-history
+bindsym Ctrl+Mod1+v exec penguinclip
 ```"#
             .to_string(),
 
@@ -327,20 +327,20 @@ bindsym Ctrl+Mod1+v exec win11-clipboard-history
 2. Comment out or remove any existing `bind = SUPER, V, ...` line
 3. Add this line:
 ```
-bind = SUPER, V, exec, win11-clipboard-history
+bind = SUPER, V, exec, penguinclip
 ```
 4. Config auto-reloads (or press Super+M to reload manually)
 
 **Alternative shortcut:**
 ```
-bind = CTRL ALT, V, exec, win11-clipboard-history
+bind = CTRL ALT, V, exec, penguinclip
 ```"#
             .to_string(),
 
         _ => r#"**Generic Instructions:**
 1. Open your desktop environment's keyboard shortcuts settings
 2. Add a new custom shortcut
-3. Command: `win11-clipboard-history`
+3. Command: `penguinclip`
 4. Shortcut: Super+V (or your preferred combination)
 
 **Alternative:** Use Ctrl+Alt+V if Super+V conflicts with your DE."#

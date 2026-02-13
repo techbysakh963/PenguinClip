@@ -64,8 +64,8 @@ impl ShortcutConfig {
 
 fn get_command_path() -> &'static str {
     // First, check if binary is in PATH (production install)
-    if Utils::command_exists("win11-clipboard-history") {
-        return "win11-clipboard-history";
+    if Utils::command_exists("penguinclip") {
+        return "penguinclip";
     }
 
     // Try to find the current executable path (for development)
@@ -77,14 +77,14 @@ fn get_command_path() -> &'static str {
     }
 
     // Fallback to just the name
-    "win11-clipboard-history"
+    "penguinclip"
 }
 
 const SHORTCUTS: &[ShortcutConfig] = &[
     ShortcutConfig {
-        id: "win11-clipboard-history",
+        id: "penguinclip",
         name: "Clipboard History",
-        command: "win11-clipboard-history", // Will be replaced at runtime
+        command: "penguinclip", // Will be replaced at runtime
         args: "",
         gnome_binding: "<Super>v",
         kde_binding: "Meta+V",
@@ -97,9 +97,9 @@ const SHORTCUTS: &[ShortcutConfig] = &[
         lxde_binding: "W-v",
     },
     ShortcutConfig {
-        id: "win11-clipboard-history-alt",
+        id: "penguinclip-alt",
         name: "Clipboard History (Alt)",
-        command: "win11-clipboard-history", // Will be replaced at runtime
+        command: "penguinclip", // Will be replaced at runtime
         args: "",
         gnome_binding: "<Ctrl><Alt>v",
         kde_binding: "Ctrl+Alt+V",
@@ -112,9 +112,9 @@ const SHORTCUTS: &[ShortcutConfig] = &[
         lxde_binding: "C-A-v",
     },
     ShortcutConfig {
-        id: "win11-clipboard-history-emoji",
+        id: "penguinclip-emoji",
         name: "Emoji Picker",
-        command: "win11-clipboard-history", // Will be replaced at runtime
+        command: "penguinclip", // Will be replaced at runtime
         args: "--emoji",
         gnome_binding: "<Super>period",
         kde_binding: "Meta+.",
@@ -1275,13 +1275,13 @@ impl ShortcutHandler for I3Handler {
                 }
                 // Check for existing mod+v bindings (word boundary check)
                 if trimmed.starts_with("bindsym") && has_mod_v_binding(&trimmed) {
-                    *line = format!("# {} # Commented by win11-clipboard-history", line);
+                    *line = format!("# {} # Commented by penguinclip", line);
                     had_existing = true;
                 }
             }
 
             // Add our binding at the end
-            lines.push("\n# Clipboard History (added by win11-clipboard-history)".to_string());
+            lines.push("\n# Clipboard History (added by penguinclip)".to_string());
             lines.push(binding_line.clone());
 
             if had_existing {
@@ -1317,7 +1317,7 @@ impl ShortcutHandler for I3Handler {
 
             for line in lines {
                 // Skip our comment line
-                if line.contains("# Clipboard History (added by win11-clipboard-history)") {
+                if line.contains("# Clipboard History (added by penguinclip)") {
                     skip_comment = true;
                     continue;
                 }
@@ -1329,10 +1329,10 @@ impl ShortcutHandler for I3Handler {
                 skip_comment = false;
 
                 // Restore commented out bindings
-                if line.contains("# Commented by win11-clipboard-history") {
+                if line.contains("# Commented by penguinclip") {
                     let restored = line
                         .replace("# ", "")
-                        .replace(" # Commented by win11-clipboard-history", "");
+                        .replace(" # Commented by penguinclip", "");
                     new_lines.push(restored);
                 } else {
                     new_lines.push(line.to_string());
@@ -1403,12 +1403,12 @@ impl ShortcutHandler for SwayHandler {
                 }
                 // Check for existing mod+v bindings (word boundary check)
                 if trimmed.starts_with("bindsym") && has_mod_v_binding(&trimmed) {
-                    *line = format!("# {} # Commented by win11-clipboard-history", line);
+                    *line = format!("# {} # Commented by penguinclip", line);
                     had_existing = true;
                 }
             }
 
-            lines.push("\n# Clipboard History (added by win11-clipboard-history)".to_string());
+            lines.push("\n# Clipboard History (added by penguinclip)".to_string());
             lines.push(binding_line.clone());
 
             if had_existing {
@@ -1443,7 +1443,7 @@ impl ShortcutHandler for SwayHandler {
             let mut skip_comment = false;
 
             for line in lines {
-                if line.contains("# Clipboard History (added by win11-clipboard-history)") {
+                if line.contains("# Clipboard History (added by penguinclip)") {
                     skip_comment = true;
                     continue;
                 }
@@ -1453,10 +1453,10 @@ impl ShortcutHandler for SwayHandler {
                 }
                 skip_comment = false;
 
-                if line.contains("# Commented by win11-clipboard-history") {
+                if line.contains("# Commented by penguinclip") {
                     let restored = line
                         .replace("# ", "")
-                        .replace(" # Commented by win11-clipboard-history", "");
+                        .replace(" # Commented by penguinclip", "");
                     new_lines.push(restored);
                 } else {
                     new_lines.push(line.to_string());
@@ -1520,12 +1520,12 @@ impl ShortcutHandler for HyprlandHandler {
                     && trimmed.contains("super")
                     && (trimmed.contains(", v,") || trimmed.contains(",v,"))
                 {
-                    *line = format!("# {} # Commented by win11-clipboard-history", line);
+                    *line = format!("# {} # Commented by penguinclip", line);
                     modified = true;
                 }
             }
 
-            lines.push("\n# Clipboard History (added by win11-clipboard-history)".to_string());
+            lines.push("\n# Clipboard History (added by penguinclip)".to_string());
             lines.push(binding_line.clone());
 
             if modified {
@@ -1556,7 +1556,7 @@ impl ShortcutHandler for HyprlandHandler {
             let mut skip_comment = false;
 
             for line in lines {
-                if line.contains("# Clipboard History (added by win11-clipboard-history)") {
+                if line.contains("# Clipboard History (added by penguinclip)") {
                     skip_comment = true;
                     continue;
                 }
@@ -1566,10 +1566,10 @@ impl ShortcutHandler for HyprlandHandler {
                 }
                 skip_comment = false;
 
-                if line.contains("# Commented by win11-clipboard-history") {
+                if line.contains("# Commented by penguinclip") {
                     let restored = line
                         .replace("# ", "")
-                        .replace(" # Commented by win11-clipboard-history", "");
+                        .replace(" # Commented by penguinclip", "");
                     new_lines.push(restored);
                 } else {
                     new_lines.push(line.to_string());

@@ -1,4 +1,4 @@
-# udev rules for Windows 11 Clipboard History
+# udev rules for PenguinClip (clipboard history manager)
 # Allows non-root access to uinput for keyboard simulation (paste)
 
 # Load module automatically

@@ -5,6 +5,7 @@ import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { useClipboardHistory } from './hooks/useClipboardHistory'
+import { setTenorApiKey, isGifEnabled } from './services/gifService'
 import { TabBar, TabBarRef } from './components/TabBar'
 import { DragHandle } from './components/DragHandle'
 import { EmojiPicker } from './components/EmojiPicker'
@@ -28,6 +29,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   auto_delete_unit: 'hours',
   custom_kaomojis: [],
   ui_scale: 1,
+  tenor_api_key: '',
 }
 
 /**
@@ -113,12 +115,14 @@ function ClipboardApp() {
         setSettings(loadedSettings)
         applyBackgroundOpacity(loadedSettings)
         applyUIScale(loadedSettings.ui_scale)
+        setTenorApiKey(loadedSettings.tenor_api_key || null)
         setSettingsLoaded(true)
       })
       .catch((err) => {
         console.error('Failed to load user settings:', err)
         applyBackgroundOpacity(DEFAULT_SETTINGS)
         applyUIScale(DEFAULT_SETTINGS.ui_scale)
+        setTenorApiKey(null)
         setSettingsLoaded(true)
       })
 
@@ -128,6 +132,7 @@ function ClipboardApp() {
       setSettings(newSettings)
       applyBackgroundOpacity(newSettings)
       applyUIScale(newSettings.ui_scale)
+      setTenorApiKey(newSettings.tenor_api_key || null)
     })
 
     // Listen for switch-tab events from Rust (e.g., when Super+. is pressed)
@@ -234,6 +239,18 @@ function ClipboardApp() {
         return <EmojiPicker isDark={isDark} opacity={secondaryOpacity} />
 
       case 'gifs':
+        if (!isGifEnabled()) {
+          return (
+            <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-3">
+              <p className={clsx('text-sm font-medium', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                GIF Integration is disabled
+              </p>
+              <p className={clsx('text-xs', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                To enable, open Settings and enter your Tenor API key.
+              </p>
+            </div>
+          )
+        }
         return <GifPicker isDark={isDark} opacity={secondaryOpacity} />
 
       case 'kaomoji':
