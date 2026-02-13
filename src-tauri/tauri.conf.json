@@ -104,6 +104,6 @@
         "preRemoveScript": "bundle/linux/postrm.sh"
       }
     },
-    "resources": ["bundle/linux/99-win11-clipboard-input.rules"]
+    "resources": ["bundle/linux/99-penguinclip-input.rules"]
   }
 }
