@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.png" alt="PenguinClip Logo" width="150">
+
 # PenguinClip
 
 **A security-hardened clipboard history manager for Linux.**
@@ -15,6 +17,8 @@ Developed by **SAKH** | Hardened fork of [Windows-11-Clipboard-History-For-Linux
 *Works on Wayland & X11.*
 
 Built with Rust + Tauri v2 + React + Tailwind CSS
+
+<img src="assets/screenshot.png" alt="PenguinClip Screenshot" width="600">
 
 </div>
 
