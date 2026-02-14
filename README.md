@@ -13,7 +13,6 @@
 [![Total Downloads](https://img.shields.io/endpoint?url=https://clipboard.gustavosett.workers.dev/&style=for-the-badge&logo=cloudsmith&logoColor=white)](https://broadcasts.cloudsmith.com/gustavosett/clipboard-manager)
 [![Tauri](https://img.shields.io/badge/Built_With-Tauri_v2-24C8D6?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![Rust](https://img.shields.io/badge/Powered_By-Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux)
 
 ![App Screenshot](https://github.com/user-attachments/assets/74400c8b-9d7d-49ce-8de7-45dfd556e256)
 
