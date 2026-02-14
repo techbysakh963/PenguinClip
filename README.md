@@ -236,11 +236,12 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 <div align="center">
 <br />
-<p><b>Like this project?</b>
 
+# Like this project?
 
+<img width="2752" height="1173" alt="Gemini_Generated_Image_3jise93jise93jis" src="https://github.com/user-attachments/assets/0e4e0804-095a-469c-aca5-e559202840f7" />
 
-Give it a ⭐ to show your support!</p>
+---
 
 <img alt="Static Badge" src="https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square&link=https%3A%2F%2Fcloudsmith.com">
 </img>
