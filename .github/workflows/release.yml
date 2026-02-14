@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -40,8 +40,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -127,74 +127,88 @@ jobs:
             artifacts/**/*.AppImage
             artifacts/**/*.rpm
           body: |
-            ## Windows 11 Clipboard History For Linux ${{ github.ref_name }}
-            
-            A Windows 11-style Clipboard History Manager for Linux.
-            
-            ### Supported Architectures
-            
-            | Architecture | Debian/Ubuntu | Fedora/RHEL | AppImage |
-            |---|---|---|---|
-            | x86_64 (Intel/AMD) | ✅ | ✅ | ✅ |
-            | aarch64 (ARM64) | ✅ | ✅ | ✅ |
-            
-            ### 🚀 Quick Installation (Recommended)
-            
+            <div align="center">
+
+            <img width="128" height="128" alt="logo" src="https://github.com/user-attachments/assets/4534e915-5d83-45f3-9f09-48a0f94b1d9a" />
+
+            # W11 Clipboard For Linux ${{ github.ref_name }}
+
+            ## 🚀 Quick Installation (Recommended)
+
             ```bash
             curl -fsSL https://raw.githubusercontent.com/gustavosett/Windows-11-Clipboard-History-For-Linux/master/scripts/install.sh | bash
             ```
-            
+
             This script auto-detects your distro and architecture, then sets up everything including paste permissions.
-            
+
+            </div>
+
             ---
-            
+
             ### 📦 Manual Installation
-            
-            #### Ubuntu/Debian (APT Repository - enables auto-updates)
+
+            <details>
+            <summary>Ubuntu/Debian (APT Repository - enables auto-updates)</summary>
+
             ```bash
             curl -1sLf 'https://dl.cloudsmith.io/public/gustavosett/clipboard-manager/setup.deb.sh' | sudo -E bash
             sudo apt update && sudo apt install win11-clipboard-history
             sudo setfacl -m u:$USER:rw /dev/uinput  # For immediate paste access
             ```
-            
+
             Or download the `.deb` directly (amd64 for x86_64, arm64 for ARM64):
             ```bash
             sudo apt install ./win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.deb
             sudo setfacl -m u:$USER:rw /dev/uinput
             ```
-            
-            #### Fedora/RHEL (DNF Repository - enables auto-updates)
+            </details>
+
+            <details>
+            <summary>Fedora/RHEL (DNF Repository - enables auto-updates)</summary
+
             ```bash
             curl -1sLf 'https://dl.cloudsmith.io/public/gustavosett/clipboard-manager/setup.rpm.sh' | sudo -E bash
             sudo dnf install win11-clipboard-history
             sudo setfacl -m u:$USER:rw /dev/uinput  # For immediate paste access
             ```
-            
+
             Or download the `.rpm` directly (x86_64 for Intel/AMD, aarch64 for ARM64):
             ```bash
             sudo dnf install ./win11-clipboard-history-${{ steps.get_version.outputs.VERSION }}-1.x86_64.rpm
             sudo setfacl -m u:$USER:rw /dev/uinput
             ```
-            
-            #### Arch Linux (AUR)
+            </details>
+
+            <details>
+            <summary>Arch Linux (AUR)</summary>
+
             ```bash
             yay -S win11-clipboard-history-bin
             ```
-            
-            #### AppImage (Universal - any distro)
+            </details>
+
+            <details>
+            <summary>AppImage (Universal - any distro)</summary>
+
+            > ## Some features are disabled; we strongly recommend the complete installation.
             ```bash
             # Download the correct AppImage for your architecture
             chmod +x win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
             sudo setfacl -m u:$USER:rw /dev/uinput  # Required for paste simulation
             ./win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
             ```
-            
+            then register the command that you want in your system to open the AppImage
+            ```
+            KEYBOARD SETTINGS -> SHORTCUTS -> NEW SHORTCUT -> Super+V -> ./my_awesome_folder/win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
+            ```
+
             > **Note:** The `setfacl` command is temporary (resets on reboot). For permanent setup, see the [README](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux#appimage-universal).
-            
+            </details>
+
             ---
-            
+
             ### ⌨️ Usage
-            
+
             Press **Super+V** to open the clipboard history. The app will show a Setup Wizard on first run to configure shortcuts and permissions.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -211,9 +225,9 @@ jobs:
           fi
           pip install cloudsmith-cli
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          
+
           echo "Uploading STABLE release v$VERSION to Cloudsmith..."
-          
+
           # Upload all .deb files (x86_64 and arm64)
           deb_files=$(find artifacts -name '*.deb' 2>/dev/null)
           if [ -n "$deb_files" ]; then
@@ -225,7 +239,7 @@ jobs:
           else
             echo "No .deb files found to upload"
           fi
-          
+
           # Upload all .rpm files (x86_64 and aarch64)
           rpm_files=$(find artifacts -name '*.rpm' 2>/dev/null)
           if [ -n "$rpm_files" ]; then
@@ -248,28 +262,28 @@ jobs:
             echo "AUR_SSH_KEY not set, skipping AUR update"
             exit 0
           fi
-          
+
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          
+
           # Compute checksums for each architecture
           DEB_X86_64=$(find artifacts -name "*_amd64.deb" | head -1)
           DEB_ARM64=$(find artifacts -name "*_arm64.deb" | head -1)
-          
+
           if [ -z "$DEB_X86_64" ]; then
             echo "x86_64 .deb not found, skipping AUR update"
             exit 0
           fi
-          
+
           SHA256_X86_64=$(sha256sum "$DEB_X86_64" | cut -d' ' -f1)
           SHA256_ARM64=""
           if [ -n "$DEB_ARM64" ]; then
             SHA256_ARM64=$(sha256sum "$DEB_ARM64" | cut -d' ' -f1)
           fi
-          
+
           echo "Updating AUR package to version $VERSION"
           echo "x86_64 checksum: $SHA256_X86_64"
           echo "arm64 checksum: ${SHA256_ARM64:-SKIP}"
-          
+
           # Setup SSH for AUR
           mkdir -p ~/.ssh
           echo "$AUR_SSH_KEY" > ~/.ssh/aur
@@ -278,15 +292,15 @@ jobs:
             User aur
             IdentityFile ~/.ssh/aur
             StrictHostKeyChecking no" > ~/.ssh/config
-          
+
           # Clone AUR repo
           git clone ssh://aur@aur.archlinux.org/win11-clipboard-history-bin.git /tmp/aur-pkg
           cd /tmp/aur-pkg
-          
+
           # Use aur/PKGBUILD from the repo as the single source of truth
           cp "$GITHUB_WORKSPACE/aur/PKGBUILD" PKGBUILD
           cp "$GITHUB_WORKSPACE/aur/win11-clipboard-history-bin.install" . 2>/dev/null || true
-          
+
           # Update version and checksums via sed
           sed -i "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
@@ -296,7 +310,7 @@ jobs:
           else
             sed -i "s/sha256sums_aarch64=.*/sha256sums_aarch64=('SKIP')/" PKGBUILD
           fi
-          
+
           # Generate .SRCINFO
           docker run --rm -v "$PWD:/pkg" archlinux bash -c "
             pacman -Sy --noconfirm pacman-contrib
@@ -337,7 +351,7 @@ jobs:
           SRCINFO_EOF
             sed -i 's/^          //' .SRCINFO
           }
-          
+
           # Commit and push
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
