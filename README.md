@@ -1,84 +1,87 @@
-<img width="897" height="427" alt="image" src="https://github.com/user-attachments/assets/74400c8b-9d7d-49ce-8de7-45dfd556e256" />
-
 <div align="center">
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.77+-orange.svg)
-![Tauri](https://img.shields.io/badge/tauri-v2-blue.svg)
-![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)
-![Version](https://img.shields.io/github/v/release/gustavosett/Windows-11-Clipboard-History-For-Linux?color=green)
-![Sites](https://img.shields.io/website?down_color=red&down_message=offline&up_color=green&up_message=online&url=https%3A%2F%2Fclipboard.gustavosett.dev)
+<img width="52" height="52" alt="logo" src="https://github.com/user-attachments/assets/4534e915-5d83-45f3-9f09-48a0f94b1d9a" />
 
-**A beautiful, [Windows 11-style Clipboard History Manager for Linux](https://clipboard.gustavosett.dev).**
 
-*Works on Wayland & X11.*
+# Windows 11 Clipboard History For Linux
 
-Built with 🦀 **Rust** + ⚡ **Tauri v2** + ⚛️ **React** + 🎨 **Tailwind CSS**
+[Website](https://clipboard.gustavosett.dev) • [Report Bug](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/issues) • [Request Feature](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/discussions/new?category=ideas)
 
-[Features](#-features) • [Installation](#-installation) • [How to Use](#-how-to-use) • [Development](#-development)
+**The aesthetic, feature-rich clipboard manager your Linux desktop deserves.**
+
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Total Downloads](https://img.shields.io/endpoint?url=https://clipboard.gustavosett.workers.dev/&style=for-the-badge&logo=cloudsmith&logoColor=white)](https://broadcasts.cloudsmith.com/gustavosett/clipboard-manager)
+[![Tauri](https://img.shields.io/badge/Built_With-Tauri_v2-24C8D6?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
+[![Rust](https://img.shields.io/badge/Powered_By-Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux)
+
+![App Screenshot](https://github.com/user-attachments/assets/74400c8b-9d7d-49ce-8de7-45dfd556e256)
 
 </div>
 
 ---
 
-## ✨ Features
+## ⚡ Quick Start (Recommended)
 
-- 🐧 **Wayland & X11 Support** - Uses OS-level shortcuts and `uinput` for pasting to support Wayland & X11.
-- ⚡ **Global Hotkey** - Press `Super+V` or `Ctrl+Alt+V` to open instantly.
-- 🖱️ **Smart Positioning** - Window follows your mouse cursor across multiple monitors.
-- 📌 **Pinning** - Keep important items at the top of your list.
-- 🖼️ **Rich Media** - Supports Images, Text, etc.
-- 🎬 **GIF Integration** - Search and paste GIFs from Tenor directly into Discord, Slack, etc.
-- 🤩 **Emoji Picker** - Built-in searchable emoji keyboard.
-- 🏎️ **Performance** - Native Rust backend ensures minimal resource usage.
-- 🛡️ **Privacy Focused** - History is stored locally and never leaves your machine.
-- 🧙 **Setup Wizard** - First-run wizard guides you through permission setup, detects shortcut conflicts, and autostart configuration.
-
----
-
-## 📥 Installation
-
-### 🚀 Recommended: One-Line Install
-
-This script automatically detects your distro and architecture (x86_64, ARM64), downloads the correct package, and sets up permissions.
+Get up and running in seconds. This script detects your distro, installs the app, and configures permissions automatically.
 
 ```bash
+# Just copy and paste this into your terminal
 curl -fsSL https://raw.githubusercontent.com/gustavosett/Windows-11-Clipboard-History-For-Linux/master/scripts/install.sh | bash
 ```
 
-> **Note:** The installer uses ACLs to grant immediate access to input devices — **no logout required!**
+> **Note:** No logout required! The installer uses ACLs to grant immediate access.
 
-### 📦 Manual Installation
+---
 
-Download the latest release from the [Releases Page](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/releases).
+## 🌟 Why use this?
+
+Most Linux clipboard managers are purely functional but lack visual appeal. This project brings the **modern, fluid design of Windows 11's clipboard history** to the Linux ecosystem, backed by the blazing speed of Rust.
+
+| 😎 | 🔍 |
+| --- | --- |
+| **🐧 Universal Support** | Works flawlessly on both **Wayland** & **X11**. |
+| **⚡ Instant Access** | Opens instantly with `Super+V` or `Ctrl+Alt+V`. |
+| **🧠 Smart Positioning** | The window follows your mouse cursor across multiple monitors. |
+| **📌 Pin & Sync** | Pin important snippets to keep them at the top. |
+| **🎬 GIF Integration** | Search Tenor and paste GIFs directly into Discord, Slack, etc. |
+| **🤩 Emoji Picker** | A built-in, searchable emoji keyboard. |
+| **🛡️ Privacy First** | Your history is stored locally. No data leaves your machine. |
+
+---
+
+## ⌨️ Shortcuts & Usage
+
+| Key | Action |
+| --- | --- |
+| <kbd>Super</kbd> + <kbd>V</kbd> | **Open Clipboard History** |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd> | Alternative Shortcut |
+| <kbd>Enter</kbd> | Paste Selected Item |
+| <kbd>Esc</kbd> | Close Window |
+
+> **Pro Tip:** Need to paste a GIF? Just select it! The app simulates `Ctrl+V` to paste the file URI directly into your chat apps.
+
+---
+
+## 📦 Detailed Installation
+
+Prefer to install manually? We support all major distributions.
 
 <details>
-<summary><b>Debian / Ubuntu / Pop!_OS / Linux Mint</b></summary>
+<summary><b>Debian / Ubuntu / Mint / Pop!_OS</b></summary>
 
-**Option 1: APT Repository (Recommended - enables automatic updates)**
+> **Recommended:** Use the APT repository for automatic updates.
 
 ```bash
-# Add the Cloudsmith repository
+# 1. Add Repository
 curl -1sLf 'https://dl.cloudsmith.io/public/gustavosett/clipboard-manager/setup.deb.sh' | sudo -E bash
 
-# Install the package
-sudo apt update
-sudo apt install win11-clipboard-history
+# 2. Install
+sudo apt update && sudo apt install win11-clipboard-history
 
-# For immediate paste access (without logout):
+# 3. Grant Permissions (One-time)
 sudo setfacl -m u:$USER:rw /dev/uinput
-```
 
-**Option 2: Direct Download**
-
-```bash
-# Download and install (replace VERSION and ARCH with actual values)
-# ARCH: amd64 for x86_64, arm64 for ARM64/aarch64
-sudo apt install ./win11-clipboard-history_VERSION_ARCH.deb
-
-# The package sets up udev rules automatically.
-# For immediate paste access (without logout):
-sudo setfacl -m u:$USER:rw /dev/uinput
 ```
 
 </details>
@@ -86,28 +89,16 @@ sudo setfacl -m u:$USER:rw /dev/uinput
 <details>
 <summary><b>Fedora / RHEL / CentOS</b></summary>
 
-**Option 1: DNF Repository (Recommended - enables automatic updates)**
-
 ```bash
-# Add the Cloudsmith repository
+# 1. Add Repository
 curl -1sLf 'https://dl.cloudsmith.io/public/gustavosett/clipboard-manager/setup.rpm.sh' | sudo -E bash
 
-# Install the package
+# 2. Install
 sudo dnf install win11-clipboard-history
 
-# For immediate paste access (without logout):
+# 3. Grant Permissions (One-time)
 sudo setfacl -m u:$USER:rw /dev/uinput
-```
 
-**Option 2: Direct Download**
-
-```bash
-# Download and install (replace VERSION and ARCH with actual values)
-# ARCH: x86_64 for Intel/AMD, aarch64 for ARM64
-sudo dnf install ./win11-clipboard-history-VERSION-1.ARCH.rpm
-
-# For immediate paste access (without logout):
-sudo setfacl -m u:$USER:rw /dev/uinput
 ```
 
 </details>
@@ -121,6 +112,7 @@ yay -S win11-clipboard-history-bin
 
 # Or using paru
 paru -S win11-clipboard-history-bin
+
 ```
 
 </details>
@@ -128,300 +120,42 @@ paru -S win11-clipboard-history-bin
 <details>
 <summary><b>AppImage (Universal)</b></summary>
 
-**Quick Start**
+> ## Some features are disabled; we strongly recommend the complete installation.
 
-```bash
-# Download the AppImage from the releases page
-chmod +x win11-clipboard-history_*.AppImage
-
-# Grant uinput access for paste simulation
-sudo setfacl -m u:$USER:rw /dev/uinput
-
-# Run the app
-./win11-clipboard-history_*.AppImage
+1. Download the `.AppImage` from [Releases](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/releases).
+2. Make it executable: `chmod +x win11-clipboard-history_*.AppImage`
+3. Grant permissions: `sudo setfacl -m u:$USER:rw /dev/uinput`
+4. Register the command that you want in your system to open the AppImage
 ```
-
-**Full Installation (recommended for regular use)**
-
-```bash
-# Create directories
-mkdir -p ~/.local/bin ~/.local/share/applications
-
-# Move AppImage to local bin
-mv win11-clipboard-history_*.AppImage ~/.local/bin/win11-clipboard-history.AppImage
-chmod +x ~/.local/bin/win11-clipboard-history.AppImage
-
-# Create a wrapper script for clean environment
-cat > ~/.local/bin/win11-clipboard-history << 'EOF'
-#!/bin/bash
-unset LD_LIBRARY_PATH LD_PRELOAD GTK_PATH GIO_MODULE_DIR
-export NO_AT_BRIDGE=1
-exec "$HOME/.local/bin/win11-clipboard-history.AppImage" "$@"
-EOF
-chmod +x ~/.local/bin/win11-clipboard-history
-
-# Create desktop entry
-cat > ~/.local/share/applications/win11-clipboard-history.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=Clipboard History
-Comment=Windows 11-style Clipboard History Manager
-Exec=$HOME/.local/bin/win11-clipboard-history
-Icon=utilities-clipboard
-Terminal=false
-Categories=Utility;
-EOF
-
-# Add ~/.local/bin to PATH if not already there
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-```
-
-**Setting up paste simulation (required)**
-
-AppImage doesn't install udev rules automatically, so you need to set up permissions:
-
-```bash
-# Quick fix (temporary, resets on reboot):
-sudo setfacl -m u:$USER:rw /dev/uinput
-
-# Permanent fix (survives reboot):
-sudo tee /etc/udev/rules.d/99-win11-clipboard-input.rules > /dev/null << 'EOF'
-ACTION=="add", SUBSYSTEM=="misc", KERNEL=="uinput", OPTIONS+="static_node=uinput"
-KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="input", TAG+="uaccess"
-EOF
-
-echo "uinput" | sudo tee /etc/modules-load.d/win11-clipboard.conf > /dev/null
-sudo modprobe uinput
-sudo udevadm control --reload-rules
-sudo udevadm trigger --subsystem-match=misc
-
-# Apply ACL for immediate access
-sudo setfacl -m u:$USER:rw /dev/uinput
-```
-
-> **Note:** You may need to log out and back in for the permanent udev rules to take full effect.
-
-> **Note:** Window transparency is automatically disabled when running as an AppImage to prevent rendering artefacts. The app will use a solid opaque background instead. See [Troubleshooting → Transparency](#transparency--opacity-rendering-issues-nvidia-or-appimage) for details.
-
-</details>
-
-<details>
-<summary><b>Build from Source</b></summary>
-
-```bash
-# Clone and enter the repo
-git clone https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux.git
-cd Windows-11-Clipboard-History-For-Linux
-
-# Install dependencies (auto-detects distro)
-make deps
-make rust
-make node
-source ~/.cargo/env
-
-# Build
-make build
-
-# Install system-wide (uses /usr/local by default)
-sudo make install
-
-# Or install to /usr like a package
-sudo make install PREFIX=/usr
+KEYBOARD SETTINGS -> SHORTCUTS -> NEW SHORTCUT -> Super+V -> ./my_awesome_folder/win11-clipboard-history.AppImage
 ```
 
 </details>
-
-### 🎯 First Run
-
-On the first launch, the app will show a **Setup Wizard** that:
-- ✅ Checks if you have the necessary permissions for paste simulation
-- 🔧 Offers a one-click fix if permissions are missing
-- ⚠️ **Detects shortcut conflicts** with your desktop environment (GNOME, KDE, i3, Sway, Hyprland, etc.)
-- ⚡ Offers automatic conflict resolution where possible
-- ⌨️ Helps register the global shortcut (Super+V) for your desktop environment
-- 🚀 Lets you enable autostart on login
-
----
-
-## ⌨️ How to Use
-
-| Hotkey | Action |
-| :--- | :--- |
-| **`Super + V`** | Open Clipboard History |
-| **`Ctrl + Alt + V`** | Alternative Shortcut |
-| **`Esc`** | Close Window |
-| **`↑ / ↓ / Tab`** | Navigate Items |
-| **`Enter`** | Paste Selected Item |
-
-### Tips
-- **Paste GIFs:** Select a GIF, and it will be copied as a file URI. The app simulates `Ctrl+V` to paste it into apps like Discord or Telegram.
-- **Pinning:** Click the pin icon on any item to keep it at the top permanently.
-
----
-
-## 🛠️ Development
-
-### Prerequisites
-
-- **Rust 1.77+**
-- **Node.js 20+**
-- System build dependencies (see `make deps`)
-
-### Quick Start
-
-```bash
-git clone https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux.git
-cd Windows-11-Clipboard-History-For-Linux
-
-make deps      # Install system dependencies (auto-detects distro)
-make rust      # Install Rust via rustup
-make node      # Install Node.js via nvm
-source ~/.cargo/env
-
-make dev       # Run in development mode with hot reload
-```
-
-### Available Commands
-
-| Command | Description |
-|---------|-------------|
-| `make dev` | Run in development mode |
-| `make build` | Build production release |
-| `make install` | Install to system (default: `/usr/local`) |
-| `make uninstall` | Remove from system |
-| `make clean` | Remove build artifacts |
-| `make lint` | Run linters |
-| `make help` | Show all available commands |
 
 ---
 
 ## 🔧 Troubleshooting
 
-### App won't open with Super+V
-
-1. **Ensure the app is running:** `pgrep -f win11-clipboard-history-bin`
-2. If not running, launch it from your app menu or run `win11-clipboard-history`
-3. **Re-run the Setup Wizard** to register the shortcut:
-   ```bash
-   rm ~/.config/win11-clipboard-history/setup.json
-   win11-clipboard-history
-   ```
-
-### Super+V Conflicts with Desktop Environment
-
-Many desktop environments use Super+V for built-in features. The Setup Wizard will detect and offer to fix these automatically, but you can also resolve them manually:
-
 <details>
-<summary><b>GNOME / Ubuntu</b></summary>
+<summary><b>Shortcut (Super+V) isn't working</b></summary>
 
-GNOME uses Super+V for the Notification Center / Message Tray.
-
+1. Ensure the app is running: `pgrep -f win11-clipboard-history-bin`
+2. If running, try resetting the config:
 ```bash
-# Change GNOME's notification tray shortcut to Super+Shift+V
-gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super><Shift>v']"
+rm ~/.config/win11-clipboard-history/setup.json
+win11-clipboard-history
+
 ```
 
-Or manually: **Settings → Keyboard → Keyboard Shortcuts → Search "Notification"**
+
+3. **Conflicts:** GNOME and other DEs often reserve `Super+V`. The app's **Setup Wizard** usually fixes this, but you can manually unbind `Super+V` in your system keyboard settings.
 
 </details>
 
 <details>
-<summary><b>Pop!_OS / Pop Shell</b></summary>
+<summary><b>Transparency Issues (NVIDIA / AppImage)</b></summary>
 
-Pop!_OS inherits GNOME's Super+V shortcut:
-
-```bash
-gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super><Shift>v']"
-```
-
-If Pop Shell also uses Super+V for tiling:
-**Settings → Keyboard → Customize Shortcuts → Pop Shell**
-
-</details>
-
-<details>
-<summary><b>KDE Plasma</b></summary>
-
-Check if Klipper (built-in clipboard manager) uses Meta+V:
-1. Right-click Klipper in system tray → Configure
-2. Go to Shortcuts
-3. Change or disable the Meta+V binding
-
-Or: **System Settings → Shortcuts → Global Shortcuts → Search "Meta+V"**
-
-</details>
-
-<details>
-<summary><b>COSMIC Desktop</b></summary>
-
-**Settings → Keyboard → Shortcuts** and check for Super+V bindings in both Custom and System shortcuts.
-
-</details>
-
-<details>
-<summary><b>i3 Window Manager</b></summary>
-
-Edit your i3 config (`~/.config/i3/config`):
-
-```bash
-# Comment out or remove existing $mod+v binding
-# bindsym $mod+v split vertical
-
-# Add clipboard history
-bindsym $mod+v exec win11-clipboard-history
-```
-
-Reload i3: `$mod+Shift+r`
-
-</details>
-
-<details>
-<summary><b>Sway</b></summary>
-
-Edit your Sway config (`~/.config/sway/config`):
-
-```bash
-# Comment out existing $mod+v binding if any
-# Add clipboard history
-bindsym $mod+v exec win11-clipboard-history
-```
-
-Reload Sway: `$mod+Shift+c`
-
-</details>
-
-<details>
-<summary><b>Hyprland</b></summary>
-
-Edit your Hyprland config (`~/.config/hypr/hyprland.conf`):
-
-```bash
-# Comment out existing SUPER, V binding if any
-# Add clipboard history
-bind = SUPER, V, exec, win11-clipboard-history
-```
-
-Config auto-reloads.
-
-</details>
-
-### Pasting doesn't work
-
-1. **Check the Setup Wizard:** It shows permission status and offers one-click fixes
-2. **Quick fix:** `sudo setfacl -m u:$USER:rw /dev/uinput`
-3. **Wayland:** Ensure `wl-clipboard` is installed
-4. **X11:** Ensure `xclip` is installed
-5. The app simulates `Ctrl+V` — ensure the target app accepts this shortcut
-
-### Transparency / opacity rendering issues (NVIDIA or AppImage)
-
-Users running **NVIDIA proprietary drivers** or launching the app via **AppImage** may experience visual glitches with window transparency (black background, flickering, or garbled content). The app detects these environments automatically and:
-
-1. Sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` to work around WebKit DMA-BUF bugs.
-2. Forces window opacity to **100 %** (fully opaque) and removes rounded window corners.
-3. Disables the transparency sliders in **Settings → Window Transparency** with an explanatory message.
-
-If detection fails or you want to force this behaviour manually, set the environment variable before launching:
+If you see a black background or flickering, use the compatibility mode:
 
 ```bash
 # Force NVIDIA workaround
@@ -430,143 +164,92 @@ IS_NVIDIA=1 win11-clipboard-history
 # Force AppImage workaround
 IS_APPIMAGE=1 win11-clipboard-history
 
-# Or disable the DMA-BUF renderer directly
-WEBKIT_DISABLE_DMABUF_RENDERER=1 win11-clipboard-history
 ```
-
-### Window appears on the wrong monitor
-The app uses smart cursor tracking. If it appears incorrectly, try moving your mouse to the center of the desired screen and pressing the hotkey again.
-
----
-
-## 🗑️ Uninstalling
-
-<details>
-<summary><b>Debian / Ubuntu</b></summary>
-
-```bash
-sudo apt remove win11-clipboard-history
-# To also remove config files:
-sudo apt purge win11-clipboard-history
-```
-
-</details>
-
-<details>
-<summary><b>Fedora / RHEL</b></summary>
-
-```bash
-sudo dnf remove win11-clipboard-history
-```
-
-</details>
-
-<details>
-<summary><b>Arch Linux (AUR)</b></summary>
-
-```bash
-yay -R win11-clipboard-history-bin
-```
-
-</details>
-
-<details>
-<summary><b>AppImage</b></summary>
-
-```bash
-rm -f ~/.local/bin/win11-clipboard-history*
-rm -f ~/.local/share/applications/win11-clipboard-history.desktop
-rm -rf ~/.config/win11-clipboard-history
-```
-
-</details>
-
-<details>
-<summary><b>Built from Source (Makefile)</b></summary>
-
-```bash
-rm -f ~/.local/bin/win11-clipboard-history
-rm -rf ~/.local/lib/win11-clipboard-history
-rm -f ~/.config/autostart/win11-clipboard-history.desktop
-```
-
-
-**Check if it still have shortcuts registered and remove them:**
-> This can happen if the application was uninstalled while it was running or if the uninstall permissions were incorrect.
-
-1. Go to Settings -> Keyboard -> Shortcuts
-2. Find "Win11 Clipboard History" or similar entry
-3. Remove the shortcut or change it to "Disabled"
 
 </details>
 
 ---
 
-![Screenshot](./docs/img/banner.gif)
+## 🛠️ For Developers
 
-## Contributors ✨
+Want to hack on the code?
+
+**Tech Stack:** `Rust` + `Tauri v2` + `React` + `Tailwind CSS`
+
+```bash
+# 1. Clone
+git clone https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux.git
+cd Windows-11-Clipboard-History-For-Linux
+
+# 2. Install Deps
+make deps && make rust && make node
+source ~/.cargo/env
+
+# 3. Run Dev Mode
+make dev
+
+```
+
+---
+
+## ✨ Contributors
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+
 <!-- prettier-ignore-start -->
+
 <!-- markdownlint-disable -->
+
 <table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/freshCoder21313"><img src="https://avatars.githubusercontent.com/u/151538542?v=4?s=100" width="100px;" alt="freshCoder21313"/><br /><sub><b>freshCoder21313</b></sub></a><br /><a href="#data-freshCoder21313" title="Data">🔣</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=freshCoder21313" title="Code">💻</a> <a href="#design-freshCoder21313" title="Design">🎨</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Tallin-Boston-Technology"><img src="https://avatars.githubusercontent.com/u/247321893?v=4?s=100" width="100px;" alt="Tallin-Boston-Technology"/><br /><sub><b>Tallin-Boston-Technology</b></sub></a><br /><a href="#ideas-Tallin-Boston-Technology" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/rorar"><img src="https://avatars.githubusercontent.com/u/44790144?v=4?s=100" width="100px;" alt="rorar"/><br /><sub><b>rorar</b></sub></a><br /><a href="#ideas-rorar" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Arorar" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sosadsonar"><img src="https://avatars.githubusercontent.com/u/120033042?v=4?s=100" width="100px;" alt="sonarx"/><br /><sub><b>sonarx</b></sub></a><br /><a href="#ideas-sosadsonar" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://oleksandrdev.com/"><img src="https://avatars.githubusercontent.com/u/47930925?v=4?s=100" width="100px;" alt="Oleksandr Romaniuk"/><br /><sub><b>Oleksandr Romaniuk</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Aolksndrdevhub" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Predrag"><img src="https://avatars.githubusercontent.com/u/460694?v=4?s=100" width="100px;" alt="Predrag"/><br /><sub><b>Predrag</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=Predrag" title="Code">💻</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3APredrag" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/henmalib"><img src="https://avatars.githubusercontent.com/u/68553709?v=4?s=100" width="100px;" alt="Hen"/><br /><sub><b>Hen</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Ahenmalib" title="Bug reports">🐛</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=henmalib" title="Code">💻</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/e6ad2020"><img src="https://avatars.githubusercontent.com/u/119390190?v=4?s=100" width="100px;" alt="Eyad"/><br /><sub><b>Eyad</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Ae6ad2020" title="Bug reports">🐛</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=e6ad2020" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://alexandre-pommier.com"><img src="https://avatars.githubusercontent.com/u/69145792?v=4?s=100" width="100px;" alt="Kinou"/><br /><sub><b>Kinou</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Akinou-p" title="Bug reports">🐛</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=kinou-p" title="Code">💻</a></td>
-    </tr>
-  </tbody>
-  <tfoot>
-    <tr>
-      <td align="center" size="13px" colspan="7">
-        <img src="https://raw.githubusercontent.com/all-contributors/all-contributors-cli/1b8533af435da9854653492b1327a23a4dbd0a10/assets/logo-small.svg">
-          <a href="https://all-contributors.js.org/docs/en/bot/usage">Add your contributions</a>
-        </img>
-      </td>
-    </tr>
-  </tfoot>
+<tbody>
+<tr>
+<td align="center" valign="top" width="14.28%"><a href="https://github.com/freshCoder21313"><img src="https://avatars.githubusercontent.com/u/151538542?v=4?s=100" width="100px;" alt="freshCoder21313"/><br /><sub><b>freshCoder21313</b></sub></a><br /><a href="#data-freshCoder21313" title="Data">🔣</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=freshCoder21313" title="Code">💻</a> <a href="#design-freshCoder21313" title="Design">🎨</a></td>
+<td align="center" valign="top" width="14.28%"><a href="https://github.com/Tallin-Boston-Technology"><img src="https://avatars.githubusercontent.com/u/247321893?v=4?s=100" width="100px;" alt="Tallin-Boston-Technology"/><br /><sub><b>Tallin-Boston-Technology</b></sub></a><br /><a href="#ideas-Tallin-Boston-Technology" title="Ideas, Planning, & Feedback">🤔</a></td>
+<td align="center" valign="top" width="14.28%"><a href="https://github.com/rorar"><img src="https://avatars.githubusercontent.com/u/44790144?v=4?s=100" width="100px;" alt="rorar"/><br /><sub><b>rorar</b></sub></a><br /><a href="#ideas-rorar" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Arorar" title="Bug reports">🐛</a></td>
+<td align="center" valign="top" width="14.28%"><a href="https://github.com/sosadsonar"><img src="https://avatars.githubusercontent.com/u/120033042?v=4?s=100" width="100px;" alt="sonarx"/><br /><sub><b>sonarx</b></sub></a><br /><a href="#ideas-sosadsonar" title="Ideas, Planning, & Feedback">🤔</a></td>
+<td align="center" valign="top" width="14.28%"><a href="https://oleksandrdev.com/"><img src="https://avatars.githubusercontent.com/u/47930925?v=4?s=100" width="100px;" alt="Oleksandr Romaniuk"/><br /><sub><b>Oleksandr Romaniuk</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Aolksndrdevhub" title="Bug reports">🐛</a></td>
+<td align="center" valign="top" width="14.28%"><a href="https://github.com/Predrag"><img src="https://avatars.githubusercontent.com/u/460694?v=4?s=100" width="100px;" alt="Predrag"/><br /><sub><b>Predrag</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=Predrag" title="Code">💻</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3APredrag" title="Bug reports">🐛</a></td>
+<td align="center" valign="top" width="14.28%"><a href="https://github.com/henmalib"><img src="https://avatars.githubusercontent.com/u/68553709?v=4?s=100" width="100px;" alt="Hen"/><br /><sub><b>Hen</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Ahenmalib" title="Bug reports">🐛</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=henmalib" title="Code">💻</a></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="14.28%"><a href="https://github.com/e6ad2020"><img src="https://avatars.githubusercontent.com/u/119390190?v=4?s=100" width="100px;" alt="Eyad"/><br /><sub><b>Eyad</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Ae6ad2020" title="Bug reports">🐛</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=e6ad2020" title="Code">💻</a></td>
+<td align="center" valign="top" width="14.28%"><a href="https://alexandre-pommier.com"><img src="https://avatars.githubusercontent.com/u/69145792?v=4?s=100" width="100px;" alt="Kinou"/><br /><sub><b>Kinou</b></sub></a><br /><a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/issues?q=author%3Akinou-p" title="Bug reports">🐛</a> <a href="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/gustavosett/Windows-11-Clipboard-History-For-Linux/commits?author=kinou-p" title="Code">💻</a></td>
+</tr>
+</tbody>
+<tfoot>
+<tr>
+<td align="center" size="13px" colspan="7">
+<img src="https://raw.githubusercontent.com/all-contributors/all-contributors-cli/1b8533af435da9854653492b1327a23a4dbd0a10/assets/logo-small.svg">
+<a href="https://all-contributors.js.org/docs/en/bot/usage">Add your contributions</a>
+</img>
+</td>
+</tr>
+</tfoot>
 </table>
 
 <!-- markdownlint-restore -->
+
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+<div align="center">
+<br />
+<p><b>Like this project?</b>
 
-## 🤝 Contributing
 
-Contributions are welcome!
-1. Fork it
-2. Create your feature branch (`git checkout -b feature/cool-feature`)
-3. Commit your changes (`git commit -m 'feat: add cool feature'`)
-4. Push to the branch (`git push origin feature/cool-feature`)
-5. Open a Pull Request
 
-## 📄 License
-
-MIT License © [Gustavo Sett](https://github.com/gustavosett)
+Give it a ⭐ to show your support!</p>
 
 <img alt="Static Badge" src="https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square&link=https%3A%2F%2Fcloudsmith.com">
 </img>
+
+
 
 Package repository hosting is graciously provided by [Cloudsmith](https://cloudsmith.com).
 Cloudsmith is the only fully hosted, cloud-native, universal package management solution, that
 enables your organization to create, store and share packages in any format, to any place, with total
 confidence.
-
-<div align="center">
-  <br />
-  <b>If you like this project, give it a ⭐!</b>
 </div>
