@@ -173,7 +173,13 @@ IS_APPIMAGE=1 win11-clipboard-history
 
 Want to hack on the code?
 
-**Tech Stack:** `Rust` + `Tauri v2` + `React` + `Tailwind CSS`
+**Tech Stack:** `Rust` + `Tauri v2` + `React` + `Tailwind CSS` + `Linux`
+
+<div align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=rust,tauri,react,ts,tailwind,linux" />
+  </a>
+</div>
 
 ```bash
 # 1. Clone
@@ -239,13 +245,12 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 # Like this project?
 
-<img width="2752" height="1173" alt="Gemini_Generated_Image_3jise93jise93jis" src="https://github.com/user-attachments/assets/0e4e0804-095a-469c-aca5-e559202840f7" />
+<img alt="give it a star" src="https://github.com/user-attachments/assets/0e4e0804-095a-469c-aca5-e559202840f7" />
 
 ---
 
 <img alt="Static Badge" src="https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square&link=https%3A%2F%2Fcloudsmith.com">
 </img>
-
 
 
 Package repository hosting is graciously provided by [Cloudsmith](https://cloudsmith.com).
