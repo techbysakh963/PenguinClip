@@ -128,6 +128,11 @@ fn is_settings_window_visible(app: AppHandle) -> bool {
         .unwrap_or(false)
 }
 
+#[tauri::command]
+fn show_settings(app: AppHandle) {
+    SettingsController::show(&app);
+}
+
 // --- Theme Detection Commands ---
 
 /// Get system color scheme from XDG Desktop Portal (supports COSMIC and other modern DEs)
@@ -995,6 +1000,7 @@ fn main() {
             get_user_settings,
             set_user_settings,
             is_settings_window_visible,
+            show_settings,
             copy_text_to_clipboard,
             get_system_theme,
             refresh_system_theme,
