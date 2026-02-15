@@ -274,6 +274,30 @@ async fn copy_text_to_clipboard(_state: State<'_, AppState>, text: String) -> Re
     Ok(())
 }
 
+#[tauri::command]
+async fn finish_setup(app: AppHandle) -> Result<(), String> {
+    // 1. Mark first run as complete (redundant but safe)
+    win11_clipboard_history_lib::permission_checker::mark_first_run_complete()
+        .map_err(|e| e.to_string())?;
+
+    // 2. Close setup window
+    if let Some(setup_window) = app.get_webview_window("setup") {
+        let _ = setup_window.close();
+    }
+
+    // 3. Show main window
+    if let Some(main_window) = app.get_webview_window("main") {
+        // Ensure it's ready to be shown
+        WindowController::position_and_show(&main_window, &app);
+    }
+
+    // 4. Emit event to main window to update its state (stop waiting)
+    // We emit to all just in case, or specifically to main
+    let _ = app.emit("setup_complete", ());
+
+    Ok(())
+}
+
 // --- Helper for Paste Logic ---
 
 struct PasteHelper;
@@ -773,6 +797,19 @@ fn main() {
             config_manager: config_manager.clone(),
             is_mouse_inside: is_mouse_inside.clone(),
         })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                if window.label() == "setup" {
+                    // Check if setup was effectively finished.
+                    // If the user clicked "Start Using", `finish_setup` would have been called.
+                    // `finish_setup` calls `mark_first_run_complete`.
+                    if win11_clipboard_history_lib::permission_checker::is_first_run() {
+                         println!("[Setup] Setup window closed without completion. Exiting app.");
+                         window.app_handle().exit(0);
+                    }
+                }
+            }
+        })
         .setup(move |app| {
             let app_handle = app.handle().clone();
 
@@ -985,6 +1022,7 @@ fn main() {
             get_recent_emojis,
             paste_gif_from_url,
             finish_paste,
+            finish_setup, // Register the new command
             set_mouse_state,
             get_user_settings,
             set_user_settings,

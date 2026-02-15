@@ -1,75 +1,81 @@
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
-import { getCurrentWindow } from '@tauri-apps/api/window'
+import { getCurrentWindow, getAllWindows } from '@tauri-apps/api/window'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import ClipboardApp from './ClipboardApp'
 import SettingsApp from './SettingsApp'
-import { SetupWizard } from './components/SetupWizard'
+import { SetupApp } from './setup'
 import './index.css'
 
 /**
- * Main app wrapper that handles first-run setup wizard
+ * Main app wrapper that handles first-run check and launches setup window if needed
  */
 function ClipboardAppWithSetup() {
-  const [showWizard, setShowWizard] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [waitingForSetup, setWaitingForSetup] = useState(false)
 
   useEffect(() => {
-    // Check if this is first run
-    invoke<boolean>('is_first_run')
-      .then((isFirst) => {
-        setShowWizard(isFirst)
-        setLoading(false)
+    let unlistenSetup: (() => void) | undefined
+
+    const init = async () => {
+      // Listen for setup completion event from the setup window
+      // We set this up early to ensure we don't miss it
+      unlistenSetup = await listen('setup_complete', async () => {
+        console.log('Setup complete event received')
+        setWaitingForSetup(false)
       })
-      .catch((err) => {
+
+      // Check if this is first run
+      try {
+        const isFirst = await invoke<boolean>('is_first_run')
+        if (isFirst) {
+          setWaitingForSetup(true)
+
+          // In Tauri v2, if the window is in tauri.conf.json, it's already created.
+          // We just need to find it and show it.
+          const windows = await getAllWindows()
+          const setupWin = windows.find((w) => w.label === 'setup')
+
+          if (setupWin) {
+            await setupWin.show()
+            await setupWin.setFocus()
+          } else {
+            console.error('Setup window not found in config')
+            // Attempt to create it if it somehow doesn't exist (fallback)
+            const newSetupWin = new WebviewWindow('setup')
+            newSetupWin.once('tauri://created', () => {
+              newSetupWin.show()
+              newSetupWin.setFocus()
+            })
+          }
+        }
+        setLoading(false)
+      } catch (err: unknown) {
         console.error('Failed to check first run:', err)
         setLoading(false)
-      })
-
-    // Listen for reset-to-defaults event from settings
-    let isMounted = true
-    let unlistenFn: (() => void) | null = null
-
-    listen('show-setup-wizard', () => {
-      if (isMounted) {
-        setShowWizard(true)
       }
-    }).then((fn) => {
-      if (isMounted) {
-        unlistenFn = fn
-      } else {
-        // Component already unmounted, clean up immediately
-        fn()
-      }
-    })
+    }
+
+    init()
 
     return () => {
-      isMounted = false
-      unlistenFn?.()
+      if (unlistenSetup) unlistenSetup()
     }
   }, [])
 
-  const handleWizardComplete = () => {
-    setShowWizard(false)
-  }
-
-  if (loading) {
-    // Show nothing while checking first run status
+  if (loading || waitingForSetup) {
+    // Show nothing while checking status or waiting for setup to complete
+    // This prevents the clipboard app from trying to initialize before permissions are granted
     return null
   }
 
-  return (
-    <>
-      {showWizard && <SetupWizard onComplete={handleWizardComplete} />}
-      <ClipboardApp />
-    </>
-  )
+  return <ClipboardApp />
 }
 
 /**
- * Root component that routes to either ClipboardApp or SettingsApp
- * based on the current window's label
+ * Root component that routes based on the current window's label
  */
 export default function Root() {
   const [windowLabel] = useState<string>(() => getCurrentWindow().label)
@@ -79,7 +85,11 @@ export default function Root() {
     return <SettingsApp />
   }
 
-  // Default to ClipboardApp with setup wizard for 'main' and any other window
+  if (windowLabel === 'setup') {
+    return <SetupApp />
+  }
+
+  // Default to ClipboardAppWithSetup for 'main'
   return <ClipboardAppWithSetup />
 }
 
