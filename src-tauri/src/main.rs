@@ -69,6 +69,15 @@ fn toggle_pin(state: State<AppState>, id: String) -> Option<ClipboardItem> {
 }
 
 #[tauri::command]
+fn toggle_favorite(state: State<AppState>, id: String) -> Option<ClipboardItem> {
+    let result = state.clipboard_manager.lock().toggle_favorite(&id);
+    if result.is_none() {
+        eprintln!("[toggle_favorite] Item with id '{}' not found in history.", id);
+    }
+    result
+}
+
+#[tauri::command]
 fn get_recent_emojis(state: State<AppState>) -> Vec<EmojiUsage> {
     state.emoji_manager.lock().get_recent()
 }
@@ -571,11 +580,11 @@ impl SettingsController {
                     "settings",
                     WebviewUrl::App("index.html".into()),
                 )
-                .title("Settings - Clipboard History")
-                .inner_size(480.0, 520.0)
+                .title("Settings - PenguinClip")
+                .inner_size(480.0, 580.0)
                 .resizable(false)
-                .decorations(true)
-                .transparent(false)
+                .decorations(false)
+                .transparent(true)
                 .visible(true)
                 .skip_taskbar(false)
                 .always_on_top(false)
@@ -991,6 +1000,7 @@ fn main() {
             clear_history,
             delete_item,
             toggle_pin,
+            toggle_favorite,
             paste_item,
             paste_text,
             get_recent_emojis,

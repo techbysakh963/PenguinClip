@@ -4,6 +4,7 @@ import { getCurrentWindow, Window } from '@tauri-apps/api/window'
 import { listen } from '@tauri-apps/api/event'
 import { emit } from '@tauri-apps/api/event'
 import { clsx } from 'clsx'
+import { X } from 'lucide-react'
 
 import type { UserSettings, CustomKaomoji, BooleanSettingKey } from './types/clipboard'
 import { FeaturesSection } from './components/FeaturesSection'
@@ -115,6 +116,21 @@ const ResetIcon = () => (
 )
 
 /**
+ * Applies background opacity CSS variables for glassmorphism
+ */
+function applyBackgroundOpacity(settings: UserSettings) {
+  const root = document.documentElement
+  const darkStart = settings.dark_background_opacity
+  const darkEnd = darkStart >= 1 ? 1 : Math.max(0, darkStart - 0.03)
+  const lightStart = settings.light_background_opacity
+  const lightEnd = lightStart >= 1 ? 1 : Math.max(0, lightStart - 0.05)
+  root.style.setProperty('--win11-dark-bg-alpha-start', darkStart.toString())
+  root.style.setProperty('--win11-dark-bg-alpha-end', darkEnd.toString())
+  root.style.setProperty('--win11-light-bg-alpha-start', lightStart.toString())
+  root.style.setProperty('--win11-light-bg-alpha-end', lightEnd.toString())
+}
+
+/**
  * Settings App Component - Configuration UI for PenguinClip
  */
 function SettingsApp() {
@@ -142,6 +158,7 @@ function SettingsApp() {
     invoke<UserSettings>('get_user_settings')
       .then((loadedSettings) => {
         setSettings(loadedSettings)
+        applyBackgroundOpacity(loadedSettings)
         setIsLoading(false)
       })
       .catch((err) => {
@@ -163,6 +180,7 @@ function SettingsApp() {
     // Listen for settings changes (in case another settings window is open)
     const unlistenSettingsPromise = listen<UserSettings>('app-settings-changed', (event) => {
       setSettings(event.payload)
+      applyBackgroundOpacity(event.payload)
     })
 
     // Hide main window when settings window closes
@@ -209,7 +227,11 @@ function SettingsApp() {
 
   // Handle dark opacity change (visual only, no disk I/O)
   const handleDarkOpacityChange = (value: number) => {
-    setSettings((prev) => ({ ...prev, dark_background_opacity: value }))
+    setSettings((prev) => {
+      const next = { ...prev, dark_background_opacity: value }
+      applyBackgroundOpacity(next)
+      return next
+    })
   }
 
   const handleAutoDeleteValueChange = (value: string) => {
@@ -231,7 +253,11 @@ function SettingsApp() {
 
   // Handle light opacity change (visual only, no disk I/O)
   const handleLightOpacityChange = (value: number) => {
-    setSettings((prev) => ({ ...prev, light_background_opacity: value }))
+    setSettings((prev) => {
+      const next = { ...prev, light_background_opacity: value }
+      applyBackgroundOpacity(next)
+      return next
+    })
   }
 
   // Commit opacity changes to disk (called on mouseUp/touchEnd)
@@ -281,10 +307,9 @@ function SettingsApp() {
     return (
       <div
         className={clsx(
-          'h-screen w-screen flex items-center justify-center select-none',
-          isDark
-            ? 'bg-win11-bg-primary text-win11-text-primary'
-            : 'bg-win11Light-bg-primary text-win11Light-text-primary'
+          'h-screen w-screen flex items-center justify-center select-none rounded-win11-lg',
+          isDark ? 'glass-effect' : 'glass-effect-light',
+          isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
         )}
       >
         <div className="flex flex-col items-center gap-3">
@@ -298,32 +323,30 @@ function SettingsApp() {
   return (
     <div
       className={clsx(
-        'h-screen w-screen flex flex-col font-sans select-none',
-        isDark
-          ? 'bg-win11-bg-primary text-win11-text-primary'
-          : 'bg-[#f0f3f9] text-win11Light-text-primary' // Slightly better light gray background
+        'h-screen w-screen overflow-hidden flex flex-col font-sans select-none rounded-win11-lg',
+        isDark ? 'glass-effect' : 'glass-effect-light',
+        isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
     >
-      {/* Header */}
-      <header
-        className={clsx(
-          'flex items-center justify-between px-8 py-6 flex-shrink-0',
-          'transition-colors duration-200'
-        )}
+      {/* Custom Titlebar */}
+      <div
+        data-tauri-drag-region
+        className="flex items-center justify-between px-6 pt-4 pb-2 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
       >
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Personalization</h1>
-          <p className={clsx('text-sm mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
-            Customize the look and feel of your clipboard history
-          </p>
-        </div>
-
-        {/* Status Indicator */}
-        <div className="h-8 flex items-center justify-end min-w-[100px]">
+        <span
+          className={clsx(
+            'text-sm font-medium pointer-events-none',
+            isDark ? 'text-white/60' : 'text-black/60'
+          )}
+        >
+          Settings
+        </span>
+        <div className="flex items-center gap-2">
+          {/* Status Indicator */}
           {(isSaving || saveMessage) && (
             <div
               className={clsx(
-                'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium animate-in fade-in slide-in-from-right-4 duration-300',
+                'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium no-drag',
                 saveMessage?.includes('Error')
                   ? 'bg-red-500/10 text-red-500'
                   : isDark
@@ -337,16 +360,37 @@ function SettingsApp() {
               {saveMessage || 'Saving...'}
             </div>
           )}
+          <button
+            onClick={handleClose}
+            onMouseDown={(e) => e.stopPropagation()}
+            className={clsx(
+              'p-1 rounded-md cursor-pointer transition-colors no-drag',
+              isDark
+                ? 'text-white/50 hover:text-white/80 hover:bg-white/10'
+                : 'text-black/50 hover:text-black/80 hover:bg-black/10'
+            )}
+            tabIndex={-1}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+      </div>
+
+      {/* Header */}
+      <header className="px-8 pt-2 pb-4 flex-shrink-0">
+        <h1 className="text-2xl font-bold tracking-tight">Personalization</h1>
+        <p className={clsx('text-sm mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
+          Customize the look and feel of your clipboard history
+        </p>
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 custom-scrollbar">
+      <main className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 scrollbar-win11">
         {/* Theme Selection Card */}
         <section
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
-            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
           )}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -450,7 +494,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
-            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
           )}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -544,7 +588,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -619,7 +663,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -670,7 +714,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -722,7 +766,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -762,7 +806,7 @@ function SettingsApp() {
 
             {/* List */}
             {settings.custom_kaomojis.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-win11 pr-1">
                 {settings.custom_kaomojis.map((item, idx) => (
                   <div
                     key={idx}
@@ -813,7 +857,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-win11-bg-secondary border-white/5' : 'bg-white border-gray-200/60'
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -898,7 +942,7 @@ function SettingsApp() {
       <footer
         className={clsx(
           'px-8 py-5 border-t flex items-center justify-between',
-          isDark ? 'border-white/5 bg-win11-bg-secondary/50' : 'border-gray-200 bg-gray-50'
+          isDark ? 'border-white/5 bg-white/5' : 'border-white/30 bg-white/40'
         )}
       >
         <span className={clsx('text-[10px]', isDark ? 'text-gray-600' : 'text-gray-400')}>

@@ -284,6 +284,145 @@ pub fn x11_activate_window_by_title(title: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Checks if the currently focused X11 window is a terminal emulator.
+/// Queries WM_CLASS of the focused window and matches against known terminals.
+#[cfg(target_os = "linux")]
+pub fn is_focused_window_terminal() -> bool {
+    // First try xdotool (works even when X11 direct connection is tricky)
+    if let Ok(result) = is_terminal_via_xdotool() {
+        return result;
+    }
+
+    // Fallback: query X11 WM_CLASS directly
+    is_terminal_via_x11().unwrap_or(false)
+}
+
+/// Known terminal WM_CLASS values (lowercase for comparison)
+#[cfg(target_os = "linux")]
+const TERMINAL_WM_CLASSES: &[&str] = &[
+    "gnome-terminal",
+    "konsole",
+    "xterm",
+    "xfce4-terminal",
+    "alacritty",
+    "kitty",
+    "terminator",
+    "tilix",
+    "urxvt",
+    "rxvt",
+    "lxterminal",
+    "mate-terminal",
+    "st",
+    "foot",
+    "wezterm",
+    "sakura",
+    "terminology",
+    "guake",
+    "tilda",
+    "yakuake",
+    "cool-retro-term",
+    "eterm",
+    "hyper",
+    "tabby",
+    "terminal",
+    "deepin-terminal",
+    "qterminal",
+    "termite",
+    "roxterm",
+    "kgx",               // GNOME Console
+    "org.gnome.console",  // GNOME Console flatpak
+    "org.gnome.terminal", // GNOME Terminal flatpak
+    "blackbox",           // Black Box terminal
+    "ptyxis",             // GNOME Ptyxis terminal
+];
+
+/// Get WM_CLASS using xdotool to get window ID, then xprop to read WM_CLASS
+#[cfg(target_os = "linux")]
+fn is_terminal_via_xdotool() -> Result<bool, String> {
+    // Step 1: Get active window ID via xdotool
+    let id_output = std::process::Command::new("xdotool")
+        .arg("getactivewindow")
+        .output()
+        .map_err(|e| format!("xdotool getactivewindow failed: {}", e))?;
+
+    if !id_output.status.success() {
+        return Err("xdotool getactivewindow failed".to_string());
+    }
+
+    let window_id = String::from_utf8_lossy(&id_output.stdout).trim().to_string();
+    if window_id.is_empty() {
+        return Err("xdotool returned empty window ID".to_string());
+    }
+
+    // Step 2: Get WM_CLASS via xprop
+    let prop_output = std::process::Command::new("xprop")
+        .args(["-id", &window_id, "WM_CLASS"])
+        .output()
+        .map_err(|e| format!("xprop failed: {}", e))?;
+
+    if !prop_output.status.success() {
+        return Err("xprop WM_CLASS query failed".to_string());
+    }
+
+    let wm_class = String::from_utf8_lossy(&prop_output.stdout).to_lowercase();
+    eprintln!("[FocusManager] Focused window WM_CLASS (xprop): {}", wm_class.trim());
+
+    Ok(TERMINAL_WM_CLASSES.iter().any(|t| wm_class.contains(t)))
+}
+
+/// Get WM_CLASS by querying X11 directly, walking up parent windows if needed
+#[cfg(target_os = "linux")]
+fn is_terminal_via_x11() -> Result<bool, String> {
+    let conn = get_x11_connection()?;
+    let focused = {
+        let cookie = conn.get_input_focus().map_err(|e| format!("get_input_focus: {}", e))?;
+        let reply = cookie.reply().map_err(|e| format!("focus reply: {}", e))?;
+        reply.focus
+    };
+
+    if focused == 0 {
+        return Ok(false);
+    }
+
+    // Try the focused window and its parents (focused window may be a child without WM_CLASS)
+    let mut window = focused;
+    for _ in 0..10 {
+        // Query WM_CLASS property (type STRING)
+        let reply = conn
+            .get_property(false, window, x11rb::protocol::xproto::AtomEnum::WM_CLASS, x11rb::protocol::xproto::AtomEnum::STRING, 0, 256)
+            .map_err(|e| format!("get_property WM_CLASS: {}", e))?
+            .reply()
+            .map_err(|e| format!("WM_CLASS reply: {}", e))?;
+
+        if !reply.value.is_empty() {
+            // WM_CLASS is two null-terminated strings: instance\0class\0
+            let wm_class_raw = String::from_utf8_lossy(&reply.value).to_lowercase();
+            eprintln!("[FocusManager] Window {} WM_CLASS (x11): {}", window, wm_class_raw);
+
+            if TERMINAL_WM_CLASSES.iter().any(|t| wm_class_raw.contains(t)) {
+                return Ok(true);
+            }
+            // Found a WM_CLASS but it's not a terminal
+            return Ok(false);
+        }
+
+        // No WM_CLASS on this window, try parent
+        let tree = conn
+            .query_tree(window)
+            .map_err(|e| format!("query_tree: {}", e))?
+            .reply()
+            .map_err(|e| format!("query_tree reply: {}", e))?;
+
+        if tree.parent == 0 || tree.parent == tree.root {
+            break; // Reached root
+        }
+        window = tree.parent;
+    }
+
+    eprintln!("[FocusManager] Could not find WM_CLASS for focused window {}", focused);
+    Ok(false)
+}
+
 /// Alternative activation that sets input focus directly.
 /// Use this as a fallback if _NET_ACTIVE_WINDOW doesn't work.
 #[cfg(target_os = "linux")]

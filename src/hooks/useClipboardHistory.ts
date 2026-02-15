@@ -29,7 +29,7 @@ export function useClipboardHistory() {
   const clearHistory = useCallback(async () => {
     try {
       await invoke('clear_history')
-      setHistory((prev) => prev.filter((item) => item.pinned))
+      setHistory((prev) => prev.filter((item) => item.pinned || item.favorited))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clear history')
     }
@@ -78,6 +78,28 @@ export function useClipboardHistory() {
         console.warn('[useClipboardHistory] Toggle pin failed, refreshing history')
         await fetchHistory()
         setError(err instanceof Error ? err.message : 'Failed to toggle pin')
+      }
+    },
+    [fetchHistory]
+  )
+
+  // Toggle favorite status
+  const toggleFavorite = useCallback(
+    async (id: string) => {
+      try {
+        const updatedItem = await invoke<ClipboardItem>('toggle_favorite', { id })
+        if (updatedItem) {
+          setHistory((prev) =>
+            prev.map((item) => (item.id === id ? updatedItem : item))
+          )
+        } else {
+          console.warn('[useClipboardHistory] Toggle favorite returned null, refreshing history')
+          await fetchHistory()
+        }
+      } catch (err) {
+        console.warn('[useClipboardHistory] Toggle favorite failed, refreshing history')
+        await fetchHistory()
+        setError(err instanceof Error ? err.message : 'Failed to toggle favorite')
       }
     },
     [fetchHistory]
@@ -168,6 +190,7 @@ export function useClipboardHistory() {
     clearHistory,
     deleteItem,
     togglePin,
+    toggleFavorite,
     pasteItem,
   }
 }

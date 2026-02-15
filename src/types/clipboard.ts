@@ -35,11 +35,15 @@ export interface ClipboardItem {
   content: ClipboardContent
   timestamp: string
   pinned: boolean
+  favorited: boolean
   preview: string
 }
 
 /** Active tab in the UI */
-export type ActiveTab = 'clipboard' | 'gifs' | 'emoji' | 'kaomoji' | 'symbols'
+export type ActiveTab = 'clipboard' | 'favorites' | 'gifs' | 'emoji' | 'kaomoji' | 'symbols'
+
+/** Auto-detected content category */
+export type ClipboardCategory = 'URL' | 'Email' | 'Color' | 'Code' | 'Phone' | 'Image' | 'Text'
 
 /** Theme mode */
 export type ThemeMode = 'light' | 'dark' | 'system'

@@ -1,6 +1,6 @@
 import { forwardRef, useRef, useImperativeHandle, useCallback, useState } from 'react'
 import { clsx } from 'clsx'
-import { ClipboardList, Smile, Image, Type, Omega } from 'lucide-react'
+import { ClipboardList, Star, Smile, Image, Type, Omega } from 'lucide-react'
 import type { ActiveTab } from '../types/clipboard'
 
 import { getTertiaryBackgroundStyle } from '../utils/themeUtils'
@@ -18,6 +18,7 @@ export interface TabBarRef {
 
 const ALL_TABS: { id: ActiveTab; label: string; icon: typeof ClipboardList }[] = [
   { id: 'clipboard', label: 'Clipboard', icon: ClipboardList },
+  { id: 'favorites', label: 'Favorites', icon: Star },
   { id: 'symbols', label: 'Symbols', icon: Omega },
   { id: 'emoji', label: 'Emoji', icon: Smile },
   { id: 'kaomoji', label: 'Kaomoji', icon: Type },

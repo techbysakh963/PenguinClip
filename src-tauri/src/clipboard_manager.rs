@@ -89,6 +89,9 @@ pub struct ClipboardItem {
     pub timestamp: DateTime<Utc>,
     /// Whether this item is pinned
     pub pinned: bool,
+    /// Whether this item is favorited (starred)
+    #[serde(default)]
+    pub favorited: bool,
     /// Preview text (for display)
     pub preview: String,
 }
@@ -141,6 +144,7 @@ impl ClipboardItem {
             content,
             timestamp: Utc::now(),
             pinned: false,
+            favorited: false,
             preview,
         }
     }
@@ -201,15 +205,15 @@ impl ClipboardManager {
     /// Updates the maximum history size and enforces the new limit
     pub fn set_max_history_size(&mut self, new_size: usize) {
         let mut clamped = Self::clamp_max_history_size(new_size);
-        // Do not set max less than number of pinned items; we won't delete pins automatically
-        let pinned_count = self.history.iter().filter(|i| i.pinned).count();
-        if clamped < pinned_count {
+        // Do not set max less than number of protected items; we won't delete pins/favorites automatically
+        let protected_count = self.history.iter().filter(|i| i.pinned || i.favorited).count();
+        if clamped < protected_count {
             eprintln!(
-                "clipboard_manager: requested max history size ({}) is less than the number of pinned items ({}); increasing limit to preserve pinned items.",
+                "clipboard_manager: requested max history size ({}) is less than the number of protected items ({}); increasing limit to preserve them.",
                 clamped,
-                pinned_count
+                protected_count
             );
-            clamped = pinned_count;
+            clamped = protected_count;
         }
         self.max_history_size = clamped;
         let trimmed = self.enforce_history_limit();
@@ -493,11 +497,11 @@ impl ClipboardManager {
     fn enforce_history_limit(&mut self) -> bool {
         let before = self.history.len();
         while self.history.len() > self.max_history_size {
-            // Remove from the end, skipping pinned items if possible
-            if let Some(pos) = self.history.iter().rposition(|i| !i.pinned) {
+            // Remove from the end, skipping pinned and favorited items
+            if let Some(pos) = self.history.iter().rposition(|i| !i.pinned && !i.favorited) {
                 self.history.remove(pos);
             } else {
-                // All items are pinned. We stopped removing to avoid deleting pins.
+                // All items are pinned or favorited. Stop removing.
                 break;
             }
         }
@@ -515,7 +519,7 @@ impl ClipboardManager {
     }
 
     pub fn clear(&mut self) {
-        self.history.retain(|item| item.pinned);
+        self.history.retain(|item| item.pinned || item.favorited);
         self.save_history();
     }
 
@@ -532,6 +536,14 @@ impl ClipboardManager {
         Some(item_clone)
     }
 
+    pub fn toggle_favorite(&mut self, id: &str) -> Option<ClipboardItem> {
+        let item = self.history.iter_mut().find(|i| i.id == id)?;
+        item.favorited = !item.favorited;
+        let item_clone = item.clone();
+        self.save_history();
+        Some(item_clone)
+    }
+
     pub fn cleanup_old_items(&mut self, interval_minutes: u64) -> bool {
         if interval_minutes == 0 {
             return false;
@@ -542,7 +554,7 @@ impl ClipboardManager {
 
         // Use a more robust time comparison
         self.history.retain(|item| {
-            if item.pinned {
+            if item.pinned || item.favorited {
                 return true;
             }
 

@@ -100,7 +100,7 @@ function ClipboardApp() {
   const secondaryOpacity = calculateSecondaryOpacity(opacity)
   const tertiaryOpacity = calculateTertiaryOpacity(opacity)
 
-  const { history, isLoading, clearHistory, deleteItem, togglePin, pasteItem } =
+  const { history, isLoading, clearHistory, deleteItem, togglePin, toggleFavorite, pasteItem } =
     useClipboardHistory()
 
   // Refs for focus management
@@ -138,7 +138,7 @@ function ClipboardApp() {
     // Listen for switch-tab events from Rust (e.g., when Super+. is pressed)
     const unlistenSwitchTab = listen<string>('switch-tab', (event) => {
       const tabName = event.payload as ActiveTab
-      if (['clipboard', 'emoji', 'gifs', 'kaomoji', 'symbols'].includes(tabName)) {
+      if (['clipboard', 'favorites', 'emoji', 'gifs', 'kaomoji', 'symbols'].includes(tabName)) {
         setActiveTab(tabName)
       }
     })
@@ -229,6 +229,25 @@ function ClipboardApp() {
             clearHistory={clearHistory}
             deleteItem={deleteItem}
             togglePin={togglePin}
+            toggleFavorite={toggleFavorite}
+            onPaste={pasteItem}
+            settings={settings}
+            tabBarRef={tabBarRef}
+          />
+        )
+
+      case 'favorites':
+        return (
+          <ClipboardTab
+            history={history.filter((item) => item.favorited)}
+            isLoading={isLoading}
+            isDark={isDark}
+            tertiaryOpacity={tertiaryOpacity}
+            secondaryOpacity={secondaryOpacity}
+            clearHistory={clearHistory}
+            deleteItem={deleteItem}
+            togglePin={togglePin}
+            toggleFavorite={toggleFavorite}
             onPaste={pasteItem}
             settings={settings}
             tabBarRef={tabBarRef}

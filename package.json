@@ -1,7 +1,7 @@
 {
   "name": "penguinclip",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "description": "PenguinClip - A security-hardened clipboard history manager for Linux. Developed by SAKH. Fork of Windows-11-Clipboard-History-For-Linux.",
   "author": "SAKH (techbysakh963)",

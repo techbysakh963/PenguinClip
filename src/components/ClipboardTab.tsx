@@ -19,6 +19,7 @@ export function ClipboardTab(props: {
   clearHistory: () => void
   deleteItem: (id: string) => void
   togglePin: (id: string) => void
+  toggleFavorite: (id: string) => void
   onPaste: (id: string) => void
   settings: UserSettings
   tabBarRef: React.RefObject<TabBarRef | null>
@@ -32,6 +33,7 @@ export function ClipboardTab(props: {
     clearHistory,
     deleteItem,
     togglePin,
+    toggleFavorite,
     onPaste,
     settings,
     tabBarRef,
@@ -238,6 +240,7 @@ export function ClipboardTab(props: {
               onPaste={onPaste}
               onDelete={deleteItem}
               onTogglePin={togglePin}
+              onToggleFavorite={toggleFavorite}
               onFocus={() => setFocusedIndex(index)}
               isDark={isDark}
               secondaryOpacity={secondaryOpacity}

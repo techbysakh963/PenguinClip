@@ -1,18 +1,20 @@
-import { useCallback, forwardRef, useRef, useEffect } from 'react'
+import { useCallback, forwardRef, useRef, useEffect, useMemo } from 'react'
 import { clsx } from 'clsx'
-import { Pin, X, Image as ImageIcon, Type } from 'lucide-react'
+import { Pin, Star, X, Image as ImageIcon, Type } from 'lucide-react'
 import type { ClipboardItem } from '../../types/clipboard'
 import { getCardBackgroundStyle, getTertiaryBackgroundStyle } from '../../utils/themeUtils'
 import { useSmartActions } from '../../hooks/useSmartActions'
 import { HistorySmartActions } from '../HistorySmartActions'
 import { TextContent, ImageContent, Timestamp } from './_HistoryItemContent'
 import { getIconSize, getIconContainerClasses } from './_HistoryItemUtils'
+import { detectCategory, CATEGORY_CONFIG } from '../../utils/categoryDetection'
 
 interface HistoryItemProps {
   item: ClipboardItem
   onPaste: (id: string) => void
   onDelete: (id: string) => void
   onTogglePin: (id: string) => void
+  onToggleFavorite: (id: string) => void
   onFocus?: () => void
   index: number
   isFocused?: boolean
@@ -30,6 +32,7 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
     onPaste,
     onDelete,
     onTogglePin,
+    onToggleFavorite,
     onFocus,
     index,
     isFocused = false,
@@ -99,6 +102,21 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
     },
     [item.id, onTogglePin]
   )
+
+  // Handle favorite toggle with stopPropagation
+  const handleToggleFavorite = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onToggleFavorite(item.id)
+      const raf = window.requestAnimationFrame(() => internalRef.current?.focus())
+      return () => window.cancelAnimationFrame(raf)
+    },
+    [item.id, onToggleFavorite]
+  )
+
+  // Detect content category
+  const category = useMemo(() => detectCategory(item), [item])
+  const categoryConfig = CATEGORY_CONFIG[category]
 
   // Prevent buttons from taking focus on pointer down (covers mouse/touch/pen)
   const handlePointerDownPreventDefault = useCallback((e: React.PointerEvent) => {
@@ -201,7 +219,19 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
         <div className="flex-1 min-w-0">
           <TextContent item={item} isDark={isDark} effectiveCompact={effectiveCompact} />
           <ImageContent item={item} isDark={isDark} effectiveCompact={effectiveCompact} />
-          <Timestamp show={!effectiveCompact} isDark={isDark} timestamp={item.timestamp} />
+          <div className="flex items-center gap-2">
+            <Timestamp show={!effectiveCompact} isDark={isDark} timestamp={item.timestamp} />
+            {category !== 'Text' && (
+              <span
+                className={clsx(
+                  'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
+                  isDark ? categoryConfig.darkColor : categoryConfig.color
+                )}
+              >
+                {categoryConfig.label}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Action buttons - visible on hover */}
@@ -218,6 +248,25 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
             isDark={isDark}
             onActionClick={handleSmartAction}
           />
+
+          {/* Favorite button */}
+          <button
+            onPointerDown={handlePointerDownPreventDefault}
+            onClick={handleToggleFavorite}
+            className={clsx(
+              'p-1.5 rounded-md transition-colors',
+              isDark ? 'hover:bg-win11-bg-tertiary' : 'hover:bg-win11Light-bg-tertiary',
+              item.favorited
+                ? 'text-yellow-500'
+                : isDark
+                  ? 'text-win11-text-tertiary'
+                  : 'text-win11Light-text-secondary'
+            )}
+            title={item.favorited ? 'Remove from favorites' : 'Add to favorites'}
+            tabIndex={-1}
+          >
+            <Star className="w-4 h-4" fill={item.favorited ? 'currentColor' : 'none'} />
+          </button>
 
           {/* Pin button */}
           <button
@@ -260,6 +309,10 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
       {/* Pinned badge */}
       {item.pinned && (
         <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-win11-bg-accent" />
+      )}
+      {/* Favorited badge */}
+      {item.favorited && (
+        <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-yellow-500" />
       )}
     </div>
   )
