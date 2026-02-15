@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/pengune_logo.png" alt="PenguinClip Logo" width="120">
+
 # PenguinClip
 
 **A security-hardened clipboard history manager for Linux.**
