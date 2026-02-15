@@ -115,7 +115,7 @@ detect_nvidia() {
 
     return 1
 }
-detect_nvidia
+detect_nvidia || true
 
 # ---------------------------------------------------------------------------
 # AppImage detection
