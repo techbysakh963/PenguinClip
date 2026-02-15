@@ -1,5 +1,5 @@
 <div align="center">
-  
+
 # PenguinClip
 
 **A security-hardened clipboard history manager for Linux.**
@@ -24,7 +24,7 @@ Built with Rust + Tauri v2 + React + Tailwind CSS
 
 ## What is PenguinClip?
 
-PenguinClip is a **security-focused fork** of the excellent Windows-11-Clipboard-History-For-Linux project. It provides the same beautiful clipboard history UI while addressing security concerns for enterprise and privacy-conscious users.
+PenguinClip is a **security-focused fork** of the excellent Windows-11-Clipboard-History-For-Linux project. It provides a beautiful clipboard history UI while addressing security concerns for enterprise and privacy-conscious users.
 
 ### What Changed from Upstream
 
@@ -47,92 +47,90 @@ For the complete audit, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 
 ## Features
 
-- **Wayland & X11 Support** - Uses OS-level shortcuts and `uinput` for paste simulation
-- **Global Hotkey** - Press `Super+V` to open instantly
-- **Smart Positioning** - Window follows your mouse cursor across monitors
-- **Pinning** - Keep important items at the top
-- **Rich Media** - Supports images, text, and more
-- **GIF Integration** (opt-in) - Search and paste GIFs (requires your own Tenor API key)
-- **Emoji Picker** - Built-in searchable emoji keyboard
-- **Performance** - Native Rust backend, minimal resource usage
-- **Privacy Focused** - History stored locally, no telemetry, no tracking
-- **Setup Wizard** - First-run wizard for permissions, shortcuts, and autostart
-- **Security Hardened** - See the audit report for details
+### Clipboard
+- **Wayland & X11 Support** — Uses OS-level shortcuts and `uinput` for paste simulation
+- **Global Hotkey** — Press `Super+V` to open instantly
+- **Smart Positioning** — Window follows your mouse cursor across monitors
+- **Pinning** — Keep important items at the top
+- **Favorites** — Star items to save them in a dedicated Favorites tab
+- **Categories** — Auto-detects content type (URL, Email, Code, Color, Phone) with colored badges
+- **Rich Media** — Supports images, text, rich text, and more
+- **Terminal Paste** — Automatically sends `Ctrl+Shift+V` when pasting into terminal emulators (30+ terminals supported)
+
+### Extras
+- **GIF Integration** (opt-in) — Search and paste GIFs (requires your own Tenor API key)
+- **Emoji Picker** — Built-in searchable emoji keyboard (`Super+.`)
+- **Kaomoji & Symbols** — Japanese emoticons and special characters
+
+### Settings
+- **Glassmorphism UI** — Settings window matches the clipboard's glass design
+- **Setup Wizard** — First-run wizard for permissions, shortcuts, and autostart
+- **Auto-delete** — Configurable history expiration (15 min to never)
+- **History Size** — Adjustable max items (10–500)
+- **Background Opacity** — Customize window transparency for both light and dark themes
+
+### Under the Hood
+- **Native Rust Backend** — Minimal resource usage
+- **Privacy Focused** — History stored locally, no telemetry, no tracking
+- **Security Hardened** — See the audit report for details
 
 ---
 
 ## Installation
 
-### Safe Installation (Recommended)
+### Download from Releases (Recommended)
+
+Download the latest `.deb`, `.rpm`, or `.AppImage` from the [Releases Page](https://github.com/techbysakh963/PenguinClip/releases).
+
+<details>
+<summary><b>Debian / Ubuntu / Pop!_OS / Linux Mint</b></summary>
 
 ```bash
-# 1. Download the installer
+sudo apt install ./penguinclip_0.8.0_amd64.deb
+```
+
+</details>
+
+<details>
+<summary><b>Fedora / openSUSE / RHEL</b></summary>
+
+```bash
+sudo dnf install ./penguinclip-0.8.0-1.x86_64.rpm
+```
+
+</details>
+
+<details>
+<summary><b>AppImage (Any Distro)</b></summary>
+
+```bash
+chmod +x penguinclip_0.8.0_amd64.AppImage
+./penguinclip_0.8.0_amd64.AppImage
+```
+
+</details>
+
+### Paste Permissions (Optional)
+
+PenguinClip needs `/dev/uinput` access to auto-paste. Without it, items are copied to clipboard but won't auto-paste into apps.
+
+```bash
+# Grant uinput access for auto-paste
+sudo setfacl -m u:$USER:rw /dev/uinput
+```
+
+The app's Setup Wizard can also configure this for you on first run.
+
+### Install Script
+
+```bash
+# Download, review, then run
 curl -fsSLO https://raw.githubusercontent.com/techbysakh963/PenguinClip/main/scripts/install.sh
-
-# 2. Review it (important!)
 less install.sh
-
-# 3. Run it
 bash install.sh
 ```
 
-The installer will:
-- Detect your distribution and architecture
-- Download the correct package from GitHub Releases
-- Show SHA256 checksums for verification
-- Explain every privileged action before executing
-- Require your explicit confirmation for each step
-
-> **Note:** The installer **refuses** to run when piped from `curl`. This is intentional.
-
-### Manual Installation
-
-Download the latest release from the [Releases Page](https://github.com/techbysakh963/PenguinClip/releases).
-
-<details>
-<summary><b>Debian / Ubuntu</b></summary>
-
-```bash
-# Download the .deb from the releases page, then:
-sudo apt install ./penguinclip_VERSION_amd64.deb
-
-# Set up paste permissions (optional, for auto-paste):
-sudo setfacl -m u:$USER:rw /dev/uinput
-```
-
-</details>
-
-<details>
-<summary><b>Fedora / RHEL</b></summary>
-
-```bash
-sudo dnf install ./penguinclip-VERSION-1.x86_64.rpm
-sudo setfacl -m u:$USER:rw /dev/uinput
-```
-
-</details>
-
-<details>
-<summary><b>Arch Linux (AUR)</b></summary>
-
-```bash
-yay -S penguinclip-bin
-# or
-paru -S penguinclip-bin
-```
-
-</details>
-
-<details>
-<summary><b>AppImage (Universal)</b></summary>
-
-```bash
-chmod +x penguinclip_*.AppImage
-sudo setfacl -m u:$USER:rw /dev/uinput
-./penguinclip_*.AppImage
-```
-
-</details>
+> The installer **refuses** to run when piped from `curl`. This is intentional.
 
 <details>
 <summary><b>Build from Source</b></summary>
@@ -148,22 +146,9 @@ make build
 sudo make install
 ```
 
+**Requirements:** Rust 1.77+, Node.js 20+
+
 </details>
-
----
-
-## Permissions Explained
-
-PenguinClip needs access to `/dev/uinput` to simulate keyboard input (Ctrl+V) for auto-paste. This is **optional** — without it, items are copied to clipboard but not auto-pasted.
-
-**What the permission setup does:**
-1. Creates a udev rule (`/etc/udev/rules.d/99-penguinclip-input.rules`) granting logged-in users access to `/dev/uinput`
-2. Configures the `uinput` kernel module to load on boot
-3. Applies an ACL for immediate access
-
-**Security note:** This grants uinput access to all processes running as logged-in users. This is a standard requirement for input simulation tools and is the same mechanism used by other clipboard managers and automation tools.
-
-For full details, see the installer's permission setup section or [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 
 ---
 
@@ -171,10 +156,21 @@ For full details, see the installer's permission setup section or [SECURITY_AUDI
 
 | Hotkey | Action |
 | :--- | :--- |
-| **`Super + V`** | Open Clipboard History |
+| **`Super+V`** | Open Clipboard History |
+| **`Super+.`** | Open Emoji Picker |
+| **`Ctrl+Alt+V`** | Alternative shortcut |
 | **`Esc`** | Close Window |
 | **`Up / Down / Tab`** | Navigate Items |
 | **`Enter`** | Paste Selected Item |
+
+### Tabs
+
+- **Clipboard** — Full history with pin, star, delete, and smart actions
+- **Favorites** — Starred items for quick access
+- **GIFs** — Search and paste GIFs (opt-in, requires Tenor API key)
+- **Emoji** — Searchable emoji keyboard
+- **Kaomoji** — Japanese emoticons
+- **Symbols** — Special characters and symbols
 
 ---
 
@@ -214,22 +210,12 @@ See the [original contributors](https://github.com/techbysakh963/Windows-11-Clip
 
 ## Development
 
-### Prerequisites
-
-- Rust 1.77+
-- Node.js 20+
-- System build dependencies (`make deps`)
-
-### Quick Start
-
 ```bash
 git clone https://github.com/techbysakh963/PenguinClip.git
 cd PenguinClip
 make deps
 make dev
 ```
-
-### Commands
 
 | Command | Description |
 |---------|-------------|
@@ -244,7 +230,7 @@ make dev
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
+MIT License — See [LICENSE](LICENSE)
 
 Original work: Copyright (c) 2024 Windows 11 Clipboard History For Linux Contributors
 Fork modifications: Copyright (c) 2025-2026 PenguinClip Contributors (Developed by SAKH)
