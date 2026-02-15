@@ -240,12 +240,18 @@ install_rpm() {
     fi
     
     # Try Cloudsmith repository first (enables auto-updates)
-    local setup_cmd="curl -1sLf 'https://dl.cloudsmith.io/public/${CLOUDSMITH_REPO}/setup.rpm.sh' | sudo -E bash"
     local repo_setup_success=false
     if [[ ${#env_args[@]} -gt 0 ]]; then
-        env "${env_args[@]}" bash -c "$setup_cmd" 2>/dev/null && repo_setup_success=true
+        # Export the override vars so they survive through sudo -E inside the
+        # Cloudsmith setup script (env + bash -c loses them at the sudo boundary).
+        for _evar in "${env_args[@]}"; do
+            export "${_evar?}"
+        done
+        curl -1sLf "https://dl.cloudsmith.io/public/${CLOUDSMITH_REPO}/setup.rpm.sh" | sudo -E bash 2>/dev/null && repo_setup_success=true
+        # Clean up exported overrides
+        unset distro version codename 2>/dev/null || true
     else
-        bash -c "$setup_cmd" 2>/dev/null && repo_setup_success=true
+        curl -1sLf "https://dl.cloudsmith.io/public/${CLOUDSMITH_REPO}/setup.rpm.sh" | sudo -E bash 2>/dev/null && repo_setup_success=true
     fi
     
     if [ "$repo_setup_success" = true ]; then
