@@ -1,10 +1,10 @@
-# Maintainer: PenguinClip Contributors
-pkgname=penguinclip-bin
-pkgver=0.6.0
+# Maintainer: Gustavo Sett <gustaavoribeeiro@hotmail.com>
+pkgname=win11-clipboard-history-bin
+pkgver=0.6.3
 pkgrel=1
-pkgdesc="Security-hardened Clipboard History Manager for Linux"
-arch=('x86_64')
-url="https://github.com/techbysakh963/PenguinClip"
+pkgdesc="Windows 11-style Clipboard History Manager for Linux"
+arch=('x86_64' 'aarch64')
+url="https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux"
 license=('MIT')
 depends=(
     'webkit2gtk-4.1'
@@ -19,35 +19,36 @@ depends=(
 optdepends=(
     'libappindicator-gtk3: Legacy tray icon support'
 )
-provides=('penguinclip')
-conflicts=('penguinclip')
+provides=('win11-clipboard-history')
+conflicts=('win11-clipboard-history')
 options=('!strip' '!debug')
-source_x86_64=("${url}/releases/download/v${pkgver}/penguinclip_${pkgver}_amd64.deb")
+source_x86_64=("${url}/releases/download/v${pkgver}/win11-clipboard-history_${pkgver}_amd64.deb")
+source_aarch64=("${url}/releases/download/v${pkgver}/win11-clipboard-history_${pkgver}_arm64.deb")
 sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
 install="${pkgname}.install"
 
 package() {
     # Extract the deb
     cd "$srcdir"
     bsdtar -xf data.tar.* -C "$pkgdir/"
-
+    
     # Fix permissions
-    chmod 755 "$pkgdir/usr/bin/penguinclip"
-    chmod 755 "$pkgdir/usr/bin/penguinclip-bin" 2>/dev/null || true
-
+    chmod 755 "$pkgdir/usr/bin/win11-clipboard-history"
+    chmod 755 "$pkgdir/usr/bin/win11-clipboard-history-bin" 2>/dev/null || true
+    
     # Move udev rules to Arch location
     if [ -d "$pkgdir/etc/udev/rules.d" ]; then
         mkdir -p "$pkgdir/usr/lib/udev/rules.d"
         mv "$pkgdir/etc/udev/rules.d/"* "$pkgdir/usr/lib/udev/rules.d/"
         rm -rf "$pkgdir/etc/udev"
     fi
-
+    
     # Install license
     install -Dm644 /dev/stdin "$pkgdir/usr/share/licenses/$pkgname/LICENSE" << 'EOF'
 MIT License
 
-Copyright (c) 2024 Windows 11 Clipboard History For Linux Contributors
-Copyright (c) 2025-2026 PenguinClip Contributors
+Copyright (c) 2024 Gustavo Sett
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
