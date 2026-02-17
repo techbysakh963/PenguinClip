@@ -14,6 +14,7 @@ import { KaomojiPicker } from './components/KaomojiPicker'
 import { SymbolPicker } from './components/SymbolPicker'
 import { calculateSecondaryOpacity, calculateTertiaryOpacity } from './utils/themeUtils'
 import { useSystemThemePreference } from './utils/systemTheme'
+import { useRenderingEnv } from './hooks/useRenderingEnv'
 import type { ActiveTab, UserSettings } from './types/clipboard'
 import { ClipboardTab } from './components/ClipboardTab'
 
@@ -96,7 +97,12 @@ function ClipboardApp() {
   const [settingsLoaded, setSettingsLoaded] = useState(false)
 
   const isDark = useThemeMode(settings.theme_mode)
-  const opacity = isDark ? settings.dark_background_opacity : settings.light_background_opacity
+  const renderingEnv = useRenderingEnv()
+  const opacity = renderingEnv.transparency_disabled
+    ? 1
+    : isDark
+      ? settings.dark_background_opacity
+      : settings.light_background_opacity
   const secondaryOpacity = calculateSecondaryOpacity(opacity)
   const tertiaryOpacity = calculateTertiaryOpacity(opacity)
 
@@ -298,7 +304,13 @@ function ClipboardApp() {
     <div
       className={clsx(
         'h-screen w-screen overflow-hidden flex flex-col rounded-win11-lg select-none',
-        isDark ? 'glass-effect' : 'glass-effect-light',
+        renderingEnv.transparency_disabled
+          ? isDark
+            ? 'glass-effect-opaque'
+            : 'glass-effect-opaque-light'
+          : isDark
+            ? 'glass-effect'
+            : 'glass-effect-light',
         isDark ? 'bg-win11-acrylic-bg' : 'bg-win11Light-acrylic-bg',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}

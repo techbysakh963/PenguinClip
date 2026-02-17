@@ -675,22 +675,19 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-      {/* Modal */}
-      <div
-        className={clsx(
-          'relative w-full max-w-sm rounded-win11-lg p-6 shadow-win11-elevated animate-scale-in',
-          isDark ? 'glass-effect' : 'glass-effect-light',
-          isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
-        )}
-      >
+    <div
+      className={clsx(
+        'h-full w-full flex flex-col items-center justify-center p-6',
+        isDark
+          ? 'bg-win11-bg-primary text-win11-text-primary'
+          : 'bg-win11Light-bg-primary text-win11Light-text-primary'
+      )}
+    >
+      <div className={clsx('w-full max-w-sm', 'animate-scale-in')}>
         {steps[step]}
 
         {/* Progress dots */}
-        <div className="flex justify-center gap-2 mt-6">
+        <div className="flex justify-center gap-2 mt-8">
           {steps.map((_, i) => (
             <button
               key={`dot-${i}`}

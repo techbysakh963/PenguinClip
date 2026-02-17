@@ -62,7 +62,6 @@ pub fn get_desktop_environment() -> String {
     }
 }
 
-#[cfg(target_os = "linux")]
 fn is_process_running(name: &str) -> bool {
     std::process::Command::new("pgrep")
         .arg("-x")
@@ -70,11 +69,6 @@ fn is_process_running(name: &str) -> bool {
         .output()
         .map(|o| o.status.success())
         .unwrap_or(false)
-}
-
-#[cfg(not(target_os = "linux"))]
-fn is_process_running(_name: &str) -> bool {
-    false
 }
 
 /// Detect shortcut conflicts for Super+V
@@ -93,33 +87,23 @@ pub fn resolve_conflicts() -> Result<Vec<String>, String> {
 /// This calls the existing linux_shortcut_manager
 #[tauri::command]
 pub fn register_de_shortcut() -> Result<String, String> {
-    #[cfg(target_os = "linux")]
-    {
-        // Run in a separate thread but wait for completion to avoid race conditions
-        let (tx, rx) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            crate::linux_shortcut_manager::register_global_shortcut();
-            let _ = tx.send(());
-        });
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        crate::linux_shortcut_manager::register_global_shortcut();
+        let _ = tx.send(());
+    });
 
-        match rx.recv() {
-            Ok(()) => {
-                Ok("Shortcut registration completed. Check the app logs for details.".to_string())
-            }
-            Err(_) => Err("Shortcut registration thread failed unexpectedly.".to_string()),
+    match rx.recv() {
+        Ok(()) => {
+            Ok("Shortcut registration completed. Check the app logs for details.".to_string())
         }
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    {
-        Err("Shortcut registration is only supported on Linux.".to_string())
+        Err(_) => Err("Shortcut registration thread failed unexpectedly.".to_string()),
     }
 }
 
 /// Check if the DE shortcut manager has the tools needed
 #[tauri::command]
 pub fn check_shortcut_tools() -> ShortcutToolsStatus {
-    #[cfg(target_os = "linux")]
     {
         let gsettings = command_exists("gsettings");
         let kwriteconfig5 = command_exists("kwriteconfig5");
@@ -158,20 +142,6 @@ pub fn check_shortcut_tools() -> ShortcutToolsStatus {
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
-    {
-        ShortcutToolsStatus {
-            desktop_environment: "Unknown".to_string(),
-            gsettings_available: false,
-            kde_tools_available: false,
-            xfce_tools_available: false,
-            can_register_automatically: false,
-            manual_instructions: "This feature is only available on Linux.".to_string(),
-            has_conflicts: false,
-            conflict_count: 0,
-            can_auto_resolve_conflicts: false,
-        }
-    }
 }
 
 #[derive(serde::Serialize)]
@@ -187,7 +157,6 @@ pub struct ShortcutToolsStatus {
     pub can_auto_resolve_conflicts: bool,
 }
 
-#[cfg(target_os = "linux")]
 fn command_exists(cmd: &str) -> bool {
     std::process::Command::new("which")
         .arg(cmd)

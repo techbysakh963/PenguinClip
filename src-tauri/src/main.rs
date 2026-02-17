@@ -15,7 +15,7 @@ use penguinclip_lib::autostart_manager;
 use penguinclip_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
 use penguinclip_lib::config_manager::{resolve_window_position, ConfigManager};
 use penguinclip_lib::emoji_manager::{EmojiManager, EmojiUsage};
-#[cfg(target_os = "linux")]
+
 use penguinclip_lib::focus_manager::x11_robust_activate;
 use penguinclip_lib::focus_manager::{restore_focused_window, save_focused_window};
 use penguinclip_lib::input_simulator::simulate_paste_keystroke;
@@ -117,13 +117,13 @@ fn set_user_settings(
         .map_err(|e| format!("Failed to emit settings changed event: {}", e))?;
 
     // Refresh tray icon immediately to reflect possible dynamic setting change
-    #[cfg(target_os = "linux")]
+    
     theme_manager::update_dynamic_tray_flag(new_settings.enable_dynamic_tray_icon);
 
     let app_for_tray = app.clone();
     let settings_for_tray = new_settings.clone();
     tauri::async_runtime::spawn(async move {
-        #[cfg(target_os = "linux")]
+        
         theme_manager::refresh_tray_icon(&app_for_tray, &settings_for_tray).await;
     });
 
@@ -180,6 +180,11 @@ async fn paste_item(app: AppHandle, state: State<'_, AppState>, id: String) -> R
             // 3. Perform Paste
             let mut manager = state.clipboard_manager.lock();
             manager.paste_item(&item).map_err(|e| e.to_string())?;
+
+            // 4. Notify frontend of history change (item moved to top)
+            let history = manager.get_history();
+            drop(manager);
+            let _ = app.emit("history-sync", &history);
         }
         None => {
             eprintln!(
@@ -285,6 +290,22 @@ async fn copy_text_to_clipboard(_state: State<'_, AppState>, text: String) -> Re
     Ok(())
 }
 
+#[tauri::command]
+async fn finish_setup(app: AppHandle) -> Result<(), String> {
+    permission_checker::mark_first_run_complete().map_err(|e| e.to_string())?;
+
+    if let Some(setup_window) = app.get_webview_window("setup") {
+        let _ = setup_window.close();
+    }
+
+    if let Some(main_window) = app.get_webview_window("main") {
+        WindowController::position_and_show(&main_window, &app);
+    }
+
+    let _ = app.emit("setup_complete", ());
+    Ok(())
+}
+
 // --- Helper for Paste Logic ---
 
 struct PasteHelper;
@@ -374,11 +395,8 @@ impl WindowController {
             Self::position_for_non_wayland(window);
         }
 
-        #[cfg(target_os = "linux")]
+        
         let is_wayland_session = is_wayland();
-
-        #[cfg(not(target_os = "linux"))]
-        let is_wayland_session = false;
 
         if is_wayland_session {
             // Wayland needs to be born "On Top" to be visible
@@ -397,7 +415,7 @@ impl WindowController {
         std::thread::spawn(move || {
             // For Wayland, we still need a small delay for the compositor
             // For X11, we use polling-based wait instead of fixed sleep
-            #[cfg(target_os = "linux")]
+            
             if is_wayland_session {
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 let _ = window_clone.set_always_on_top(false);
@@ -418,7 +436,7 @@ impl WindowController {
     }
 
     /// Activate window on X11 using xdotool (fallback method)
-    #[cfg(target_os = "linux")]
+    
     fn x11_activate_window_xdotool() -> Result<(), String> {
         use std::process::Command;
 
@@ -507,7 +525,7 @@ impl WindowController {
             return Some((pos.x as i32, pos.y as i32));
         }
 
-        #[cfg(target_os = "linux")]
+        
         {
             if let Some(p) = Self::get_cursor_xdotool() {
                 return Some(p);
@@ -520,7 +538,7 @@ impl WindowController {
         None
     }
 
-    #[cfg(target_os = "linux")]
+    
     fn get_cursor_xdotool() -> Option<(i32, i32)> {
         let output = std::process::Command::new("xdotool")
             .args(["getmouselocation", "--shell"])
@@ -544,7 +562,7 @@ impl WindowController {
         x.zip(y)
     }
 
-    #[cfg(target_os = "linux")]
+    
     fn get_cursor_x11() -> Option<(i32, i32)> {
         use x11rb::connection::Connection;
         use x11rb::protocol::xproto::ConnectionExt;
@@ -736,6 +754,7 @@ fn main() {
     let open_emoji_on_start_clone = open_emoji_on_start;
 
     penguinclip_lib::session::init();
+    penguinclip_lib::rendering_env::init();
 
     let is_mouse_inside = Arc::new(AtomicBool::new(false));
     let base_dir = dirs::data_local_dir()
@@ -789,6 +808,16 @@ fn main() {
             config_manager: config_manager.clone(),
             is_mouse_inside: is_mouse_inside.clone(),
         })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                if window.label() == "setup" {
+                    if penguinclip_lib::permission_checker::is_first_run() {
+                        println!("[Setup] Setup window closed without completion. Exiting app.");
+                        window.app_handle().exit(0);
+                    }
+                }
+            }
+        })
         .setup(move |app| {
             let app_handle = app.handle().clone();
 
@@ -825,7 +854,7 @@ fn main() {
             let settings = settings_manager.load();
 
             // Initialize atomic flag for the listener loop
-            #[cfg(target_os = "linux")]
+            
             theme_manager::update_dynamic_tray_flag(settings.enable_dynamic_tray_icon);
 
             let (icon, use_template_icon) = theme_manager::initial_tray_icon(&settings);
@@ -858,7 +887,7 @@ fn main() {
                  let app_handle_bg = app.handle().clone();
                  let settings_bg = settings.clone();
                  tauri::async_runtime::spawn(async move {
-                    #[cfg(target_os = "linux")]
+                    
                     theme_manager::refresh_tray_icon(&app_handle_bg, &settings_bg).await;
                  });
             }
@@ -922,7 +951,7 @@ fn main() {
             start_clipboard_watcher(app_handle.clone(), clipboard_manager.clone());
 
             // Start theme change listener (D-Bus event-based, more efficient than polling)
-            #[cfg(target_os = "linux")]
+            
             {
                 let app_handle_for_theme = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
@@ -936,7 +965,7 @@ fn main() {
 
             // Register global shortcut (Super+V) with the desktop environment
             // This runs in a background thread to avoid blocking startup
-            #[cfg(target_os = "linux")]
+            
             std::thread::spawn(|| {
                 // Give the desktop environment a moment to settle
                 std::thread::sleep(std::time::Duration::from_secs(2));
@@ -1006,6 +1035,7 @@ fn main() {
             get_recent_emojis,
             paste_gif_from_url,
             finish_paste,
+            finish_setup,
             set_mouse_state,
             get_user_settings,
             set_user_settings,
@@ -1029,6 +1059,7 @@ fn main() {
             autostart_manager::autostart_disable,
             autostart_manager::autostart_is_enabled,
             autostart_manager::autostart_migrate,
+            penguinclip_lib::rendering_env::get_rendering_environment,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

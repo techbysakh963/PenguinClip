@@ -10,6 +10,7 @@ import type { UserSettings, CustomKaomoji, BooleanSettingKey } from './types/cli
 import { FeaturesSection } from './components/FeaturesSection'
 import { Switch } from './components/Switch'
 import { useSystemThemePreference } from './utils/systemTheme'
+import { useRenderingEnv } from './hooks/useRenderingEnv'
 
 const MIN_HISTORY_SIZE = 1
 const MAX_HISTORY_SIZE = 100_000
@@ -144,6 +145,7 @@ function SettingsApp() {
 
   // Apply theme to settings window itself
   const isDark = useThemeMode(settings.theme_mode)
+  const renderingEnv = useRenderingEnv()
 
   useEffect(() => {
     if (isDark) {
@@ -599,8 +601,14 @@ function SettingsApp() {
           </div>
 
           <div className="p-6 space-y-8">
+            {renderingEnv.transparency_disabled && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+                {renderingEnv.reason}
+              </div>
+            )}
+
             {/* Dark Mode Slider */}
-            <div className="space-y-4">
+            <div className={clsx('space-y-4', renderingEnv.transparency_disabled && 'opacity-50 pointer-events-none')}>
               <div className="flex justify-between items-center">
                 <label htmlFor="dark-opacity" className="text-sm font-medium">
                   Dark Mode Opacity
@@ -629,7 +637,7 @@ function SettingsApp() {
             </div>
 
             {/* Light Mode Slider */}
-            <div className="space-y-4">
+            <div className={clsx('space-y-4', renderingEnv.transparency_disabled && 'opacity-50 pointer-events-none')}>
               <div className="flex justify-between items-center">
                 <label htmlFor="light-opacity" className="text-sm font-medium">
                   Light Mode Opacity

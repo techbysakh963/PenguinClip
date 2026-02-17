@@ -555,6 +555,32 @@ impl ClipboardManager {
         Some(item_clone)
     }
 
+    /// Move an item to the top of the history (respecting pinned items)
+    /// If the item is pinned, it moves to the top of pinned items
+    /// If not pinned, it moves to the first non-pinned position
+    pub fn move_item_to_top(&mut self, id: &str) -> bool {
+        let current_pos = match self.history.iter().position(|i| i.id == id) {
+            Some(pos) => pos,
+            None => return false,
+        };
+        let item_pinned = self.history[current_pos].pinned;
+        let insert_pos = if item_pinned {
+            0
+        } else {
+            self.history
+                .iter()
+                .position(|i| !i.pinned)
+                .unwrap_or(self.history.len())
+        };
+        if insert_pos == current_pos {
+            return true;
+        }
+        let item = self.history.remove(current_pos);
+        self.history.insert(insert_pos, item);
+        self.save_history();
+        true
+    }
+
     pub fn cleanup_old_items(&mut self, interval_minutes: u64) -> bool {
         if interval_minutes == 0 {
             return false;
@@ -647,6 +673,9 @@ impl ClipboardManager {
         // 3. Simulate User Input
         self.simulate_paste_action()?;
 
+        // 4. Move item to top of history so it's easily accessible for repeated use
+        self.move_item_to_top(&item.id);
+
         Ok(())
     }
 
@@ -680,9 +709,7 @@ impl ClipboardManager {
         // Trigger keystroke
         crate::input_simulator::simulate_paste_keystroke()?;
 
-        // Linux X11/Wayland often needs a moment to process the paste
-        // before the clipboard ownership changes or the app reads it.
-        #[cfg(target_os = "linux")]
+        // Wait for the target app to process the paste
         thread::sleep(Duration::from_millis(250));
 
         Ok(())

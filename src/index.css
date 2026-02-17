@@ -133,6 +133,17 @@ body {
       0 8px 32px rgba(0, 0, 0, 0.15),
       inset 0 0 0 1px rgba(255, 255, 255, 0.5);
   }
+
+  /* Opaque fallback for Nvidia / AppImage where transparency glitches */
+  .glass-effect-opaque {
+    background: rgb(40, 40, 40);
+    border-radius: inherit;
+  }
+
+  .glass-effect-opaque-light {
+    background: rgb(243, 243, 243);
+    border-radius: inherit;
+  }
 }
 
 /* Animations */

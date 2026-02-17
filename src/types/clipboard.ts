@@ -82,6 +82,14 @@ export interface UserSettings {
   tenor_api_key: string
 }
 
+/** Rendering environment info from the backend */
+export interface RenderingEnv {
+  is_nvidia: boolean
+  is_appimage: boolean
+  transparency_disabled: boolean
+  reason: string
+}
+
 /** Helper type for boolean settings keys */
 export type BooleanSettingKey = {
   [K in keyof UserSettings]: UserSettings[K] extends boolean ? K : never

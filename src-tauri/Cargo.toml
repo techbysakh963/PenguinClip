@@ -1,6 +1,6 @@
 [package]
 name = "penguinclip-lib"
-version = "0.8.0"
+version = "0.9.0"
 description = "PenguinClip - A security-hardened clipboard history manager for Linux. Developed by SAKH."
 authors = ["SAKH (techbysakh963)", "gustavosett", "PenguinClip Contributors"]
 license = "MIT"

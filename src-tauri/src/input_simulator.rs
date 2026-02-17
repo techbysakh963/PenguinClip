@@ -17,7 +17,7 @@ const UINPUT_DEVICE_SETTLE_MS: u64 = 100;
 /// Delay after paste sequence completes
 const POST_PASTE_DELAY_MS: u64 = 30;
 
-#[cfg(target_os = "linux")]
+
 pub fn simulate_paste_keystroke() -> Result<(), String> {
     // Give window manager time to settle focus before sending keystrokes
     thread::sleep(Duration::from_millis(PRE_PASTE_DELAY_MS));
@@ -64,7 +64,7 @@ pub fn simulate_paste_keystroke() -> Result<(), String> {
 }
 
 /// Helper for XTest input generation
-#[cfg(target_os = "linux")]
+
 fn fake_key<C: x11rb::connection::Connection + x11rb::protocol::xtest::ConnectionExt>(
     conn: &C,
     key_type: u8,
@@ -79,7 +79,7 @@ fn fake_key<C: x11rb::connection::Connection + x11rb::protocol::xtest::Connectio
 }
 
 /// Simulate Ctrl+V (or Ctrl+Shift+V for terminals) using X11 XTest extension
-#[cfg(target_os = "linux")]
+
 fn simulate_paste_xtest(use_shift: bool) -> Result<(), String> {
     use x11rb::connection::Connection;
     use x11rb::protocol::xtest::ConnectionExt as XtestConnectionExt;
@@ -138,7 +138,7 @@ fn simulate_paste_xtest(use_shift: bool) -> Result<(), String> {
 }
 
 /// Simulate Ctrl+V (or Ctrl+Shift+V for terminals) using xdotool
-#[cfg(target_os = "linux")]
+
 fn simulate_paste_xdotool(use_shift: bool) -> Result<(), String> {
     let key_combo = if use_shift { "ctrl+shift+v" } else { "ctrl+v" };
 
@@ -159,7 +159,7 @@ fn simulate_paste_xdotool(use_shift: bool) -> Result<(), String> {
     }
 }
 
-#[cfg(target_os = "linux")]
+
 fn simulate_paste_uinput(use_shift: bool) -> Result<(), String> {
     use std::fs::OpenOptions;
     use std::io::Write;
