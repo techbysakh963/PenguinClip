@@ -437,7 +437,6 @@ impl WindowController {
     }
 
     /// Activate window on X11 using xdotool (fallback method)
-
     fn x11_activate_window_xdotool() -> Result<(), String> {
         use std::process::Command;
 
@@ -807,11 +806,11 @@ fn main() {
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
-                if window.label() == "setup" {
-                    if penguinclip_lib::permission_checker::is_first_run() {
-                        println!("[Setup] Setup window closed without completion. Exiting app.");
-                        window.app_handle().exit(0);
-                    }
+                if window.label() == "setup"
+                    && penguinclip_lib::permission_checker::is_first_run()
+                {
+                    println!("[Setup] Setup window closed without completion. Exiting app.");
+                    window.app_handle().exit(0);
                 }
             }
         })

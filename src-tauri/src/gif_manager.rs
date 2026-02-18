@@ -79,7 +79,7 @@ impl Downloader {
             .unwrap_or("");
 
         // Check against whitelist
-        if !ALLOWED_GIF_DOMAINS.iter().any(|&domain| host == domain) {
+        if !ALLOWED_GIF_DOMAINS.contains(&host) {
             return Err(format!(
                 "Domain '{}' is not in the allowed list. Allowed: {:?}",
                 host, ALLOWED_GIF_DOMAINS

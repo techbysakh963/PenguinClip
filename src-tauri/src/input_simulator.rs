@@ -63,7 +63,6 @@ pub fn simulate_paste_keystroke() -> Result<(), String> {
 }
 
 /// Helper for XTest input generation
-
 fn fake_key<C: x11rb::connection::Connection + x11rb::protocol::xtest::ConnectionExt>(
     conn: &C,
     key_type: u8,
@@ -78,7 +77,6 @@ fn fake_key<C: x11rb::connection::Connection + x11rb::protocol::xtest::Connectio
 }
 
 /// Simulate Ctrl+V (or Ctrl+Shift+V for terminals) using X11 XTest extension
-
 fn simulate_paste_xtest(use_shift: bool) -> Result<(), String> {
     use x11rb::connection::Connection;
     use x11rb::protocol::xtest::ConnectionExt as XtestConnectionExt;
@@ -167,7 +165,6 @@ fn simulate_paste_xtest(use_shift: bool) -> Result<(), String> {
 }
 
 /// Simulate Ctrl+V (or Ctrl+Shift+V for terminals) using xdotool
-
 fn simulate_paste_xdotool(use_shift: bool) -> Result<(), String> {
     let key_combo = if use_shift { "ctrl+shift+v" } else { "ctrl+v" };
 
