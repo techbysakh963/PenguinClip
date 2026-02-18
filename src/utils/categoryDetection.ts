@@ -6,7 +6,7 @@ const HEX_COLOR_REGEX = /^#([0-9a-f]{3}){1,2}$/i
 const RGB_COLOR_REGEX = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}/i
 const PHONE_REGEX = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,15}$/
 const CODE_INDICATORS =
-  /[{}\[\]();].*[{}\[\]();]|^(import |export |const |let |var |function |class |def |fn |pub |if \(|for \(|while \(|<\/?[a-z][\s\S]*>)/im
+  /[{}[\]();].*[{}[\]();]|^(import |export |const |let |var |function |class |def |fn |pub |if \(|for \(|while \(|<\/?[a-z][\s\S]*>)/im
 
 export function detectCategory(item: ClipboardItem): ClipboardCategory {
   if (item.content.type === 'Image') return 'Image'
