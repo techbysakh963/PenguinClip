@@ -17,7 +17,6 @@ const UINPUT_DEVICE_SETTLE_MS: u64 = 100;
 /// Delay after paste sequence completes
 const POST_PASTE_DELAY_MS: u64 = 30;
 
-
 pub fn simulate_paste_keystroke() -> Result<(), String> {
     // Give window manager time to settle focus before sending keystrokes
     thread::sleep(Duration::from_millis(PRE_PASTE_DELAY_MS));
@@ -103,37 +102,67 @@ fn simulate_paste_xtest(use_shift: bool) -> Result<(), String> {
         .map_err(|e| format!("Sync setup failed: {}", e))?;
 
     // Press Ctrl
-    fake_key(&conn, 2, CTRL_L_KEYCODE, root_window, "Failed to press Ctrl")?;
-    conn.sync().map_err(|e| format!("Sync after Ctrl press failed: {}", e))?;
+    fake_key(
+        &conn,
+        2,
+        CTRL_L_KEYCODE,
+        root_window,
+        "Failed to press Ctrl",
+    )?;
+    conn.sync()
+        .map_err(|e| format!("Sync after Ctrl press failed: {}", e))?;
     thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
 
     // Press Shift (if terminal)
     if use_shift {
-        fake_key(&conn, 2, SHIFT_L_KEYCODE, root_window, "Failed to press Shift")?;
-        conn.sync().map_err(|e| format!("Sync after Shift press failed: {}", e))?;
+        fake_key(
+            &conn,
+            2,
+            SHIFT_L_KEYCODE,
+            root_window,
+            "Failed to press Shift",
+        )?;
+        conn.sync()
+            .map_err(|e| format!("Sync after Shift press failed: {}", e))?;
         thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
     }
 
     // Press V
     fake_key(&conn, 2, V_KEYCODE, root_window, "Failed to press V")?;
-    conn.sync().map_err(|e| format!("Sync after V press failed: {}", e))?;
+    conn.sync()
+        .map_err(|e| format!("Sync after V press failed: {}", e))?;
     thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
 
     // Release V
     fake_key(&conn, 3, V_KEYCODE, root_window, "Failed to release V")?;
-    conn.sync().map_err(|e| format!("Sync after V release failed: {}", e))?;
+    conn.sync()
+        .map_err(|e| format!("Sync after V release failed: {}", e))?;
     thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
 
     // Release Shift (if terminal)
     if use_shift {
-        fake_key(&conn, 3, SHIFT_L_KEYCODE, root_window, "Failed to release Shift")?;
-        conn.sync().map_err(|e| format!("Sync after Shift release failed: {}", e))?;
+        fake_key(
+            &conn,
+            3,
+            SHIFT_L_KEYCODE,
+            root_window,
+            "Failed to release Shift",
+        )?;
+        conn.sync()
+            .map_err(|e| format!("Sync after Shift release failed: {}", e))?;
         thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
     }
 
     // Release Ctrl
-    fake_key(&conn, 3, CTRL_L_KEYCODE, root_window, "Failed to release Ctrl")?;
-    conn.sync().map_err(|e| format!("Final sync failed: {}", e))?;
+    fake_key(
+        &conn,
+        3,
+        CTRL_L_KEYCODE,
+        root_window,
+        "Failed to release Ctrl",
+    )?;
+    conn.sync()
+        .map_err(|e| format!("Final sync failed: {}", e))?;
     Ok(())
 }
 
@@ -151,14 +180,16 @@ fn simulate_paste_xdotool(use_shift: bool) -> Result<(), String> {
         .map_err(|e| format!("Failed to run xdotool key: {}", e))?;
 
     if output.status.success() {
-        eprintln!("[SimulatePaste] xdotool sent {} to focused window", key_combo);
+        eprintln!(
+            "[SimulatePaste] xdotool sent {} to focused window",
+            key_combo
+        );
         Ok(())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("xdotool key failed: {}", stderr))
     }
 }
-
 
 fn simulate_paste_uinput(use_shift: bool) -> Result<(), String> {
     use std::fs::OpenOptions;
@@ -195,10 +226,20 @@ fn simulate_paste_uinput(use_shift: bool) -> Result<(), String> {
         if libc::ioctl(uinput.as_raw_fd(), UI_SET_EVBIT, EV_KEY as libc::c_int) < 0 {
             return Err("Failed to set EV_KEY".to_string());
         }
-        if libc::ioctl(uinput.as_raw_fd(), UI_SET_KEYBIT, KEY_LEFTCTRL as libc::c_int) < 0 {
+        if libc::ioctl(
+            uinput.as_raw_fd(),
+            UI_SET_KEYBIT,
+            KEY_LEFTCTRL as libc::c_int,
+        ) < 0
+        {
             return Err("Failed to set KEY_LEFTCTRL".to_string());
         }
-        if libc::ioctl(uinput.as_raw_fd(), UI_SET_KEYBIT, KEY_LEFTSHIFT as libc::c_int) < 0 {
+        if libc::ioctl(
+            uinput.as_raw_fd(),
+            UI_SET_KEYBIT,
+            KEY_LEFTSHIFT as libc::c_int,
+        ) < 0
+        {
             return Err("Failed to set KEY_LEFTSHIFT".to_string());
         }
         if libc::ioctl(uinput.as_raw_fd(), UI_SET_KEYBIT, KEY_V as libc::c_int) < 0 {
@@ -232,42 +273,66 @@ fn simulate_paste_uinput(use_shift: bool) -> Result<(), String> {
     thread::sleep(Duration::from_millis(UINPUT_DEVICE_SETTLE_MS));
 
     // Press Ctrl
-    uinput.write_all(&make_event(EV_KEY, KEY_LEFTCTRL, 1)).map_err(|e| e.to_string())?;
-    uinput.write_all(&make_event(EV_SYN, SYN_REPORT, 0)).map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_KEY, KEY_LEFTCTRL, 1))
+        .map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_SYN, SYN_REPORT, 0))
+        .map_err(|e| e.to_string())?;
     uinput.flush().map_err(|e| e.to_string())?;
     thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
 
     // Press Shift (if terminal)
     if use_shift {
-        uinput.write_all(&make_event(EV_KEY, KEY_LEFTSHIFT, 1)).map_err(|e| e.to_string())?;
-        uinput.write_all(&make_event(EV_SYN, SYN_REPORT, 0)).map_err(|e| e.to_string())?;
+        uinput
+            .write_all(&make_event(EV_KEY, KEY_LEFTSHIFT, 1))
+            .map_err(|e| e.to_string())?;
+        uinput
+            .write_all(&make_event(EV_SYN, SYN_REPORT, 0))
+            .map_err(|e| e.to_string())?;
         uinput.flush().map_err(|e| e.to_string())?;
         thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
     }
 
     // Press V
-    uinput.write_all(&make_event(EV_KEY, KEY_V, 1)).map_err(|e| e.to_string())?;
-    uinput.write_all(&make_event(EV_SYN, SYN_REPORT, 0)).map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_KEY, KEY_V, 1))
+        .map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_SYN, SYN_REPORT, 0))
+        .map_err(|e| e.to_string())?;
     uinput.flush().map_err(|e| e.to_string())?;
     thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
 
     // Release V
-    uinput.write_all(&make_event(EV_KEY, KEY_V, 0)).map_err(|e| e.to_string())?;
-    uinput.write_all(&make_event(EV_SYN, SYN_REPORT, 0)).map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_KEY, KEY_V, 0))
+        .map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_SYN, SYN_REPORT, 0))
+        .map_err(|e| e.to_string())?;
     uinput.flush().map_err(|e| e.to_string())?;
     thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
 
     // Release Shift (if terminal)
     if use_shift {
-        uinput.write_all(&make_event(EV_KEY, KEY_LEFTSHIFT, 0)).map_err(|e| e.to_string())?;
-        uinput.write_all(&make_event(EV_SYN, SYN_REPORT, 0)).map_err(|e| e.to_string())?;
+        uinput
+            .write_all(&make_event(EV_KEY, KEY_LEFTSHIFT, 0))
+            .map_err(|e| e.to_string())?;
+        uinput
+            .write_all(&make_event(EV_SYN, SYN_REPORT, 0))
+            .map_err(|e| e.to_string())?;
         uinput.flush().map_err(|e| e.to_string())?;
         thread::sleep(Duration::from_millis(KEY_EVENT_DELAY_MS));
     }
 
     // Release Ctrl
-    uinput.write_all(&make_event(EV_KEY, KEY_LEFTCTRL, 0)).map_err(|e| e.to_string())?;
-    uinput.write_all(&make_event(EV_SYN, SYN_REPORT, 0)).map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_KEY, KEY_LEFTCTRL, 0))
+        .map_err(|e| e.to_string())?;
+    uinput
+        .write_all(&make_event(EV_SYN, SYN_REPORT, 0))
+        .map_err(|e| e.to_string())?;
     uinput.flush().map_err(|e| e.to_string())?;
 
     // Wait for events to be processed before destroying device

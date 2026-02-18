@@ -206,7 +206,11 @@ impl ClipboardManager {
     pub fn set_max_history_size(&mut self, new_size: usize) {
         let mut clamped = Self::clamp_max_history_size(new_size);
         // Do not set max less than number of protected items; we won't delete pins/favorites automatically
-        let protected_count = self.history.iter().filter(|i| i.pinned || i.favorited).count();
+        let protected_count = self
+            .history
+            .iter()
+            .filter(|i| i.pinned || i.favorited)
+            .count();
         if clamped < protected_count {
             eprintln!(
                 "clipboard_manager: requested max history size ({}) is less than the number of protected items ({}); increasing limit to preserve them.",

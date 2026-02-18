@@ -16,14 +16,12 @@ pub mod shortcut_setup;
 pub mod theme_manager;
 pub mod user_settings;
 
-
 pub mod linux_shortcut_manager;
 
 pub use clipboard_manager::{ClipboardContent, ClipboardItem, ClipboardManager};
 pub use config_manager::ConfigManager;
 pub use emoji_manager::{EmojiManager, EmojiUsage};
 pub use focus_manager::{restore_focused_window, save_focused_window};
-
 
 pub use focus_manager::{x11_activate_window_by_title, x11_robust_activate};
 pub use gif_manager::{paste_gif_to_clipboard, paste_gif_to_clipboard_with_uri};

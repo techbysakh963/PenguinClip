@@ -141,7 +141,6 @@ pub fn check_shortcut_tools() -> ShortcutToolsStatus {
             can_auto_resolve_conflicts: conflicts.can_auto_resolve,
         }
     }
-
 }
 
 #[derive(serde::Serialize)]

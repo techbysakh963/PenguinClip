@@ -2,7 +2,6 @@
 //! Tracks and restores window focus for proper paste injection on X11.
 //! Also provides X11 window activation using EWMH protocols.
 
-
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::thread;
@@ -21,8 +20,6 @@ const FOCUS_RESTORE_DELAY: Duration = Duration::from_millis(150);
 
 static LAST_FOCUSED_WINDOW: AtomicU32 = AtomicU32::new(0);
 
-
-
 pub fn save_focused_window() {
     match get_x11_connection() {
         Ok(conn) => match conn.get_input_focus() {
@@ -39,7 +36,6 @@ pub fn save_focused_window() {
         Err(e) => eprintln!("[FocusManager] X11 Connection failed: {}", e),
     }
 }
-
 
 pub fn restore_focused_window() -> Result<(), String> {
     let window_id = LAST_FOCUSED_WINDOW.load(Ordering::SeqCst);
@@ -63,7 +59,6 @@ pub fn restore_focused_window() -> Result<(), String> {
 
     Ok(())
 }
-
 
 pub fn get_focused_window() -> Option<u32> {
     let conn = get_x11_connection().ok()?;
@@ -328,7 +323,7 @@ const TERMINAL_WM_CLASSES: &[&str] = &[
     "qterminal",
     "termite",
     "roxterm",
-    "kgx",               // GNOME Console
+    "kgx",                // GNOME Console
     "org.gnome.console",  // GNOME Console flatpak
     "org.gnome.terminal", // GNOME Terminal flatpak
     "blackbox",           // Black Box terminal
@@ -348,7 +343,9 @@ fn is_terminal_via_xdotool() -> Result<bool, String> {
         return Err("xdotool getactivewindow failed".to_string());
     }
 
-    let window_id = String::from_utf8_lossy(&id_output.stdout).trim().to_string();
+    let window_id = String::from_utf8_lossy(&id_output.stdout)
+        .trim()
+        .to_string();
     if window_id.is_empty() {
         return Err("xdotool returned empty window ID".to_string());
     }
@@ -364,7 +361,10 @@ fn is_terminal_via_xdotool() -> Result<bool, String> {
     }
 
     let wm_class = String::from_utf8_lossy(&prop_output.stdout).to_lowercase();
-    eprintln!("[FocusManager] Focused window WM_CLASS (xprop): {}", wm_class.trim());
+    eprintln!(
+        "[FocusManager] Focused window WM_CLASS (xprop): {}",
+        wm_class.trim()
+    );
 
     Ok(TERMINAL_WM_CLASSES.iter().any(|t| wm_class.contains(t)))
 }
@@ -374,7 +374,9 @@ fn is_terminal_via_xdotool() -> Result<bool, String> {
 fn is_terminal_via_x11() -> Result<bool, String> {
     let conn = get_x11_connection()?;
     let focused = {
-        let cookie = conn.get_input_focus().map_err(|e| format!("get_input_focus: {}", e))?;
+        let cookie = conn
+            .get_input_focus()
+            .map_err(|e| format!("get_input_focus: {}", e))?;
         let reply = cookie.reply().map_err(|e| format!("focus reply: {}", e))?;
         reply.focus
     };
@@ -388,7 +390,14 @@ fn is_terminal_via_x11() -> Result<bool, String> {
     for _ in 0..10 {
         // Query WM_CLASS property (type STRING)
         let reply = conn
-            .get_property(false, window, x11rb::protocol::xproto::AtomEnum::WM_CLASS, x11rb::protocol::xproto::AtomEnum::STRING, 0, 256)
+            .get_property(
+                false,
+                window,
+                x11rb::protocol::xproto::AtomEnum::WM_CLASS,
+                x11rb::protocol::xproto::AtomEnum::STRING,
+                0,
+                256,
+            )
             .map_err(|e| format!("get_property WM_CLASS: {}", e))?
             .reply()
             .map_err(|e| format!("WM_CLASS reply: {}", e))?;
@@ -396,7 +405,10 @@ fn is_terminal_via_x11() -> Result<bool, String> {
         if !reply.value.is_empty() {
             // WM_CLASS is two null-terminated strings: instance\0class\0
             let wm_class_raw = String::from_utf8_lossy(&reply.value).to_lowercase();
-            eprintln!("[FocusManager] Window {} WM_CLASS (x11): {}", window, wm_class_raw);
+            eprintln!(
+                "[FocusManager] Window {} WM_CLASS (x11): {}",
+                window, wm_class_raw
+            );
 
             if TERMINAL_WM_CLASSES.iter().any(|t| wm_class_raw.contains(t)) {
                 return Ok(true);
@@ -418,7 +430,10 @@ fn is_terminal_via_x11() -> Result<bool, String> {
         window = tree.parent;
     }
 
-    eprintln!("[FocusManager] Could not find WM_CLASS for focused window {}", focused);
+    eprintln!(
+        "[FocusManager] Could not find WM_CLASS for focused window {}",
+        focused
+    );
     Ok(false)
 }
 

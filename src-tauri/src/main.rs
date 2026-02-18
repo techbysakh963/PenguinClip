@@ -2,6 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use parking_lot::Mutex;
+use penguinclip_lib::autostart_manager;
+use penguinclip_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
+use penguinclip_lib::config_manager::{resolve_window_position, ConfigManager};
+use penguinclip_lib::emoji_manager::{EmojiManager, EmojiUsage};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,10 +15,6 @@ use tauri::{
     AppHandle, Emitter, Manager, Monitor, PhysicalPosition, PhysicalSize, State, WebviewWindow,
     WindowEvent,
 };
-use penguinclip_lib::autostart_manager;
-use penguinclip_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
-use penguinclip_lib::config_manager::{resolve_window_position, ConfigManager};
-use penguinclip_lib::emoji_manager::{EmojiManager, EmojiUsage};
 
 use penguinclip_lib::focus_manager::x11_robust_activate;
 use penguinclip_lib::focus_manager::{restore_focused_window, save_focused_window};
@@ -72,7 +72,10 @@ fn toggle_pin(state: State<AppState>, id: String) -> Option<ClipboardItem> {
 fn toggle_favorite(state: State<AppState>, id: String) -> Option<ClipboardItem> {
     let result = state.clipboard_manager.lock().toggle_favorite(&id);
     if result.is_none() {
-        eprintln!("[toggle_favorite] Item with id '{}' not found in history.", id);
+        eprintln!(
+            "[toggle_favorite] Item with id '{}' not found in history.",
+            id
+        );
     }
     result
 }
@@ -117,13 +120,12 @@ fn set_user_settings(
         .map_err(|e| format!("Failed to emit settings changed event: {}", e))?;
 
     // Refresh tray icon immediately to reflect possible dynamic setting change
-    
+
     theme_manager::update_dynamic_tray_flag(new_settings.enable_dynamic_tray_icon);
 
     let app_for_tray = app.clone();
     let settings_for_tray = new_settings.clone();
     tauri::async_runtime::spawn(async move {
-        
         theme_manager::refresh_tray_icon(&app_for_tray, &settings_for_tray).await;
     });
 
@@ -395,7 +397,6 @@ impl WindowController {
             Self::position_for_non_wayland(window);
         }
 
-        
         let is_wayland_session = is_wayland();
 
         if is_wayland_session {
@@ -415,7 +416,7 @@ impl WindowController {
         std::thread::spawn(move || {
             // For Wayland, we still need a small delay for the compositor
             // For X11, we use polling-based wait instead of fixed sleep
-            
+
             if is_wayland_session {
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 let _ = window_clone.set_always_on_top(false);
@@ -436,7 +437,7 @@ impl WindowController {
     }
 
     /// Activate window on X11 using xdotool (fallback method)
-    
+
     fn x11_activate_window_xdotool() -> Result<(), String> {
         use std::process::Command;
 
@@ -525,7 +526,6 @@ impl WindowController {
             return Some((pos.x as i32, pos.y as i32));
         }
 
-        
         {
             if let Some(p) = Self::get_cursor_xdotool() {
                 return Some(p);
@@ -538,7 +538,6 @@ impl WindowController {
         None
     }
 
-    
     fn get_cursor_xdotool() -> Option<(i32, i32)> {
         let output = std::process::Command::new("xdotool")
             .args(["getmouselocation", "--shell"])
@@ -562,7 +561,6 @@ impl WindowController {
         x.zip(y)
     }
 
-    
     fn get_cursor_x11() -> Option<(i32, i32)> {
         use x11rb::connection::Connection;
         use x11rb::protocol::xproto::ConnectionExt;
@@ -671,8 +669,7 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
             // Text
             if let Ok(text) = manager.get_current_text() {
                 if !text.is_empty() {
-                    let text_hash =
-                        penguinclip_lib::clipboard_manager::calculate_hash(&text);
+                    let text_hash = penguinclip_lib::clipboard_manager::calculate_hash(&text);
 
                     if Some(text_hash) != last_text_hash {
                         last_text_hash = Some(text_hash);
@@ -854,7 +851,6 @@ fn main() {
             let settings = settings_manager.load();
 
             // Initialize atomic flag for the listener loop
-            
             theme_manager::update_dynamic_tray_flag(settings.enable_dynamic_tray_icon);
 
             let (icon, use_template_icon) = theme_manager::initial_tray_icon(&settings);
@@ -887,7 +883,6 @@ fn main() {
                  let app_handle_bg = app.handle().clone();
                  let settings_bg = settings.clone();
                  tauri::async_runtime::spawn(async move {
-                    
                     theme_manager::refresh_tray_icon(&app_handle_bg, &settings_bg).await;
                  });
             }
@@ -951,7 +946,6 @@ fn main() {
             start_clipboard_watcher(app_handle.clone(), clipboard_manager.clone());
 
             // Start theme change listener (D-Bus event-based, more efficient than polling)
-            
             {
                 let app_handle_for_theme = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
@@ -965,7 +959,6 @@ fn main() {
 
             // Register global shortcut (Super+V) with the desktop environment
             // This runs in a background thread to avoid blocking startup
-            
             std::thread::spawn(|| {
                 // Give the desktop environment a moment to settle
                 std::thread::sleep(std::time::Duration::from_secs(2));

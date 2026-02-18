@@ -24,11 +24,7 @@ const WL_COPY_SETTLE_TIME: u64 = 150;
 
 /// SECURITY: Allowed domains for GIF downloads.
 /// Only URLs from these domains are permitted to prevent SSRF attacks.
-const ALLOWED_GIF_DOMAINS: &[&str] = &[
-    "media.tenor.com",
-    "media1.tenor.com",
-    "c.tenor.com",
-];
+const ALLOWED_GIF_DOMAINS: &[&str] = &["media.tenor.com", "media1.tenor.com", "c.tenor.com"];
 
 // --- Cache Management ---
 

@@ -41,10 +41,10 @@ fn read_autostart_content() -> Option<String> {
 fn get_exec_path() -> String {
     // Priority order for the wrapper/binary
     let possible_paths = [
-        "/usr/bin/penguinclip",             // Wrapper installed by .deb/.rpm
-        "/usr/local/bin/penguinclip",       // Manual install with PREFIX=/usr/local
-        "/usr/bin/penguinclip-bin",         // Direct binary (fallback)
-        "/usr/local/bin/penguinclip-bin",   // Direct binary local (fallback)
+        "/usr/bin/penguinclip",           // Wrapper installed by .deb/.rpm
+        "/usr/local/bin/penguinclip",     // Manual install with PREFIX=/usr/local
+        "/usr/bin/penguinclip-bin",       // Direct binary (fallback)
+        "/usr/local/bin/penguinclip-bin", // Direct binary local (fallback)
     ];
 
     for path in &possible_paths {
