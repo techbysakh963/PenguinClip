@@ -118,8 +118,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          generate_release_notes: true
+          name: PenguinClip ${{ github.ref_name }}
+          generate_release_notes: false
           draft: false
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'dev') }}
           files: |
@@ -127,234 +127,30 @@ jobs:
             artifacts/**/*.AppImage
             artifacts/**/*.rpm
           body: |
-            <div align="center">
+            ## PenguinClip ${{ github.ref_name }}
 
-            <img width="128" height="128" alt="logo" src="https://github.com/user-attachments/assets/4534e915-5d83-45f3-9f09-48a0f94b1d9a" />
+            Secure clipboard history manager for Linux.
 
-            # W11 Clipboard For Linux ${{ github.ref_name }}
+            ### Installation
 
-            ## 🚀 Quick Installation (Recommended)
-
+            **Debian/Ubuntu:**
             ```bash
-            curl -fsSL https://raw.githubusercontent.com/gustavosett/Windows-11-Clipboard-History-For-Linux/master/scripts/install.sh | bash
+            sudo dpkg -i penguinclip_${{ steps.get_version.outputs.VERSION }}_amd64.deb
             ```
 
-            This script auto-detects your distro and architecture, then sets up everything including paste permissions.
-
-            </div>
-
-            ---
-
-            ### 📦 Manual Installation
-
-            <details>
-            <summary>Ubuntu/Debian (APT Repository - enables auto-updates)</summary>
-
+            **Fedora/RHEL:**
             ```bash
-            curl -1sLf 'https://dl.cloudsmith.io/public/gustavosett/clipboard-manager/setup.deb.sh' | sudo -E bash
-            sudo apt update && sudo apt install win11-clipboard-history
-            sudo setfacl -m u:$USER:rw /dev/uinput  # For immediate paste access
+            sudo dnf install ./penguinclip-${{ steps.get_version.outputs.VERSION }}-1.x86_64.rpm
             ```
 
-            Or download the `.deb` directly (amd64 for x86_64, arm64 for ARM64):
+            **AppImage (any distro):**
             ```bash
-            sudo apt install ./win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.deb
-            sudo setfacl -m u:$USER:rw /dev/uinput
-            ```
-            </details>
-
-            <details>
-            <summary>Fedora/RHEL (DNF Repository - enables auto-updates)</summary
-
-            ```bash
-            curl -1sLf 'https://dl.cloudsmith.io/public/gustavosett/clipboard-manager/setup.rpm.sh' | sudo -E bash
-            sudo dnf install win11-clipboard-history
-            sudo setfacl -m u:$USER:rw /dev/uinput  # For immediate paste access
+            chmod +x penguinclip_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
+            ./penguinclip_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
             ```
 
-            Or download the `.rpm` directly (x86_64 for Intel/AMD, aarch64 for ARM64):
-            ```bash
-            sudo dnf install ./win11-clipboard-history-${{ steps.get_version.outputs.VERSION }}-1.x86_64.rpm
-            sudo setfacl -m u:$USER:rw /dev/uinput
-            ```
-            </details>
+            Press **Super+V** to open. A setup wizard runs on first launch.
 
-            <details>
-            <summary>Arch Linux (AUR)</summary>
-
-            ```bash
-            yay -S win11-clipboard-history-bin
-            ```
-            </details>
-
-            <details>
-            <summary>AppImage (Universal - any distro)</summary>
-
-            > ## Some features are disabled; we strongly recommend the complete installation.
-            ```bash
-            # Download the correct AppImage for your architecture
-            chmod +x win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
-            sudo setfacl -m u:$USER:rw /dev/uinput  # Required for paste simulation
-            ./win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
-            ```
-            then register the command that you want in your system to open the AppImage
-            ```
-            KEYBOARD SETTINGS -> SHORTCUTS -> NEW SHORTCUT -> Super+V -> ./my_awesome_folder/win11-clipboard-history_${{ steps.get_version.outputs.VERSION }}_amd64.AppImage
-            ```
-
-            > **Note:** The `setfacl` command is temporary (resets on reboot). For permanent setup, see the [README](https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux#appimage-universal).
-            </details>
-
-            ---
-
-            ### ⌨️ Usage
-
-            Press **Super+V** to open the clipboard history. The app will show a Setup Wizard on first run to configure shortcuts and permissions.
+            **Full Changelog**: https://github.com/techbysakh963/PenguinClip/compare/v${{ steps.get_version.outputs.PREV_VERSION }}...${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload to Cloudsmith (stable releases only)
-        if: ${{ !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev') }}
-        continue-on-error: true
-        env:
-          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
-        run: |
-          if [ -z "$CLOUDSMITH_API_KEY" ]; then
-            echo "⚠️ CLOUDSMITH_API_KEY not set, skipping Cloudsmith upload"
-            exit 0
-          fi
-          pip install cloudsmith-cli
-          VERSION=${{ steps.get_version.outputs.VERSION }}
-
-          echo "Uploading STABLE release v$VERSION to Cloudsmith..."
-
-          # Upload all .deb files (x86_64 and arm64)
-          deb_files=$(find artifacts -name '*.deb' 2>/dev/null)
-          if [ -n "$deb_files" ]; then
-            echo "$deb_files" | while read -r deb; do
-              echo "Uploading $deb..."
-              cloudsmith push deb gustavosett/clipboard-manager/any-distro/any-version \
-                "$deb" --api-key $CLOUDSMITH_API_KEY || echo "Cloudsmith .deb upload failed for $deb (may already exist)"
-            done
-          else
-            echo "No .deb files found to upload"
-          fi
-
-          # Upload all .rpm files (x86_64 and aarch64)
-          rpm_files=$(find artifacts -name '*.rpm' 2>/dev/null)
-          if [ -n "$rpm_files" ]; then
-            echo "$rpm_files" | while read -r rpm; do
-              echo "Uploading $rpm..."
-              cloudsmith push rpm gustavosett/clipboard-manager/any-distro/any-version \
-                "$rpm" --api-key $CLOUDSMITH_API_KEY || echo "Cloudsmith .rpm upload failed for $rpm (may already exist)"
-            done
-          else
-            echo "No .rpm files found to upload"
-          fi
-
-      - name: Update AUR Package
-        if: ${{ !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev') }}
-        continue-on-error: true
-        env:
-          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
-        run: |
-          if [ -z "$AUR_SSH_KEY" ]; then
-            echo "AUR_SSH_KEY not set, skipping AUR update"
-            exit 0
-          fi
-
-          VERSION=${{ steps.get_version.outputs.VERSION }}
-
-          # Compute checksums for each architecture
-          DEB_X86_64=$(find artifacts -name "*_amd64.deb" | head -1)
-          DEB_ARM64=$(find artifacts -name "*_arm64.deb" | head -1)
-
-          if [ -z "$DEB_X86_64" ]; then
-            echo "x86_64 .deb not found, skipping AUR update"
-            exit 0
-          fi
-
-          SHA256_X86_64=$(sha256sum "$DEB_X86_64" | cut -d' ' -f1)
-          SHA256_ARM64=""
-          if [ -n "$DEB_ARM64" ]; then
-            SHA256_ARM64=$(sha256sum "$DEB_ARM64" | cut -d' ' -f1)
-          fi
-
-          echo "Updating AUR package to version $VERSION"
-          echo "x86_64 checksum: $SHA256_X86_64"
-          echo "arm64 checksum: ${SHA256_ARM64:-SKIP}"
-
-          # Setup SSH for AUR
-          mkdir -p ~/.ssh
-          echo "$AUR_SSH_KEY" > ~/.ssh/aur
-          chmod 600 ~/.ssh/aur
-          echo "Host aur.archlinux.org
-            User aur
-            IdentityFile ~/.ssh/aur
-            StrictHostKeyChecking no" > ~/.ssh/config
-
-          # Clone AUR repo
-          git clone ssh://aur@aur.archlinux.org/win11-clipboard-history-bin.git /tmp/aur-pkg
-          cd /tmp/aur-pkg
-
-          # Use aur/PKGBUILD from the repo as the single source of truth
-          cp "$GITHUB_WORKSPACE/aur/PKGBUILD" PKGBUILD
-          cp "$GITHUB_WORKSPACE/aur/win11-clipboard-history-bin.install" . 2>/dev/null || true
-
-          # Update version and checksums via sed
-          sed -i "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
-          sed -i "s/sha256sums_x86_64=.*/sha256sums_x86_64=('$SHA256_X86_64')/" PKGBUILD
-          if [ -n "$SHA256_ARM64" ]; then
-            sed -i "s/sha256sums_aarch64=.*/sha256sums_aarch64=('$SHA256_ARM64')/" PKGBUILD
-          else
-            sed -i "s/sha256sums_aarch64=.*/sha256sums_aarch64=('SKIP')/" PKGBUILD
-          fi
-
-          # Generate .SRCINFO
-          docker run --rm -v "$PWD:/pkg" archlinux bash -c "
-            pacman -Sy --noconfirm pacman-contrib
-            cd /pkg
-            makepkg --printsrcinfo > .SRCINFO
-          " || {
-            echo "Docker failed, generating .SRCINFO manually"
-            TAB=$'\t'
-            cat > .SRCINFO << SRCINFO_EOF
-          pkgbase = win11-clipboard-history-bin
-          ${TAB}pkgdesc = Windows 11-style Clipboard History Manager for Linux
-          ${TAB}pkgver = $VERSION
-          ${TAB}pkgrel = 1
-          ${TAB}url = https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux
-          ${TAB}install = win11-clipboard-history-bin.install
-          ${TAB}arch = x86_64
-          ${TAB}arch = aarch64
-          ${TAB}license = MIT
-          ${TAB}depends = webkit2gtk-4.1
-          ${TAB}depends = gtk3
-          ${TAB}depends = libayatana-appindicator
-          ${TAB}depends = xclip
-          ${TAB}depends = xdotool
-          ${TAB}depends = wl-clipboard
-          ${TAB}depends = acl
-          ${TAB}depends = polkit
-          ${TAB}optdepends = libappindicator-gtk3: Legacy tray icon support
-          ${TAB}provides = win11-clipboard-history
-          ${TAB}conflicts = win11-clipboard-history
-          ${TAB}options = !strip
-          ${TAB}options = !debug
-          ${TAB}source_x86_64 = https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/releases/download/v$VERSION/win11-clipboard-history_${VERSION}_amd64.deb
-          ${TAB}sha256sums_x86_64 = $SHA256_X86_64
-          ${TAB}source_aarch64 = https://github.com/gustavosett/Windows-11-Clipboard-History-For-Linux/releases/download/v$VERSION/win11-clipboard-history_${VERSION}_arm64.deb
-          ${TAB}sha256sums_aarch64 = ${SHA256_ARM64:-SKIP}
-
-          pkgname = win11-clipboard-history-bin
-          SRCINFO_EOF
-            sed -i 's/^          //' .SRCINFO
-          }
-
-          # Commit and push
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add PKGBUILD .SRCINFO
-          git commit -m "Update to version $VERSION" || echo "No changes to commit"
-          git push || echo "Push failed - may need manual intervention"
