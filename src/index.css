@@ -40,9 +40,9 @@ body,
   overflow: hidden;
 }
 
-/* Transparent background for Tauri window */
+/* Solid background for Tauri window */
 body {
-  background: transparent;
+  background: rgb(40, 40, 40);
 }
 
 /* Make the app draggable from certain areas */

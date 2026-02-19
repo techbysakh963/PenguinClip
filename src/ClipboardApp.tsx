@@ -20,8 +20,8 @@ import { ClipboardTab } from './components/ClipboardTab'
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme_mode: 'system',
-  dark_background_opacity: 0.7,
-  light_background_opacity: 0.7,
+  dark_background_opacity: 1,
+  light_background_opacity: 1,
   enable_smart_actions: true,
   enable_ui_polish: true,
   enable_dynamic_tray_icon: true,
@@ -303,14 +303,8 @@ function ClipboardApp() {
   return (
     <div
       className={clsx(
-        'h-screen w-screen overflow-hidden flex flex-col rounded-win11-lg select-none',
-        renderingEnv.transparency_disabled
-          ? isDark
-            ? 'glass-effect-opaque'
-            : 'glass-effect-opaque-light'
-          : isDark
-            ? 'glass-effect'
-            : 'glass-effect-light',
+        'h-screen w-screen overflow-hidden flex flex-col select-none rounded-xl',
+        isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
         isDark ? 'bg-win11-acrylic-bg' : 'bg-win11Light-acrylic-bg',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}

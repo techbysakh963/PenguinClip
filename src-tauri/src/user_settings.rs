@@ -94,8 +94,8 @@ impl Default for UserSettings {
     fn default() -> Self {
         Self {
             theme_mode: "system".to_string(),
-            dark_background_opacity: 0.70,
-            light_background_opacity: 0.70,
+            dark_background_opacity: 1.0,
+            light_background_opacity: 1.0,
             enable_dynamic_tray_icon: true,
             enable_smart_actions: true,
             enable_ui_polish: true,
@@ -239,8 +239,8 @@ mod tests {
     fn test_default_settings() {
         let settings = UserSettings::default();
         assert_eq!(settings.theme_mode, "system");
-        assert!((settings.dark_background_opacity - 0.05).abs() < f32::EPSILON);
-        assert!((settings.light_background_opacity - 0.85).abs() < f32::EPSILON);
+        assert!((settings.dark_background_opacity - 1.0).abs() < f32::EPSILON);
+        assert!((settings.light_background_opacity - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]

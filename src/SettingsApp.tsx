@@ -10,15 +10,14 @@ import type { UserSettings, CustomKaomoji, BooleanSettingKey } from './types/cli
 import { FeaturesSection } from './components/FeaturesSection'
 import { Switch } from './components/Switch'
 import { useSystemThemePreference } from './utils/systemTheme'
-import { useRenderingEnv } from './hooks/useRenderingEnv'
 
 const MIN_HISTORY_SIZE = 1
 const MAX_HISTORY_SIZE = 100_000
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme_mode: 'system',
-  dark_background_opacity: 0.7,
-  light_background_opacity: 0.7,
+  dark_background_opacity: 1,
+  light_background_opacity: 1,
   enable_smart_actions: true,
   enable_ui_polish: true,
   enable_dynamic_tray_icon: true,
@@ -145,7 +144,6 @@ function SettingsApp() {
 
   // Apply theme to settings window itself
   const isDark = useThemeMode(settings.theme_mode)
-  const renderingEnv = useRenderingEnv()
 
   useEffect(() => {
     if (isDark) {
@@ -227,14 +225,6 @@ function SettingsApp() {
     updateSettings({ theme_mode: mode })
   }
 
-  // Handle dark opacity change (visual only, no disk I/O)
-  const handleDarkOpacityChange = (value: number) => {
-    setSettings((prev) => {
-      const next = { ...prev, dark_background_opacity: value }
-      applyBackgroundOpacity(next)
-      return next
-    })
-  }
 
   const handleAutoDeleteValueChange = (value: string) => {
     // Only allow positive integers or 0
@@ -253,19 +243,6 @@ function SettingsApp() {
     saveSettings(newSettings)
   }
 
-  // Handle light opacity change (visual only, no disk I/O)
-  const handleLightOpacityChange = (value: number) => {
-    setSettings((prev) => {
-      const next = { ...prev, light_background_opacity: value }
-      applyBackgroundOpacity(next)
-      return next
-    })
-  }
-
-  // Commit opacity changes to disk (called on mouseUp/touchEnd)
-  const commitOpacityChange = () => {
-    saveSettings(settings)
-  }
 
   // Handle Feature Toggles
   const handleToggle = (key: BooleanSettingKey) => {
@@ -309,8 +286,8 @@ function SettingsApp() {
     return (
       <div
         className={clsx(
-          'h-screen w-screen flex items-center justify-center select-none rounded-win11-lg',
-          isDark ? 'glass-effect' : 'glass-effect-light',
+          'h-screen w-screen flex items-center justify-center select-none rounded-xl',
+          isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
           isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
         )}
       >
@@ -325,8 +302,8 @@ function SettingsApp() {
   return (
     <div
       className={clsx(
-        'h-screen w-screen overflow-hidden flex flex-col font-sans select-none rounded-win11-lg',
-        isDark ? 'glass-effect' : 'glass-effect-light',
+        'h-screen w-screen overflow-hidden flex flex-col font-sans select-none rounded-xl',
+        isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
     >
@@ -586,87 +563,6 @@ function SettingsApp() {
           </div>
         </section>
 
-        {/* Transparency Section */}
-        <section
-          className={clsx(
-            'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
-          )}
-        >
-          <div className="p-6 border-b border-inherit">
-            <h2 className="text-base font-semibold mb-1">Window Transparency</h2>
-            <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
-              Control the backdrop opacity intensity
-            </p>
-          </div>
-
-          <div className="p-6 space-y-8">
-            {renderingEnv.transparency_disabled && (
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
-                {renderingEnv.reason}
-              </div>
-            )}
-
-            {/* Dark Mode Slider */}
-            <div className={clsx('space-y-4', renderingEnv.transparency_disabled && 'opacity-50 pointer-events-none')}>
-              <div className="flex justify-between items-center">
-                <label htmlFor="dark-opacity" className="text-sm font-medium">
-                  Dark Mode Opacity
-                </label>
-                <div
-                  className={clsx(
-                    'px-2 py-1 rounded text-xs font-mono font-medium',
-                    isDark ? 'bg-black/20' : 'bg-gray-100'
-                  )}
-                >
-                  {Math.round(settings.dark_background_opacity * 100)}%
-                </div>
-              </div>
-              <input
-                id="dark-opacity"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={settings.dark_background_opacity}
-                onChange={(e) => handleDarkOpacityChange(Number.parseFloat(e.target.value))}
-                onMouseUp={commitOpacityChange}
-                onTouchEnd={commitOpacityChange}
-                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-win11-bg-accent"
-              />
-            </div>
-
-            {/* Light Mode Slider */}
-            <div className={clsx('space-y-4', renderingEnv.transparency_disabled && 'opacity-50 pointer-events-none')}>
-              <div className="flex justify-between items-center">
-                <label htmlFor="light-opacity" className="text-sm font-medium">
-                  Light Mode Opacity
-                </label>
-                <div
-                  className={clsx(
-                    'px-2 py-1 rounded text-xs font-mono font-medium',
-                    isDark ? 'bg-black/20' : 'bg-gray-100'
-                  )}
-                >
-                  {Math.round(settings.light_background_opacity * 100)}%
-                </div>
-              </div>
-              <input
-                id="light-opacity"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={settings.light_background_opacity}
-                onChange={(e) => handleLightOpacityChange(Number.parseFloat(e.target.value))}
-                onMouseUp={commitOpacityChange}
-                onTouchEnd={commitOpacityChange}
-                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-win11-bg-accent"
-              />
-            </div>
-          </div>
-        </section>
-
         {/* UI Scale Section */}
         <section
           className={clsx(
@@ -707,8 +603,8 @@ function SettingsApp() {
                   const value = Number.parseFloat(e.target.value)
                   setSettings((prev) => ({ ...prev, ui_scale: value }))
                 }}
-                onMouseUp={commitOpacityChange}
-                onTouchEnd={commitOpacityChange}
+                onMouseUp={() => saveSettings(settings)}
+                onTouchEnd={() => saveSettings(settings)}
                 className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-win11-bg-accent"
               />
               <p className={clsx('text-xs', isDark ? 'text-gray-500' : 'text-gray-400')}>
