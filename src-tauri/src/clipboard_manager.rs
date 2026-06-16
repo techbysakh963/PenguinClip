@@ -367,6 +367,12 @@ impl ClipboardManager {
                 ClipboardContent::Image { .. } => None,
             };
         }
+
+        // Sweep blob files that survived but are no longer referenced.
+        let pruned = self.prune_orphan_blobs();
+        if pruned > 0 {
+            debug!("pruned {} orphan image blob(s) on load", pruned);
+        }
     }
 
     /// Attempts to salvage items from a file that failed to parse as a whole.
@@ -527,6 +533,11 @@ impl ClipboardManager {
             return None;
         }
 
+        // If this exact image already exists deeper in history, drop the old
+        // entry so we re-add it at the top instead of keeping a duplicate. The
+        // blob is content-addressed, so the shared file stays referenced.
+        self.remove_duplicate_image_from_history(hash);
+
         let width = image_data.width as u32;
         let height = image_data.height as u32;
 
@@ -644,6 +655,32 @@ impl ClipboardManager {
         }
     }
 
+    /// Removes blob files that no history item references — leftovers from a
+    /// crash between writing a blob and saving history, or from older versions.
+    /// Bounds blob-store growth. Returns the number of files removed.
+    fn prune_orphan_blobs(&self) -> usize {
+        use std::collections::HashSet;
+
+        let referenced: HashSet<&str> =
+            self.history.iter().filter_map(|i| i.image_blob()).collect();
+
+        let mut removed = 0;
+        if let Ok(entries) = fs::read_dir(self.blobs_dir()) {
+            for entry in entries.flatten() {
+                let file_name = entry.file_name();
+                let name = file_name.to_string_lossy();
+                // Only touch finished blobs; never in-flight ".tmp" scratch files.
+                if name.ends_with(".png")
+                    && !referenced.contains(name.as_ref())
+                    && fs::remove_file(entry.path()).is_ok()
+                {
+                    removed += 1;
+                }
+            }
+        }
+        removed
+    }
+
     /// Extracts any legacy inline-base64 images into the blob store, replacing
     /// the inline data with a thumbnail. Returns true if anything changed.
     fn migrate_legacy_images(&mut self) -> bool {
@@ -755,6 +792,16 @@ impl ClipboardManager {
                 _ => false,
             }
         }) {
+            self.history.remove(pos);
+        }
+    }
+
+    fn remove_duplicate_image_from_history(&mut self, hash: u64) {
+        if let Some(pos) = self
+            .history
+            .iter()
+            .position(|item| !item.pinned && item.extract_image_hash() == Some(hash))
+        {
             self.history.remove(pos);
         }
     }
@@ -1188,6 +1235,75 @@ mod tests {
             }
             _ => panic!("expected image"),
         }
+    }
+
+    // --- Storage hygiene ---
+
+    #[test]
+    fn test_recopying_image_moves_to_top_without_duplicating() {
+        let path = temp_history_path("img_dedup");
+        let mut manager = ClipboardManager::new(path, 50);
+
+        manager
+            .add_image(solid_image(10, 10, [1, 0, 0, 255]), 0xA)
+            .unwrap();
+        manager
+            .add_image(solid_image(10, 10, [0, 1, 0, 255]), 0xB)
+            .unwrap();
+
+        // Re-copy the older image (now not on top).
+        let re = manager.add_image(solid_image(10, 10, [1, 0, 0, 255]), 0xA);
+        assert!(re.is_some(), "re-copying a non-top image should re-add it");
+
+        let history = manager.get_history();
+        assert_eq!(
+            history.len(),
+            2,
+            "no duplicate image entry should be created"
+        );
+        assert_eq!(
+            history[0].extract_image_hash(),
+            Some(0xA),
+            "re-copied image moves to the top"
+        );
+        assert_eq!(history[1].extract_image_hash(), Some(0xB));
+    }
+
+    #[test]
+    fn test_orphan_blobs_are_pruned_on_load() {
+        let path = temp_history_path("orphan");
+        let blobs = blobs_dir_of(&path);
+
+        {
+            let mut manager = ClipboardManager::new(path.clone(), 50);
+            manager
+                .add_image(solid_image(10, 10, [2, 0, 0, 255]), 0xC)
+                .unwrap();
+        }
+
+        // Plant a stray blob that no history item references.
+        fs::write(blobs.join("deadbeefdeadbeef.png"), b"orphan").unwrap();
+        assert_eq!(fs::read_dir(&blobs).unwrap().count(), 2);
+
+        // Reloading should sweep the orphan but keep the referenced blob.
+        let manager = ClipboardManager::new(path, 50);
+        assert_eq!(manager.get_history().len(), 1);
+
+        let remaining: Vec<String> = fs::read_dir(&blobs)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(
+            remaining.len(),
+            1,
+            "orphan blob should be pruned, found {:?}",
+            remaining
+        );
+        assert!(
+            !remaining.iter().any(|n| n.contains("deadbeef")),
+            "the orphan specifically should be gone"
+        );
     }
 
     // --- Corruption recovery ---
