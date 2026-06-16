@@ -4,6 +4,7 @@
 pub mod autostart_manager;
 pub mod clipboard_manager;
 pub mod config_manager;
+pub mod diagnostics;
 pub mod emoji_manager;
 pub mod focus_manager;
 pub mod gif_manager;

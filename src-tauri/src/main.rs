@@ -40,6 +40,8 @@ pub struct AppState {
     emoji_manager: Arc<Mutex<EmojiManager>>,
     config_manager: Arc<Mutex<ConfigManager>>,
     is_mouse_inside: Arc<AtomicBool>,
+    /// App data directory (used for diagnostics/log paths).
+    data_dir: std::path::PathBuf,
 }
 
 // --- Commands ---
@@ -63,6 +65,19 @@ fn get_history_load_status(state: State<AppState>) -> Option<String> {
         .lock()
         .load_status()
         .map(|s| s.to_string())
+}
+
+/// Returns a redaction-safe diagnostics report (environment + recent log tail).
+/// Never includes clipboard content.
+#[tauri::command]
+fn get_diagnostics_report(state: State<AppState>) -> String {
+    penguinclip_lib::diagnostics::gather_report(&state.data_dir)
+}
+
+/// Writes the diagnostics report to a timestamped file and returns its path.
+#[tauri::command]
+fn export_diagnostics(state: State<AppState>) -> Result<String, String> {
+    penguinclip_lib::diagnostics::export_report(&state.data_dir).map(|p| p.display().to_string())
 }
 
 #[tauri::command]
@@ -787,6 +802,16 @@ fn main() {
         eprintln!("Failed to create base directory: {}", e);
     }
 
+    // Initialize structured logging and crash capture as early as possible so
+    // the rest of startup is recorded.
+    use penguinclip_lib::diagnostics;
+    if let Err(e) = diagnostics::init(&base_dir, diagnostics::default_level()) {
+        eprintln!("Failed to initialize logging: {}", e);
+    }
+    diagnostics::install_panic_hook();
+    diagnostics::log_startup(&diagnostics::collect_startup_info(&base_dir));
+
+    let data_dir = base_dir.clone();
     let history_path = base_dir.join("history.json");
 
     // Load user settings to get max_history_size
@@ -828,6 +853,7 @@ fn main() {
             emoji_manager: emoji_manager.clone(),
             config_manager: config_manager.clone(),
             is_mouse_inside: is_mouse_inside.clone(),
+            data_dir,
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
@@ -1045,6 +1071,8 @@ fn main() {
             get_history,
             clear_history,
             get_history_load_status,
+            get_diagnostics_report,
+            export_diagnostics,
             delete_item,
             toggle_pin,
             toggle_favorite,
