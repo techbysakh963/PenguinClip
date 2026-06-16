@@ -245,6 +245,9 @@ pub struct ClipboardManager {
     persistence_path: PathBuf,
     /// Maximum number of history items to keep
     max_history_size: usize,
+    /// Actionable message describing a problem loading history (e.g. corruption
+    /// recovery). `None` after a clean load. Surfaced to the user on startup.
+    load_status: Option<String>,
 }
 
 impl ClipboardManager {
@@ -266,9 +269,16 @@ impl ClipboardManager {
             last_added_text_hash: None,
             persistence_path,
             max_history_size: max_size,
+            load_status: None,
         };
         manager.load_history();
         manager
+    }
+
+    /// Returns an actionable message if the last load had a problem (e.g. the
+    /// history file was corrupted and recovered), otherwise `None`.
+    pub fn load_status(&self) -> Option<&str> {
+        self.load_status.as_deref()
     }
 
     /// Updates the maximum history size and enforces the new limit
@@ -305,58 +315,137 @@ impl ClipboardManager {
             return;
         }
 
-        match fs::read_to_string(&self.persistence_path) {
-            Ok(content) => {
-                match serde_json::from_str::<Vec<ClipboardItem>>(&content) {
-                    Ok(items) => {
-                        // Reorder items so pinned come first while preserving order within each group
-                        let mut pinned_items = Vec::new();
-                        let mut unpinned_items = Vec::new();
-
-                        for item in items {
-                            if item.pinned {
-                                pinned_items.push(item);
-                            } else {
-                                unpinned_items.push(item);
-                            }
-                        }
-
-                        pinned_items.extend(unpinned_items);
-                        self.history = pinned_items;
-                        // Migrate any legacy inline-base64 images into the blob
-                        // store so memory/IPC stay small for old histories.
-                        let images_migrated = self.migrate_legacy_images();
-                        // Ensure loaded history respects configured limit immediately
-                        let history_trimmed = self.enforce_history_limit();
-                        // Persist if anything changed so disk stays in sync.
-                        if history_trimmed || images_migrated {
-                            self.save_history();
-                        }
-                        // Initialize last_added_text_hash from the most recent item (even if pinned)
-                        // This prevents duplication on startup if the clipboard content matches the top item
-                        if let Some(first) = self.history.first() {
-                            match &first.content {
-                                ClipboardContent::Text(text) => {
-                                    self.last_added_text_hash = Some(calculate_hash(text));
-                                }
-                                ClipboardContent::RichText { plain, .. } => {
-                                    self.last_added_text_hash = Some(calculate_hash(plain));
-                                }
-                                ClipboardContent::Image { .. } => {
-                                    if let Some(_hash) = first.extract_image_hash() {
-                                        // We don't have a separate last_added_image_hash,
-                                        // but we can at least avoid text hash collision
-                                        self.last_added_text_hash = None;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Err(e) => eprintln!("Failed to parse history: {}", e),
-                }
+        let content = match fs::read_to_string(&self.persistence_path) {
+            Ok(content) => content,
+            Err(e) => {
+                self.set_load_status(format!(
+                    "Could not read the clipboard history file ({}). Starting with an empty history.",
+                    e
+                ));
+                return;
             }
-            Err(e) => eprintln!("Failed to read history file: {}", e),
+        };
+
+        let items = match serde_json::from_str::<Vec<ClipboardItem>>(&content) {
+            Ok(items) => items,
+            Err(parse_err) => match self.recover_items(&content, &parse_err) {
+                // Recovered some items from a partially-corrupt file.
+                Some(items) => items,
+                // Unrecoverable: recover_items has set the status and backed up.
+                None => return,
+            },
+        };
+
+        self.install_loaded_items(items);
+    }
+
+    /// Installs a freshly loaded item set: orders pinned first, migrates legacy
+    /// images, enforces the size limit, and seeds duplicate-detection state.
+    fn install_loaded_items(&mut self, items: Vec<ClipboardItem>) {
+        // Pinned items first, preserving relative order within each group.
+        let (mut pinned, unpinned): (Vec<_>, Vec<_>) =
+            items.into_iter().partition(|item| item.pinned);
+        pinned.extend(unpinned);
+        self.history = pinned;
+
+        // Migrate any legacy inline-base64 images into the blob store so
+        // memory/IPC stay small for old histories.
+        let images_migrated = self.migrate_legacy_images();
+        // Ensure loaded history respects the configured limit immediately.
+        let history_trimmed = self.enforce_history_limit();
+        // Persist if anything changed so disk stays in sync.
+        if history_trimmed || images_migrated {
+            self.save_history();
         }
+
+        // Seed last_added_text_hash from the most recent item so we don't
+        // duplicate it if the clipboard already holds the same content.
+        if let Some(first) = self.history.first() {
+            self.last_added_text_hash = match &first.content {
+                ClipboardContent::Text(text) => Some(calculate_hash(text)),
+                ClipboardContent::RichText { plain, .. } => Some(calculate_hash(plain)),
+                ClipboardContent::Image { .. } => None,
+            };
+        }
+    }
+
+    /// Attempts to salvage items from a file that failed to parse as a whole.
+    ///
+    /// If the file is still a JSON array, individually-valid items are kept and
+    /// the unreadable ones skipped. Otherwise the file is treated as corrupt.
+    /// In both cases the original file is backed up and an actionable status is
+    /// recorded. Returns `Some(items)` when at least one item was recovered.
+    fn recover_items(
+        &mut self,
+        content: &str,
+        parse_err: &serde_json::Error,
+    ) -> Option<Vec<ClipboardItem>> {
+        if let Ok(values) = serde_json::from_str::<Vec<serde_json::Value>>(content) {
+            let total = values.len();
+            let recovered: Vec<ClipboardItem> = values
+                .into_iter()
+                .filter_map(|value| serde_json::from_value::<ClipboardItem>(value).ok())
+                .collect();
+            let kept = recovered.len();
+
+            if kept > 0 && kept < total {
+                let dropped = total - kept;
+                let backup_note = self.backup_corrupt_file();
+                self.set_load_status(format!(
+                    "Recovered {} of {} clipboard items; {} unreadable {} skipped.{}",
+                    kept,
+                    total,
+                    dropped,
+                    if dropped == 1 {
+                        "entry was"
+                    } else {
+                        "entries were"
+                    },
+                    backup_note,
+                ));
+                return Some(recovered);
+            }
+            // kept == total can't happen (the strict parse already failed); a
+            // zero-recovery array falls through to the corruption path below.
+        }
+
+        let backup_note = self.backup_corrupt_file();
+        self.set_load_status(format!(
+            "The clipboard history file was corrupted and could not be read ({}). Starting with an empty history.{}",
+            parse_err, backup_note
+        ));
+        None
+    }
+
+    /// Moves the current (corrupt) history file aside to a timestamped backup so
+    /// the user's data is never silently destroyed. Returns a sentence to append
+    /// to the status message, or an empty string if no backup could be made.
+    fn backup_corrupt_file(&self) -> String {
+        let Some(parent) = self.persistence_path.parent() else {
+            return String::new();
+        };
+        let backup = parent.join(format!(
+            "history.corrupt-{}.json",
+            Utc::now().format("%Y%m%d-%H%M%S")
+        ));
+        match fs::rename(&self.persistence_path, &backup) {
+            Ok(_) => format!(
+                " A backup of the original file was saved to {}.",
+                backup.display()
+            ),
+            Err(e) => {
+                eprintln!(
+                    "[ClipboardManager] Failed to back up corrupt history file: {}",
+                    e
+                );
+                String::new()
+            }
+        }
+    }
+
+    fn set_load_status(&mut self, message: String) {
+        eprintln!("[ClipboardManager] {}", message);
+        self.load_status = Some(message);
     }
 
     pub fn save_history(&self) {
@@ -1102,6 +1191,86 @@ mod tests {
             }
             _ => panic!("expected image"),
         }
+    }
+
+    // --- Corruption recovery ---
+
+    #[test]
+    fn test_corrupt_history_is_backed_up_and_recovers_empty() {
+        let path = temp_history_path("corrupt");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, b"{ this is not valid json at all ]").unwrap();
+
+        let manager = ClipboardManager::new(path.clone(), 50);
+        assert!(
+            manager.get_history().is_empty(),
+            "a corrupt file should recover with an empty history, not crash"
+        );
+
+        let backups: Vec<String> = fs::read_dir(path.parent().unwrap())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|name| name.contains(".corrupt-"))
+            .collect();
+        assert!(
+            !backups.is_empty(),
+            "the corrupt file should be preserved as a backup, got {:?}",
+            backups
+        );
+
+        let status = manager
+            .load_status()
+            .expect("a corrupt load should report an actionable status");
+        assert!(
+            status.to_lowercase().contains("corrupt"),
+            "status should explain the corruption, got: {}",
+            status
+        );
+    }
+
+    #[test]
+    fn test_valid_history_reports_no_load_error() {
+        let path = temp_history_path("valid_status");
+        {
+            let mut m = ClipboardManager::new(path.clone(), 50);
+            m.add_text("hi".to_string(), None);
+        }
+
+        let reloaded = ClipboardManager::new(path, 50);
+        assert!(reloaded.load_status().is_none(), "clean load => no status");
+        assert_eq!(reloaded.get_history().len(), 1);
+    }
+
+    #[test]
+    fn test_partial_corruption_keeps_valid_items() {
+        let path = temp_history_path("partial");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+
+        // A valid text item followed by a structurally broken entry.
+        let json = r#"[
+          {"id":"a","content":{"type":"Text","data":"keep me"},"timestamp":"2024-01-01T00:00:00Z","pinned":false,"favorited":false,"preview":"keep me"},
+          {"id":"b","content":{"type":"Nonsense"},"timestamp":"not-a-date","preview":123}
+        ]"#;
+        fs::write(&path, json).unwrap();
+
+        let manager = ClipboardManager::new(path, 50);
+        let history = manager.get_history();
+        assert_eq!(history.len(), 1, "the valid item should survive");
+        assert!(
+            matches!(&history[0].content, ClipboardContent::Text(t) if t == "keep me"),
+            "the surviving item should be the valid one"
+        );
+
+        let status = manager
+            .load_status()
+            .expect("partial recovery should report a status");
+        let lowered = status.to_lowercase();
+        assert!(
+            lowered.contains("recover") || lowered.contains("skip"),
+            "status should explain partial recovery, got: {}",
+            status
+        );
     }
 
     #[test]
