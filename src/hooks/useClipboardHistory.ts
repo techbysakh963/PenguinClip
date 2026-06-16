@@ -25,6 +25,9 @@ export function useClipboardHistory() {
     }
   }, [])
 
+  // Dismiss the current error (e.g. after the user closes its banner)
+  const clearError = useCallback(() => setError(null), [])
+
   // Clear all history
   const clearHistory = useCallback(async () => {
     try {
@@ -186,6 +189,7 @@ export function useClipboardHistory() {
     history,
     isLoading,
     error,
+    clearError,
     fetchHistory,
     clearHistory,
     deleteItem,

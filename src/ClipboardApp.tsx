@@ -108,8 +108,17 @@ function ClipboardApp() {
   const secondaryOpacity = calculateSecondaryOpacity(opacity)
   const tertiaryOpacity = calculateTertiaryOpacity(opacity)
 
-  const { history, isLoading, clearHistory, deleteItem, togglePin, toggleFavorite, pasteItem } =
-    useClipboardHistory()
+  const {
+    history,
+    isLoading,
+    error,
+    clearError,
+    clearHistory,
+    deleteItem,
+    togglePin,
+    toggleFavorite,
+    pasteItem,
+  } = useClipboardHistory()
 
   // Refs for focus management
   const tabBarRef = useRef<TabBarRef>(null)
@@ -342,6 +351,9 @@ function ClipboardApp() {
           onDismiss={() => setLoadStatus(null)}
         />
       )}
+
+      {/* Runtime errors (paste/delete/pin failures) — otherwise silent */}
+      {error && <NotificationBanner message={error} isDark={isDark} onDismiss={clearError} />}
 
       {/* Scrollable content area */}
       <div
