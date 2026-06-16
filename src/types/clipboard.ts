@@ -16,11 +16,14 @@ export interface RichTextContent {
   }
 }
 
-/** Image content */
+/** Image content. `base64` is a downscaled thumbnail for display; the
+ * full-resolution PNG lives on disk in the backend blob store, referenced by
+ * `blob` (absent only for legacy items not yet migrated). */
 export interface ImageContent {
   type: 'Image'
   data: {
     base64: string
+    blob?: string
     width: number
     height: number
   }

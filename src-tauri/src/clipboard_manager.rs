@@ -21,6 +21,15 @@ const PREVIEW_TEXT_MAX_LEN: usize = 100;
 const GIF_CACHE_MARKER: &str = "penguinclip/gifs/";
 const FILE_URI_PREFIX: &str = "file://";
 
+/// Largest edge (px) of the thumbnail kept inline in history.json for display.
+/// Full-resolution pixels live in the blob store; only this small preview is
+/// ever resident in memory or serialized with the history.
+const THUMBNAIL_MAX_DIM: u32 = 256;
+
+/// Directory name (under the history file's parent) holding full-resolution
+/// image blobs, content-addressed by hash.
+const BLOB_DIR_NAME: &str = "blobs";
+
 // --- Helper Functions ---
 
 // Simple FNV-1a implementation for stable hashing across restarts
@@ -70,9 +79,17 @@ pub enum ClipboardContent {
     Text(String),
     /// Rich text with HTML formatting (plain text + optional HTML)
     RichText { plain: String, html: String },
-    /// Image as base64 encoded PNG
+    /// Image content. `base64` is a downscaled PNG thumbnail used for display;
+    /// the full-resolution PNG is stored on disk and referenced by `blob`.
     Image {
+        /// Base64 PNG shown in the UI. Post-migration this is a thumbnail
+        /// (<= THUMBNAIL_MAX_DIM); legacy items hold the full image here until
+        /// migrated on load.
         base64: String,
+        /// Filename of the full-resolution PNG in the blob store
+        /// (e.g. "a1b2c3d4e5f6a7b8.png"). `None` for legacy, un-migrated items.
+        #[serde(default)]
+        blob: Option<String>,
         width: u32,
         height: u32,
     },
@@ -123,7 +140,13 @@ impl ClipboardItem {
         Self::create(ClipboardContent::RichText { plain, html }, preview)
     }
 
-    pub fn new_image(base64: String, width: u32, height: u32, hash: u64) -> Self {
+    pub fn new_image(
+        base64: String,
+        blob: Option<String>,
+        width: u32,
+        height: u32,
+        hash: u64,
+    ) -> Self {
         // We store the hash in the preview string to persist it across sessions
         // without breaking the serialization schema of existing data.
         let preview = format!("Image ({}x{}) #{}", width, height, hash);
@@ -131,11 +154,22 @@ impl ClipboardItem {
         Self::create(
             ClipboardContent::Image {
                 base64,
+                blob,
                 width,
                 height,
             },
             preview,
         )
+    }
+
+    /// Returns the blob filename backing this item, if it is a blob-backed image.
+    pub fn image_blob(&self) -> Option<&str> {
+        match &self.content {
+            ClipboardContent::Image {
+                blob: Some(name), ..
+            } => Some(name.as_str()),
+            _ => None,
+        }
     }
 
     fn create(content: ClipboardContent, preview: String) -> Self {
@@ -254,11 +288,13 @@ impl ClipboardManager {
 
                         pinned_items.extend(unpinned_items);
                         self.history = pinned_items;
+                        // Migrate any legacy inline-base64 images into the blob
+                        // store so memory/IPC stay small for old histories.
+                        let images_migrated = self.migrate_legacy_images();
                         // Ensure loaded history respects configured limit immediately
                         let history_trimmed = self.enforce_history_limit();
-                        // If the loaded history was trimmed, persist it so disk stays in sync.
-                        // Avoid saving when nothing changed.
-                        if history_trimmed {
+                        // Persist if anything changed so disk stays in sync.
+                        if history_trimmed || images_migrated {
                             self.save_history();
                         }
                         // Initialize last_added_text_hash from the most recent item (even if pinned)
@@ -404,17 +440,161 @@ impl ClipboardManager {
             return None;
         }
 
-        let base64_image = self.convert_image_to_base64(&image_data)?;
+        let width = image_data.width as u32;
+        let height = image_data.height as u32;
 
-        let item = ClipboardItem::new_image(
-            base64_image,
-            image_data.width as u32,
-            image_data.height as u32,
-            hash,
-        );
+        // Persist the full-resolution PNG to the content-addressed blob store.
+        let full_png = self.encode_png(&image_data)?;
+        let blob_name = format!("{:016x}.png", hash);
+        if let Err(e) = self.write_blob(&blob_name, &full_png) {
+            eprintln!("[ClipboardManager] Failed to write image blob: {}", e);
+            return None;
+        }
 
+        // Keep only a small thumbnail inline; fall back to the full image if
+        // thumbnailing somehow fails so the UI still shows something.
+        let thumbnail = Self::thumbnail_from_png(&full_png).unwrap_or_else(|| BASE64.encode(&full_png));
+
+        let item = ClipboardItem::new_image(thumbnail, Some(blob_name), width, height, hash);
         self.insert_item(item.clone());
         Some(item)
+    }
+
+    // --- Blob store helpers ---
+
+    /// Absolute path to the image blob directory (sibling of history.json).
+    fn blobs_dir(&self) -> PathBuf {
+        self.persistence_path
+            .parent()
+            .map(|p| p.join(BLOB_DIR_NAME))
+            .unwrap_or_else(|| PathBuf::from(BLOB_DIR_NAME))
+    }
+
+    /// Atomically writes a blob. Content-addressed names mean an existing file
+    /// already holds identical bytes, so we skip the rewrite.
+    fn write_blob(&self, name: &str, bytes: &[u8]) -> std::io::Result<()> {
+        Self::write_blob_to(&self.blobs_dir(), name, bytes)
+    }
+
+    fn write_blob_to(dir: &std::path::Path, name: &str, bytes: &[u8]) -> std::io::Result<()> {
+        use std::io::Write;
+
+        fs::create_dir_all(dir)?;
+        let target = dir.join(name);
+        if target.exists() {
+            return Ok(());
+        }
+        let tmp = dir.join(format!("{}.{}.tmp", name, std::process::id()));
+        let mut file = fs::File::create(&tmp)?;
+        file.write_all(bytes)?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&tmp, &target)
+    }
+
+    /// Encodes raw RGBA clipboard image data to a PNG byte buffer.
+    fn encode_png(&self, image_data: &ImageData<'_>) -> Option<Vec<u8>> {
+        let img = DynamicImage::ImageRgba8(image::RgbaImage::from_raw(
+            image_data.width as u32,
+            image_data.height as u32,
+            image_data.bytes.to_vec(),
+        )?);
+        let mut buffer = Cursor::new(Vec::new());
+        img.write_to(&mut buffer, ImageFormat::Png).ok()?;
+        Some(buffer.into_inner())
+    }
+
+    /// Produces a downscaled base64 PNG thumbnail from full PNG bytes,
+    /// preserving aspect ratio. Returns the original (re-encoded) if it is
+    /// already within the thumbnail bound.
+    fn thumbnail_from_png(png_bytes: &[u8]) -> Option<String> {
+        let img = image::load_from_memory(png_bytes).ok()?;
+        let scaled = if img.width() > THUMBNAIL_MAX_DIM || img.height() > THUMBNAIL_MAX_DIM {
+            img.thumbnail(THUMBNAIL_MAX_DIM, THUMBNAIL_MAX_DIM)
+        } else {
+            img
+        };
+        let mut buffer = Cursor::new(Vec::new());
+        scaled.write_to(&mut buffer, ImageFormat::Png).ok()?;
+        Some(BASE64.encode(buffer.get_ref()))
+    }
+
+    /// Reconstructs the full-resolution RGBA pixels for an image item, reading
+    /// from the blob store when available and falling back to inline base64 for
+    /// any legacy item. Returns (width, height, rgba_bytes).
+    pub fn full_image_data(&self, item: &ClipboardItem) -> Result<(u32, u32, Vec<u8>), String> {
+        let ClipboardContent::Image { base64, blob, .. } = &item.content else {
+            return Err("clipboard item is not an image".to_string());
+        };
+
+        let png_bytes = match blob {
+            Some(name) => {
+                let path = self.blobs_dir().join(name);
+                fs::read(&path)
+                    .map_err(|e| format!("Failed to read image blob '{}': {}", name, e))?
+            }
+            None => BASE64
+                .decode(base64)
+                .map_err(|e| format!("Base64 decode failed: {}", e))?,
+        };
+
+        let img =
+            image::load_from_memory(&png_bytes).map_err(|e| format!("Image load failed: {}", e))?;
+        let rgba = img.to_rgba8();
+        Ok((rgba.width(), rgba.height(), rgba.into_raw()))
+    }
+
+    /// Removes a blob file only when no remaining history item references it
+    /// (several items may share one content-addressed blob).
+    fn cleanup_blob(&self, blob_name: &str) {
+        let still_referenced = self
+            .history
+            .iter()
+            .any(|item| item.image_blob() == Some(blob_name));
+        if !still_referenced {
+            let _ = fs::remove_file(self.blobs_dir().join(blob_name));
+        }
+    }
+
+    /// Extracts any legacy inline-base64 images into the blob store, replacing
+    /// the inline data with a thumbnail. Returns true if anything changed.
+    fn migrate_legacy_images(&mut self) -> bool {
+        let blobs_dir = self.blobs_dir();
+        let mut migrated = false;
+        for item in self.history.iter_mut() {
+            if Self::migrate_item_image(item, &blobs_dir) {
+                migrated = true;
+            }
+        }
+        migrated
+    }
+
+    fn migrate_item_image(item: &mut ClipboardItem, blobs_dir: &std::path::Path) -> bool {
+        // The original hash is recorded in the preview ("Image (WxH) #hash");
+        // fall back to a content hash of the bytes if it is missing.
+        let preview_hash = item.extract_image_hash();
+
+        let ClipboardContent::Image { base64, blob, .. } = &mut item.content else {
+            return false;
+        };
+        if blob.is_some() {
+            return false; // already blob-backed
+        }
+        let Ok(full_bytes) = BASE64.decode(base64.as_bytes()) else {
+            return false; // leave unparseable data untouched
+        };
+
+        let name_hash = preview_hash.unwrap_or_else(|| calculate_hash(&full_bytes));
+        let blob_name = format!("{:016x}.png", name_hash);
+        if Self::write_blob_to(blobs_dir, &blob_name, &full_bytes).is_err() {
+            return false; // keep inline data if the blob write failed
+        }
+
+        if let Some(thumb) = Self::thumbnail_from_png(&full_bytes) {
+            *base64 = thumb;
+        }
+        *blob = Some(blob_name);
+        true
     }
 
     // --- State Management Helpers ---
@@ -491,20 +671,6 @@ impl ClipboardManager {
         }
     }
 
-    fn convert_image_to_base64(&self, image_data: &ImageData<'_>) -> Option<String> {
-        let img = DynamicImage::ImageRgba8(
-            image::RgbaImage::from_raw(
-                image_data.width as u32,
-                image_data.height as u32,
-                image_data.bytes.to_vec(),
-            )?, // Returns None if dimensions don't match bytes
-        );
-
-        let mut buffer = Cursor::new(Vec::new());
-        img.write_to(&mut buffer, ImageFormat::Png).ok()?;
-        Some(BASE64.encode(buffer.get_ref()))
-    }
-
     fn insert_item(&mut self, item: ClipboardItem) {
         // Insert after pinned items (first non-pinned slot)
         // If all items are pinned, insert at the end to preserve pinned ordering
@@ -523,14 +689,21 @@ impl ClipboardManager {
     /// Enforce the configured history size. Returns true if trimming occurred.
     fn enforce_history_limit(&mut self) -> bool {
         let before = self.history.len();
+        let mut removed_blobs = Vec::new();
         while self.history.len() > self.max_history_size {
             // Remove from the end, skipping pinned and favorited items
             if let Some(pos) = self.history.iter().rposition(|i| !i.pinned && !i.favorited) {
-                self.history.remove(pos);
+                let removed = self.history.remove(pos);
+                if let Some(blob) = removed.image_blob() {
+                    removed_blobs.push(blob.to_string());
+                }
             } else {
                 // All items are pinned or favorited. Stop removing.
                 break;
             }
+        }
+        for blob in &removed_blobs {
+            self.cleanup_blob(blob);
         }
         self.history.len() != before
     }
@@ -546,12 +719,33 @@ impl ClipboardManager {
     }
 
     pub fn clear(&mut self) {
+        let removed_blobs: Vec<String> = self
+            .history
+            .iter()
+            .filter(|item| !(item.pinned || item.favorited))
+            .filter_map(|item| item.image_blob().map(String::from))
+            .collect();
+
         self.history.retain(|item| item.pinned || item.favorited);
+
+        for blob in &removed_blobs {
+            self.cleanup_blob(blob);
+        }
         self.save_history();
     }
 
     pub fn remove_item(&mut self, id: &str) {
+        let removed_blob = self
+            .history
+            .iter()
+            .find(|item| item.id == id)
+            .and_then(|item| item.image_blob().map(String::from));
+
         self.history.retain(|item| item.id != id);
+
+        if let Some(blob) = removed_blob {
+            self.cleanup_blob(&blob);
+        }
         self.save_history();
     }
 
@@ -614,7 +808,9 @@ impl ClipboardManager {
         }
 
         let now = Utc::now();
+        let interval_seconds = (interval_minutes * 60) as i64;
         let mut changed = false;
+        let mut removed_blobs = Vec::new();
 
         // Use a more robust time comparison
         self.history.retain(|item| {
@@ -623,11 +819,13 @@ impl ClipboardManager {
             }
 
             let age_seconds = now.signed_duration_since(item.timestamp).num_seconds();
-            let interval_seconds = (interval_minutes * 60) as i64;
             let keep = age_seconds < interval_seconds;
 
             if !keep {
                 changed = true;
+                if let Some(blob) = item.image_blob() {
+                    removed_blobs.push(blob.to_string());
+                }
                 println!(
                     "[ClipboardManager] Auto-deleting old item: {} (age: {}s, limit: {}s)",
                     item.id, age_seconds, interval_seconds
@@ -637,6 +835,9 @@ impl ClipboardManager {
         });
 
         if changed {
+            for blob in &removed_blobs {
+                self.cleanup_blob(blob);
+            }
             self.save_history();
         }
 
@@ -688,12 +889,14 @@ impl ClipboardManager {
                     .set_html(html, Some(plain))
                     .map_err(|e| e.to_string())?;
             }
-            ClipboardContent::Image {
-                base64,
-                width,
-                height,
-            } => {
-                self.write_image_to_clipboard(&mut clipboard, base64, *width, *height)?;
+            ClipboardContent::Image { .. } => {
+                let (width, height, rgba) = self.full_image_data(item)?;
+                let image_data = ImageData {
+                    width: width as usize,
+                    height: height as usize,
+                    bytes: rgba.into(),
+                };
+                clipboard.set_image(image_data).map_err(|e| e.to_string())?;
             }
         }
 
@@ -704,29 +907,6 @@ impl ClipboardManager {
         self.move_item_to_top(&item.id);
 
         Ok(())
-    }
-
-    fn write_image_to_clipboard(
-        &self,
-        clipboard: &mut Clipboard,
-        base64_str: &str,
-        width: u32,
-        height: u32,
-    ) -> Result<(), String> {
-        let bytes = BASE64
-            .decode(base64_str)
-            .map_err(|e| format!("Base64 decode failed: {}", e))?;
-        let img =
-            image::load_from_memory(&bytes).map_err(|e| format!("Image load failed: {}", e))?;
-        let rgba = img.to_rgba8();
-
-        let image_data = ImageData {
-            width: width as usize,
-            height: height as usize,
-            bytes: rgba.into_raw().into(),
-        };
-
-        clipboard.set_image(image_data).map_err(|e| e.to_string())
     }
 
     fn simulate_paste_action(&self) -> Result<(), String> {
@@ -795,6 +975,148 @@ mod tests {
             leftovers.is_empty(),
             "expected only history.json, found stray files: {:?}",
             leftovers
+        );
+    }
+
+    // --- Image blob storage helpers ---
+
+    /// Builds an in-memory solid-color RGBA image of the given size.
+    fn solid_image(width: usize, height: usize, rgba: [u8; 4]) -> ImageData<'static> {
+        let mut bytes = Vec::with_capacity(width * height * 4);
+        for _ in 0..(width * height) {
+            bytes.extend_from_slice(&rgba);
+        }
+        ImageData {
+            width,
+            height,
+            bytes: bytes.into(),
+        }
+    }
+
+    /// Decodes a base64 PNG and returns its pixel dimensions.
+    fn png_dims(b64: &str) -> (u32, u32) {
+        let bytes = BASE64.decode(b64).expect("valid base64");
+        let img = image::load_from_memory(&bytes).expect("valid png");
+        (img.width(), img.height())
+    }
+
+    /// Encodes a solid image to a base64 PNG (legacy inline format).
+    fn png_base64(width: usize, height: usize, rgba: [u8; 4]) -> String {
+        let img = solid_image(width, height, rgba);
+        let dynimg = DynamicImage::ImageRgba8(
+            image::RgbaImage::from_raw(width as u32, height as u32, img.bytes.to_vec()).unwrap(),
+        );
+        let mut buffer = Cursor::new(Vec::new());
+        dynimg.write_to(&mut buffer, ImageFormat::Png).unwrap();
+        BASE64.encode(buffer.get_ref())
+    }
+
+    fn blobs_dir_of(path: &std::path::Path) -> PathBuf {
+        path.parent().unwrap().join("blobs")
+    }
+
+    #[test]
+    fn test_add_image_writes_blob_and_keeps_only_thumbnail() {
+        let path = temp_history_path("image_blob");
+        let mut manager = ClipboardManager::new(path.clone(), 50);
+
+        let item = manager
+            .add_image(solid_image(300, 200, [10, 20, 30, 255]), 0xABCDEF)
+            .expect("image should be added");
+
+        // Full-resolution pixels are persisted to the blob store, not history.json.
+        let entries: Vec<_> = fs::read_dir(blobs_dir_of(&path))
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        assert_eq!(entries.len(), 1, "expected exactly one blob file");
+
+        match &item.content {
+            ClipboardContent::Image {
+                blob,
+                base64,
+                width,
+                height,
+            } => {
+                assert!(blob.is_some(), "blob reference must be set");
+                assert_eq!((*width, *height), (300, 200), "original dimensions kept");
+                let (tw, th) = png_dims(base64);
+                assert!(
+                    tw.max(th) <= THUMBNAIL_MAX_DIM,
+                    "stored base64 should be a downscaled thumbnail, got {}x{}",
+                    tw,
+                    th
+                );
+            }
+            other => panic!("expected image content, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_full_image_data_reconstructs_original_resolution() {
+        let path = temp_history_path("image_full");
+        let mut manager = ClipboardManager::new(path, 50);
+
+        let item = manager
+            .add_image(solid_image(300, 200, [9, 9, 9, 255]), 0x1234)
+            .unwrap();
+
+        let (w, h, rgba) = manager
+            .full_image_data(&item)
+            .expect("should reconstruct full image from blob");
+        assert_eq!((w, h), (300, 200));
+        assert_eq!(rgba.len(), 300 * 200 * 4);
+    }
+
+    #[test]
+    fn test_legacy_inline_image_migrates_to_blob_on_load() {
+        let path = temp_history_path("image_migrate");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+
+        let full_b64 = png_base64(300, 200, [5, 6, 7, 255]);
+        let legacy = format!(
+            r#"[{{"id":"legacy-1","content":{{"type":"Image","data":{{"base64":"{}","width":300,"height":200}}}},"timestamp":"2024-01-01T00:00:00Z","pinned":false,"favorited":false,"preview":"Image (300x200) #99"}}]"#,
+            full_b64
+        );
+        fs::write(&path, legacy).unwrap();
+
+        let manager = ClipboardManager::new(path.clone(), 50);
+        let history = manager.get_history();
+        assert_eq!(history.len(), 1);
+
+        assert_eq!(
+            fs::read_dir(blobs_dir_of(&path)).unwrap().count(),
+            1,
+            "legacy image should be extracted to the blob store"
+        );
+        match &history[0].content {
+            ClipboardContent::Image { blob, base64, .. } => {
+                assert!(blob.is_some(), "migrated item must reference a blob");
+                let (tw, th) = png_dims(base64);
+                assert!(
+                    tw.max(th) <= THUMBNAIL_MAX_DIM,
+                    "inline full image should be shrunk to a thumbnail on migration"
+                );
+            }
+            _ => panic!("expected image"),
+        }
+    }
+
+    #[test]
+    fn test_deleting_image_removes_its_blob() {
+        let path = temp_history_path("image_delete");
+        let mut manager = ClipboardManager::new(path.clone(), 50);
+
+        let item = manager
+            .add_image(solid_image(120, 120, [1, 2, 3, 255]), 0x55)
+            .unwrap();
+        assert_eq!(fs::read_dir(blobs_dir_of(&path)).unwrap().count(), 1);
+
+        manager.remove_item(&item.id);
+        assert_eq!(
+            fs::read_dir(blobs_dir_of(&path)).unwrap().count(),
+            0,
+            "blob should be cleaned up when its only referencing item is deleted"
         );
     }
 }
