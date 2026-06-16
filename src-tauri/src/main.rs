@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::{CheckMenuItem, Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, Monitor, PhysicalPosition, PhysicalSize, State, WebviewWindow,
     WindowEvent,
@@ -34,6 +34,11 @@ static STARTED_IN_BACKGROUND: AtomicBool = AtomicBool::new(false);
 /// While false, background mode will still hide the window on focus
 /// After the first user toggle, this is set to true to allow normal show/hide behavior
 static INITIAL_SHOW_ALLOWED: AtomicBool = AtomicBool::new(false);
+
+/// When true, the watcher stops recording new clipboard items (privacy pause).
+/// Runtime-only: resets to recording on restart so history can't silently stop
+/// for a forgotten pause.
+static RECORDING_PAUSED: AtomicBool = AtomicBool::new(false);
 
 /// Application state shared across all handlers
 pub struct AppState {
@@ -112,6 +117,12 @@ fn get_recent_emojis(state: State<AppState>) -> Vec<EmojiUsage> {
 #[tauri::command]
 fn set_mouse_state(state: State<AppState>, inside: bool) {
     state.is_mouse_inside.store(inside, Ordering::Relaxed);
+}
+
+/// Whether clipboard recording is currently paused (toggled from the tray).
+#[tauri::command]
+fn is_recording_paused() -> bool {
+    RECORDING_PAUSED.load(Ordering::SeqCst)
 }
 
 // --- User Settings Commands ---
@@ -699,6 +710,11 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
                 }
             }
 
+            // Privacy pause: keep cleanup running (above) but record nothing.
+            if RECORDING_PAUSED.load(Ordering::Relaxed) {
+                continue;
+            }
+
             // Read the OS clipboard WITHOUT holding the manager lock, so paste
             // and UI commands are never blocked behind a slow clipboard read.
             // Text
@@ -888,9 +904,19 @@ fn main() {
             }
 
             let show = MenuItem::with_id(app, "show", "Show Clipboard", true, None::<&str>)?;
+            let pause = CheckMenuItem::with_id(
+                app,
+                "pause",
+                "Pause recording",
+                true,
+                RECORDING_PAUSED.load(Ordering::SeqCst),
+                None::<&str>,
+            )?;
             let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show, &settings, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &pause, &settings, &quit])?;
+            // Cloned so the menu-event handler can reflect the new checked state.
+            let pause_item = pause.clone();
 
 
 
@@ -917,6 +943,16 @@ fn main() {
                     "quit" => app.exit(0),
                     "show" => WindowController::toggle(app),
                     "settings" => SettingsController::show(app),
+                    "pause" => {
+                        let paused = !RECORDING_PAUSED.load(Ordering::SeqCst);
+                        RECORDING_PAUSED.store(paused, Ordering::SeqCst);
+                        let _ = pause_item.set_checked(paused);
+                        log::info!(
+                            "clipboard recording {}",
+                            if paused { "paused" } else { "resumed" }
+                        );
+                        let _ = app.emit("recording-paused-changed", paused);
+                    }
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -1081,6 +1117,7 @@ fn main() {
             paste_item,
             paste_text,
             get_recent_emojis,
+            is_recording_paused,
             paste_gif_from_url,
             finish_paste,
             finish_setup,
