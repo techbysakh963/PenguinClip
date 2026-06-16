@@ -57,6 +57,10 @@ export function ImageContent({
       <img
         src={`data:image/png;base64,${base64}`}
         alt="Clipboard image"
+        loading="lazy"
+        decoding="async"
+        width={width}
+        height={height}
         className="max-w-full max-h-24 rounded object-contain bg-black/10"
       />
       <span className="absolute bottom-1 right-1 text-xs px-1.5 py-0.5 rounded bg-black/60 text-white">

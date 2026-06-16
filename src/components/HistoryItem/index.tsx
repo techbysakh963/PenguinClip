@@ -138,6 +138,11 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
         'group relative rounded-win11 cursor-pointer',
         effectiveCompact ? 'p-2' : 'p-3',
         'transition-all duration-150 ease-out',
+        // Skip layout/paint for off-screen rows so long histories stay cheap to
+        // render, while keeping every row mounted (so keyboard focus and
+        // scrollIntoView still work). contain-intrinsic-size reserves a
+        // placeholder height until a row is first painted.
+        '[content-visibility:auto] [contain-intrinsic-size:auto_64px]',
         // Animation delay based on index
         'animate-in',
         // Blue ring has priority
@@ -164,7 +169,9 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
         }
       }}
       style={{
-        animationDelay: `${index * 30}ms`,
+        // Cap the stagger so deep items in a large history don't wait seconds
+        // to fade in (index * 30ms would be 30s at row 1000).
+        animationDelay: `${Math.min(index, 12) * 30}ms`,
         ...getCardBackgroundStyle(isDark, secondaryOpacity),
       }}
     >
