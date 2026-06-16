@@ -29,6 +29,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   max_history_size: 50,
   auto_delete_interval: 0,
   auto_delete_unit: 'hours',
+  excluded_patterns: [],
   custom_kaomojis: [],
   ui_scale: 1,
   tenor_api_key: '',

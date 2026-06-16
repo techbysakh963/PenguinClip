@@ -80,6 +80,8 @@ export interface UserSettings {
   max_history_size: number
   auto_delete_interval: number
   auto_delete_unit: 'minutes' | 'hours' | 'days' | 'weeks'
+  /** Regex patterns; clipboard text matching any is never recorded (privacy). */
+  excluded_patterns: string[]
   custom_kaomojis: CustomKaomoji[]
   ui_scale: number
   tenor_api_key: string

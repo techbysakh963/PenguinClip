@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   ui_scale: 1,
   auto_delete_interval: 0,
   auto_delete_unit: 'hours',
+  excluded_patterns: [],
   tenor_api_key: '',
 }
 
@@ -142,6 +143,9 @@ function SettingsApp() {
   // Custom Kaomoji State
   const [newKaomoji, setNewKaomoji] = useState('')
 
+  // Privacy: sensitive-content exclusion patterns
+  const [newPattern, setNewPattern] = useState('')
+
   // Diagnostics export state
   const [diagnosticsMessage, setDiagnosticsMessage] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -242,6 +246,23 @@ function SettingsApp() {
   // Handle theme mode change
   const handleThemeModeChange = (mode: ThemeMode) => {
     updateSettings({ theme_mode: mode })
+  }
+
+  const addExcludedPattern = () => {
+    const pattern = newPattern.trim()
+    if (!pattern) return
+    if (settings.excluded_patterns.includes(pattern)) {
+      setNewPattern('')
+      return
+    }
+    updateSettings({ excluded_patterns: [...settings.excluded_patterns, pattern] })
+    setNewPattern('')
+  }
+
+  const removeExcludedPattern = (pattern: string) => {
+    updateSettings({
+      excluded_patterns: settings.excluded_patterns.filter((p) => p !== pattern),
+    })
   }
 
 
@@ -832,6 +853,84 @@ function SettingsApp() {
                 When enabled, search queries are sent to Google's Tenor API. Your IP and search terms are visible to Google.
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* Privacy Section */}
+        <section
+          className={clsx(
+            'rounded-xl border shadow-sm overflow-hidden',
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+          )}
+        >
+          <div className="p-6 border-b border-inherit">
+            <h2 className="text-base font-semibold mb-1">Privacy</h2>
+            <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+              Exclusion rules: clipboard text matching any of these patterns is
+              never recorded. Each entry is a regular expression (e.g.{' '}
+              <code>\d{'{'}16{'}'}</code> for card numbers, or <code>(?i)password</code>).
+            </p>
+          </div>
+
+          <div className="p-6 space-y-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPattern}
+                onChange={(e) => setNewPattern(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addExcludedPattern()
+                  }
+                }}
+                placeholder="Add a regex pattern to exclude…"
+                className={clsx(
+                  'flex-1 px-4 py-2.5 rounded-lg border outline-none transition-all font-mono text-sm',
+                  isDark
+                    ? 'bg-white/5 border-white/10 focus:border-win11-bg-accent text-white placeholder-gray-600'
+                    : 'bg-gray-50 border-gray-200 focus:border-win11-bg-accent text-gray-800 placeholder-gray-400'
+                )}
+              />
+              <button
+                onClick={addExcludedPattern}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-win11-bg-accent text-white hover:opacity-90 active:scale-95 transition-all"
+              >
+                Add
+              </button>
+            </div>
+
+            {settings.excluded_patterns.length === 0 ? (
+              <p className={clsx('text-xs', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                No exclusion rules. Clipboard text is recorded normally.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {settings.excluded_patterns.map((pattern) => (
+                  <li
+                    key={pattern}
+                    className={clsx(
+                      'flex items-center justify-between gap-2 px-3 py-2 rounded-lg',
+                      isDark ? 'bg-white/5' : 'bg-gray-50'
+                    )}
+                  >
+                    <code className="text-xs font-mono break-all">{pattern}</code>
+                    <button
+                      onClick={() => removeExcludedPattern(pattern)}
+                      aria-label={`Remove pattern ${pattern}`}
+                      className={clsx(
+                        'flex-shrink-0 rounded p-1 transition-colors',
+                        isDark
+                          ? 'hover:bg-red-500/15 text-gray-400 hover:text-red-400'
+                          : 'hover:bg-red-50 text-gray-500 hover:text-red-600'
+                      )}
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
 
