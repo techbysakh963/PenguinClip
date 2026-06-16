@@ -2,6 +2,8 @@
 //! Tracks and restores window focus for proper paste injection on X11.
 //! Also provides X11 window activation using EWMH protocols.
 
+use log::{debug, warn};
+
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::thread;
@@ -25,13 +27,15 @@ pub fn save_focused_window() {
                 Ok(reply) => {
                     let window_id = reply.focus;
                     LAST_FOCUSED_WINDOW.store(window_id, Ordering::SeqCst);
-                    eprintln!("[FocusManager] Saved focused window: {}", window_id);
+                    debug!("saved focused window: {}", window_id);
                 }
-                Err(e) => eprintln!("[FocusManager] Failed to get focus reply: {}", e),
+                Err(e) => warn!("failed to get focus reply: {}", e),
             },
-            Err(e) => eprintln!("[FocusManager] Failed to request input focus: {}", e),
+            Err(e) => warn!("failed to request input focus: {}", e),
         },
-        Err(e) => eprintln!("[FocusManager] X11 Connection failed: {}", e),
+        // Expected on pure Wayland (no XWayland); paste relies on the
+        // compositor keeping focus, so this is not an error.
+        Err(e) => debug!("X11 connection unavailable for focus save: {}", e),
     }
 }
 
@@ -42,7 +46,7 @@ pub fn restore_focused_window() -> Result<(), String> {
         return Err("No previous window saved".to_string());
     }
 
-    eprintln!("[FocusManager] Restoring focus to window: {}", window_id);
+    debug!("restoring focus to window: {}", window_id);
 
     let conn = get_x11_connection()?;
 
@@ -140,10 +144,7 @@ pub fn x11_activate_window_by_id(window_id: u32) -> Result<(), String> {
     conn.flush()
         .map_err(|e| format!("Failed to flush: {}", e))?;
 
-    eprintln!(
-        "[FocusManager] Sent _NET_ACTIVE_WINDOW for window {}",
-        window_id
-    );
+    debug!("sent _NET_ACTIVE_WINDOW for window {}", window_id);
     Ok(())
 }
 
@@ -162,8 +163,8 @@ pub fn wait_for_window_by_title(title: &str, timeout: Duration) -> Option<u32> {
 
     while start.elapsed() < timeout {
         if let Some(window_id) = find_window_by_title(title) {
-            eprintln!(
-                "[FocusManager] Found window '{}' with ID {} after {:?}",
+            debug!(
+                "found window '{}' with ID {} after {:?}",
                 title,
                 window_id,
                 start.elapsed()
@@ -173,7 +174,7 @@ pub fn wait_for_window_by_title(title: &str, timeout: Duration) -> Option<u32> {
         thread::sleep(WINDOW_MAP_POLL_INTERVAL);
     }
 
-    eprintln!("[FocusManager] Timeout waiting for window '{}'", title);
+    warn!("timeout waiting for window '{}'", title);
     None
 }
 
@@ -349,10 +350,7 @@ fn is_terminal_via_xdotool() -> Result<bool, String> {
     }
 
     let wm_class = String::from_utf8_lossy(&prop_output.stdout).to_lowercase();
-    eprintln!(
-        "[FocusManager] Focused window WM_CLASS (xprop): {}",
-        wm_class.trim()
-    );
+    debug!("focused window WM_CLASS (xprop): {}", wm_class.trim());
 
     Ok(TERMINAL_WM_CLASSES.iter().any(|t| wm_class.contains(t)))
 }
@@ -392,10 +390,7 @@ fn is_terminal_via_x11() -> Result<bool, String> {
         if !reply.value.is_empty() {
             // WM_CLASS is two null-terminated strings: instance\0class\0
             let wm_class_raw = String::from_utf8_lossy(&reply.value).to_lowercase();
-            eprintln!(
-                "[FocusManager] Window {} WM_CLASS (x11): {}",
-                window, wm_class_raw
-            );
+            debug!("window {} WM_CLASS (x11): {}", window, wm_class_raw);
 
             if TERMINAL_WM_CLASSES.iter().any(|t| wm_class_raw.contains(t)) {
                 return Ok(true);
@@ -417,10 +412,7 @@ fn is_terminal_via_x11() -> Result<bool, String> {
         window = tree.parent;
     }
 
-    eprintln!(
-        "[FocusManager] Could not find WM_CLASS for focused window {}",
-        focused
-    );
+    debug!("could not find WM_CLASS for focused window {}", focused);
     Ok(false)
 }
 
@@ -435,7 +427,7 @@ pub fn x11_force_input_focus(window_id: u32) -> Result<(), String> {
 
     conn.flush().map_err(|e| format!("Flush failed: {}", e))?;
 
-    eprintln!("[FocusManager] Forced input focus to window {}", window_id);
+    debug!("forced input focus to window {}", window_id);
     Ok(())
 }
 
@@ -448,10 +440,7 @@ pub fn x11_robust_activate(title: &str) -> Result<(), String> {
 
     // Step 2: Try EWMH _NET_ACTIVE_WINDOW (preferred, WM-friendly)
     if let Err(e) = x11_activate_window_by_id(window_id) {
-        eprintln!(
-            "[FocusManager] EWMH activation failed: {}, trying fallback",
-            e
-        );
+        warn!("EWMH activation failed ({}), trying fallback", e);
     }
 
     // Step 3: Small delay for WM to process
@@ -461,13 +450,13 @@ pub fn x11_robust_activate(title: &str) -> Result<(), String> {
     match get_focused_window() {
         Some(current_focus) => {
             if current_focus != window_id {
-                eprintln!("[FocusManager] Focus not acquired, forcing input focus");
+                debug!("focus not acquired, forcing input focus");
                 x11_force_input_focus(window_id)?;
             }
         }
         None => {
-            eprintln!(
-                "[FocusManager] Could not determine focused window after EWMH activation; forcing input focus as fallback"
+            debug!(
+                "could not determine focused window after EWMH activation; forcing input focus as fallback"
             );
             x11_force_input_focus(window_id)?;
         }
