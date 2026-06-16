@@ -3,10 +3,19 @@ import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow, Window } from '@tauri-apps/api/window'
 import { listen } from '@tauri-apps/api/event'
 import { emit } from '@tauri-apps/api/event'
+import { open } from '@tauri-apps/plugin-shell'
 import { clsx } from 'clsx'
 import { X } from 'lucide-react'
 
 import type { UserSettings, CustomKaomoji, BooleanSettingKey } from './types/clipboard'
+
+interface UpdateInfo {
+  current_version: string
+  latest_version: string
+  update_available: boolean
+  release_url: string
+  release_notes: string
+}
 import { FeaturesSection } from './components/FeaturesSection'
 import { Switch } from './components/Switch'
 import { useSystemThemePreference } from './utils/systemTheme'
@@ -162,6 +171,37 @@ function SettingsApp() {
       )
     } finally {
       setIsExporting(false)
+    }
+  }, [])
+
+  // Update check state
+  const [appVersion, setAppVersion] = useState('')
+  const [updateStatus, setUpdateStatus] = useState<{ message: string; url?: string } | null>(null)
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
+
+  useEffect(() => {
+    invoke<string>('get_app_version')
+      .then(setAppVersion)
+      .catch((err) => console.error('Failed to fetch app version:', err))
+  }, [])
+
+  const handleCheckForUpdates = useCallback(async () => {
+    setIsCheckingUpdate(true)
+    setUpdateStatus(null)
+    try {
+      const info = await invoke<UpdateInfo>('check_for_updates')
+      if (info.update_available) {
+        setUpdateStatus({
+          message: `Update available: v${info.latest_version} (you have v${info.current_version}).`,
+          url: info.release_url || undefined,
+        })
+      } else {
+        setUpdateStatus({ message: `You're up to date (v${info.current_version}).` })
+      }
+    } catch (err) {
+      setUpdateStatus({ message: err instanceof Error ? err.message : String(err) })
+    } finally {
+      setIsCheckingUpdate(false)
     }
   }, [])
 
@@ -970,6 +1010,52 @@ function SettingsApp() {
               >
                 {diagnosticsMessage}
               </p>
+            )}
+          </div>
+        </section>
+
+        {/* About & Updates Section */}
+        <section
+          className={clsx(
+            'rounded-xl border shadow-sm overflow-hidden',
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+          )}
+        >
+          <div className="p-6 border-b border-inherit">
+            <h2 className="text-base font-semibold mb-1">About &amp; Updates</h2>
+            <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+              PenguinClip{appVersion ? ` v${appVersion}` : ''}. If installed via a
+              package manager (AUR, apt), update through it; otherwise download the
+              latest release.
+            </p>
+          </div>
+
+          <div className="p-6 space-y-3">
+            <button
+              onClick={handleCheckForUpdates}
+              disabled={isCheckingUpdate}
+              className={clsx(
+                'px-4 py-2 text-sm font-medium rounded-lg transition-all',
+                'bg-win11-bg-accent text-white hover:opacity-90 active:scale-95',
+                isCheckingUpdate && 'opacity-60 cursor-not-allowed'
+              )}
+            >
+              {isCheckingUpdate ? 'Checking…' : 'Check for updates'}
+            </button>
+            {updateStatus && (
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  {updateStatus.message}
+                </p>
+                {updateStatus.url && (
+                  <button
+                    onClick={() => open(updateStatus.url!).catch(console.error)}
+                    className="text-xs font-medium text-win11-bg-accent hover:underline"
+                  >
+                    View release →
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </section>
