@@ -57,6 +57,7 @@ For the complete audit, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 - **Favorites** — Star items to save them in a dedicated Favorites tab
 - **Categories** — Auto-detects content type (URL, Email, Code, Color, Phone) with colored badges
 - **Rich Media** — Supports images, text, rich text, and more
+- **Fuzzy Search** — Typo-tolerant, relevance-ranked search (regex mode still available)
 - **Terminal Paste** — Automatically sends `Ctrl+Shift+V` when pasting into terminal emulators (30+ terminals supported)
 
 ### Extras
@@ -64,15 +65,24 @@ For the complete audit, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 - **Emoji Picker** — Built-in searchable emoji keyboard (`Super+.`)
 - **Kaomoji & Symbols** — Japanese emoticons and special characters
 
+### Privacy
+- **Exclusion Rules** — Regex patterns whose matches are never recorded (e.g. passwords, card numbers) — see [docs/PRIVACY.md](docs/PRIVACY.md)
+- **Pause Recording** — Tray toggle to stop capturing temporarily (incognito)
+- **Auto-delete** — Configurable history expiration; pinned/favorited items are kept
+
 ### Settings
 - **Glassmorphism UI** — Settings window matches the clipboard's glass design
 - **Setup Wizard** — First-run wizard for permissions, shortcuts, and autostart
-- **Auto-delete** — Configurable history expiration (15 min to never)
-- **History Size** — Adjustable max items (10–500)
+- **History Size** — Adjustable max items
 - **Background Opacity** — Customize window transparency for both light and dark themes
+- **Diagnostics Export** — One-click report for troubleshooting (no clipboard content) — see [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)
+- **Update Check** — Notifies when a newer release is available (updates stay with your package manager)
 
 ### Under the Hood
 - **Native Rust Backend** — Minimal resource usage
+- **Disk-backed image store** — Image thumbnails stay in memory; full images live on disk, keeping idle RAM low (see [docs/PERFORMANCE.md](docs/PERFORMANCE.md))
+- **Crash-safe storage** — History is written atomically and recovers from corruption with a backup
+- **Structured logging** — Rotating logs with a panic-capturing crash handler
 - **Privacy Focused** — History stored locally, no telemetry, no tracking
 - **Security Hardened** — See the audit report for details
 
