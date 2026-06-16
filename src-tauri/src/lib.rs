@@ -25,8 +25,8 @@ pub use config_manager::ConfigManager;
 pub use emoji_manager::{EmojiManager, EmojiUsage};
 pub use focus_manager::{restore_focused_window, save_focused_window};
 
-pub use focus_manager::{x11_activate_window_by_title, x11_robust_activate};
-pub use gif_manager::{paste_gif_to_clipboard, paste_gif_to_clipboard_with_uri};
+pub use focus_manager::x11_robust_activate;
+pub use gif_manager::paste_gif_to_clipboard_with_uri;
 pub use permission_checker::{
     check_permissions, fix_permissions_now, is_first_run, mark_first_run_complete, reset_first_run,
     PermissionStatus,

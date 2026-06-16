@@ -299,16 +299,6 @@ pub fn paste_gif_to_clipboard_with_uri(url: &str) -> Result<Option<String>, Stri
     }
 }
 
-/// Convenience wrapper for cases where the URI return isn't needed.
-pub fn paste_gif_to_clipboard(url: &str) -> Result<(), String> {
-    paste_gif_to_clipboard_with_uri(url).map(|_| ())
-}
-
-/// Helper for external use if needed (legacy support)
-pub fn copy_url_to_clipboard(url: &str) -> Result<(), String> {
-    ClipboardHandler::copy_url_fallback(url)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

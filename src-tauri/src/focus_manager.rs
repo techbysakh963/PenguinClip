@@ -249,27 +249,6 @@ fn find_window_by_title(title: &str) -> Option<u32> {
     None
 }
 
-/// High-level function to activate a window by title.
-/// Waits for the window to appear, then activates it using EWMH.
-///
-/// # Arguments
-/// * `title` - The window title to search for
-///
-/// # Returns
-/// * `Ok(())` if activation was successful
-/// * `Err(String)` if window not found or activation failed
-pub fn x11_activate_window_by_title(title: &str) -> Result<(), String> {
-    let window_id = wait_for_window_by_title(title, WINDOW_MAP_TIMEOUT)
-        .ok_or_else(|| format!("Window '{}' not found within timeout", title))?;
-
-    x11_activate_window_by_id(window_id)?;
-
-    // Small delay to let the WM process the activation
-    thread::sleep(Duration::from_millis(20));
-
-    Ok(())
-}
-
 /// Checks if the currently focused X11 window is a terminal emulator.
 /// Queries WM_CLASS of the focused window and matches against known terminals.
 pub fn is_focused_window_terminal() -> bool {
