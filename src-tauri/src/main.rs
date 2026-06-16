@@ -54,6 +54,17 @@ fn clear_history(state: State<AppState>) {
     state.clipboard_manager.lock().clear();
 }
 
+/// Returns an actionable message if loading the history had a problem (e.g. the
+/// file was corrupted and recovered), or `None` after a clean load.
+#[tauri::command]
+fn get_history_load_status(state: State<AppState>) -> Option<String> {
+    state
+        .clipboard_manager
+        .lock()
+        .load_status()
+        .map(|s| s.to_string())
+}
+
 #[tauri::command]
 fn delete_item(state: State<AppState>, id: String) {
     state.clipboard_manager.lock().remove_item(&id);
@@ -1033,6 +1044,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_history,
             clear_history,
+            get_history_load_status,
             delete_item,
             toggle_pin,
             toggle_favorite,

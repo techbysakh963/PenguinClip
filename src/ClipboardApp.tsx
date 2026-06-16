@@ -17,6 +17,7 @@ import { useSystemThemePreference } from './utils/systemTheme'
 import { useRenderingEnv } from './hooks/useRenderingEnv'
 import type { ActiveTab, UserSettings } from './types/clipboard'
 import { ClipboardTab } from './components/ClipboardTab'
+import { NotificationBanner } from './components/NotificationBanner'
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme_mode: 'system',
@@ -95,6 +96,7 @@ function ClipboardApp() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('clipboard')
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [loadStatus, setLoadStatus] = useState<string | null>(null)
 
   const isDark = useThemeMode(settings.theme_mode)
   const renderingEnv = useRenderingEnv()
@@ -153,6 +155,15 @@ function ClipboardApp() {
       unlistenPromise.then((unlisten) => unlisten())
       unlistenSwitchTab.then((unlisten) => unlisten())
     }
+  }, [])
+
+  // Surface any history load problem (e.g. corruption recovery) once on startup.
+  useEffect(() => {
+    invoke<string | null>('get_history_load_status')
+      .then((status) => {
+        if (status) setLoadStatus(status)
+      })
+      .catch((err) => console.error('Failed to fetch history load status:', err))
   }, [])
 
   // Apply theme class when isDark changes
@@ -322,6 +333,15 @@ function ClipboardApp() {
         isDark={isDark}
         tertiaryOpacity={tertiaryOpacity}
       />
+
+      {/* Startup diagnostics (e.g. history corruption recovery) */}
+      {loadStatus && (
+        <NotificationBanner
+          message={loadStatus}
+          isDark={isDark}
+          onDismiss={() => setLoadStatus(null)}
+        />
+      )}
 
       {/* Scrollable content area */}
       <div
