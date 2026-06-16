@@ -40,6 +40,10 @@ static INITIAL_SHOW_ALLOWED: AtomicBool = AtomicBool::new(false);
 /// for a forgotten pause.
 static RECORDING_PAUSED: AtomicBool = AtomicBool::new(false);
 
+/// Title of the main clipboard window. Used to locate the window for X11
+/// focus activation; MUST match the `main` window `title` in tauri.conf.json.
+const MAIN_WINDOW_TITLE: &str = "PenguinClip";
+
 /// Application state shared across all handlers
 pub struct AppState {
     clipboard_manager: Arc<Mutex<ClipboardManager>>,
@@ -476,7 +480,7 @@ impl WindowController {
                 // Use EWMH _NET_ACTIVE_WINDOW protocol with polling instead of fixed sleep.
                 // This waits for the window to actually appear in X11's client list
                 // before attempting activation, solving the race condition.
-                if let Err(e) = x11_robust_activate("Clipboard History") {
+                if let Err(e) = x11_robust_activate(MAIN_WINDOW_TITLE) {
                     warn!(
                         "X11 window activation failed, falling back to xdotool: {}",
                         e
@@ -495,7 +499,7 @@ impl WindowController {
         use std::process::Command;
 
         let output = Command::new("xdotool")
-            .args(["search", "--name", "Clipboard History"])
+            .args(["search", "--name", MAIN_WINDOW_TITLE])
             .output()
             .map_err(|e| format!("xdotool search failed: {}", e))?;
 
