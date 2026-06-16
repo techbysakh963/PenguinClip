@@ -9,6 +9,7 @@ import { SearchBar } from './common/SearchBar'
 import { EmptyState } from './EmptyState'
 import { HistoryItem } from './HistoryItem'
 import { useHistoryKeyboardNavigation } from '../hooks/useHistoryKeyboardNavigation'
+import { createHistoryFuse, getSearchableText, searchHistory } from '../utils/historySearch'
 
 export function ClipboardTab(props: {
   history: ClipboardItem[]
@@ -184,38 +185,33 @@ export function ClipboardTab(props: {
     }
   }, [])
 
+  // Fuzzy search index, rebuilt only when the history changes so that
+  // per-keystroke searching stays fast even with large histories.
+  const fuse = useMemo(() => createHistoryFuse(history), [history])
+
   // Filter history
   const filteredHistory = useMemo(() => {
     if (!searchQuery) return history
 
-    let regex: RegExp | null = null
+    // Regex mode is the exact, power-user path — kept as-is. Images have no
+    // searchable text and stay excluded from search results.
     if (isRegexMode) {
+      let regex: RegExp
       try {
         regex = new RegExp(searchQuery, 'i')
       } catch (err) {
         console.error('Invalid regex pattern in clipboard search query:', searchQuery, err)
         return []
       }
+      return history.filter((item) => {
+        const text = getSearchableText(item)
+        return text ? regex.test(text) : false
+      })
     }
 
-    return history.filter((item) => {
-      let searchableText = ''
-      if (item.content.type === 'Text') {
-        searchableText = item.content.data
-      } else if (item.content.type === 'RichText') {
-        searchableText = item.content.data.plain
-      } else {
-        return false
-      }
-
-      if (isRegexMode && regex) {
-        return regex.test(searchableText)
-      } else if (!isRegexMode) {
-        return searchableText.toLowerCase().includes(searchQuery.toLowerCase())
-      }
-      return false
-    })
-  }, [history, searchQuery, isRegexMode])
+    // Default: fuzzy search ranked by relevance.
+    return searchHistory(fuse, history, searchQuery)
+  }, [history, searchQuery, isRegexMode, fuse])
 
   // Keyboard navigation
   useHistoryKeyboardNavigation({
