@@ -5,6 +5,7 @@ use arboard::{Clipboard, ImageData};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use chrono::{DateTime, Utc};
 use image::{DynamicImage, ImageFormat};
+use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::hash::{Hash, Hasher};
@@ -291,10 +292,9 @@ impl ClipboardManager {
             .filter(|i| i.pinned || i.favorited)
             .count();
         if clamped < protected_count {
-            eprintln!(
-                "clipboard_manager: requested max history size ({}) is less than the number of protected items ({}); increasing limit to preserve them.",
-                clamped,
-                protected_count
+            warn!(
+                "requested max history size ({}) is less than the number of protected items ({}); increasing limit to preserve them.",
+                clamped, protected_count
             );
             clamped = protected_count;
         }
@@ -434,23 +434,20 @@ impl ClipboardManager {
                 backup.display()
             ),
             Err(e) => {
-                eprintln!(
-                    "[ClipboardManager] Failed to back up corrupt history file: {}",
-                    e
-                );
+                error!("failed to back up corrupt history file: {}", e);
                 String::new()
             }
         }
     }
 
     fn set_load_status(&mut self, message: String) {
-        eprintln!("[ClipboardManager] {}", message);
+        warn!("{}", message);
         self.load_status = Some(message);
     }
 
     pub fn save_history(&self) {
         if let Err(e) = self.write_history_atomically() {
-            eprintln!("[ClipboardManager] Failed to save history: {}", e);
+            error!("failed to save history: {}", e);
         }
     }
 
@@ -537,7 +534,7 @@ impl ClipboardManager {
         let full_png = self.encode_png(&image_data)?;
         let blob_name = format!("{:016x}.png", hash);
         if let Err(e) = self.write_blob(&blob_name, &full_png) {
-            eprintln!("[ClipboardManager] Failed to write image blob: {}", e);
+            error!("failed to write image blob: {}", e);
             return None;
         }
 
@@ -697,7 +694,7 @@ impl ClipboardManager {
 
         // Skip internal GIF cache URIs
         if text.contains(FILE_URI_PREFIX) && text.contains(GIF_CACHE_MARKER) {
-            eprintln!("[ClipboardManager] Skipping GIF cache URI");
+            debug!("skipping GIF cache URI");
             return true;
         }
 
@@ -917,8 +914,8 @@ impl ClipboardManager {
                 if let Some(blob) = item.image_blob() {
                     removed_blobs.push(blob.to_string());
                 }
-                println!(
-                    "[ClipboardManager] Auto-deleting old item: {} (age: {}s, limit: {}s)",
+                debug!(
+                    "auto-deleting old item: {} (age: {}s, limit: {}s)",
                     item.id, age_seconds, interval_seconds
                 );
             }

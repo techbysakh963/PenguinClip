@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use log::{debug, warn};
 use parking_lot::Mutex;
 use penguinclip_lib::autostart_manager;
 use penguinclip_lib::clipboard_manager::{ClipboardItem, ClipboardManager};
@@ -89,7 +90,7 @@ fn delete_item(state: State<AppState>, id: String) {
 fn toggle_pin(state: State<AppState>, id: String) -> Option<ClipboardItem> {
     let result = state.clipboard_manager.lock().toggle_pin(&id);
     if result.is_none() {
-        eprintln!("[toggle_pin] Item with id '{}' not found in history.", id);
+        warn!("toggle_pin: item '{}' not found in history", id);
     }
     result
 }
@@ -98,10 +99,7 @@ fn toggle_pin(state: State<AppState>, id: String) -> Option<ClipboardItem> {
 fn toggle_favorite(state: State<AppState>, id: String) -> Option<ClipboardItem> {
     let result = state.clipboard_manager.lock().toggle_favorite(&id);
     if result.is_none() {
-        eprintln!(
-            "[toggle_favorite] Item with id '{}' not found in history.",
-            id
-        );
+        warn!("toggle_favorite: item '{}' not found in history", id);
     }
     result
 }
@@ -215,8 +213,8 @@ async fn paste_item(app: AppHandle, state: State<'_, AppState>, id: String) -> R
             let _ = app.emit("history-sync", &history);
         }
         None => {
-            eprintln!(
-                "[paste_item] Item with id '{}' not found in history. Syncing frontend...",
+            warn!(
+                "paste_item: item '{}' not found in history; syncing frontend",
                 id
             );
             // Emit event to trigger frontend refresh
@@ -343,7 +341,7 @@ impl PasteHelper {
     /// This ensures keystrokes are sent to the correct application.
     async fn prepare_target_window() -> Result<(), String> {
         if let Err(e) = restore_focused_window() {
-            eprintln!("[PasteHelper] Warning: Focus restoration failed: {}", e);
+            warn!("focus restoration failed before paste: {}", e);
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
         Ok(())
@@ -694,7 +692,7 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
                         .lock()
                         .cleanup_old_items(interval_in_minutes);
                     if cleaned {
-                        println!("[Watcher] Background cleanup triggered sync");
+                        debug!("watcher: background cleanup triggered history sync");
                         let _ = app.emit("history-cleared", ());
                     }
                 }
