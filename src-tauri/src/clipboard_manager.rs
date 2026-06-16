@@ -6,6 +6,7 @@ use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use chrono::{DateTime, Utc};
 use image::{DynamicImage, ImageFormat};
 use log::{debug, error, warn};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::hash::{Hash, Hasher};
@@ -249,6 +250,9 @@ pub struct ClipboardManager {
     /// Actionable message describing a problem loading history (e.g. corruption
     /// recovery). `None` after a clean load. Surfaced to the user on startup.
     load_status: Option<String>,
+    /// Compiled regex patterns; clipboard text matching any of these is never
+    /// stored (user-configurable sensitive-content exclusions).
+    excluded_patterns: Vec<Regex>,
 }
 
 impl ClipboardManager {
@@ -271,9 +275,26 @@ impl ClipboardManager {
             persistence_path,
             max_history_size: max_size,
             load_status: None,
+            excluded_patterns: Vec::new(),
         };
         manager.load_history();
         manager
+    }
+
+    /// Sets the sensitive-content exclusion patterns. Invalid regexes are
+    /// logged and skipped rather than failing the whole update.
+    pub fn set_excluded_patterns(&mut self, patterns: &[String]) {
+        self.excluded_patterns = patterns
+            .iter()
+            .filter(|p| !p.trim().is_empty())
+            .filter_map(|p| match Regex::new(p) {
+                Ok(re) => Some(re),
+                Err(e) => {
+                    warn!("ignoring invalid exclusion pattern '{}': {}", p, e);
+                    None
+                }
+            })
+            .collect();
     }
 
     /// Returns an actionable message if the last load had a problem (e.g. the
@@ -726,6 +747,13 @@ impl ClipboardManager {
 
     fn should_skip_text(&mut self, text: &str) -> bool {
         if text.trim().is_empty() {
+            return true;
+        }
+
+        // User-defined sensitive-content exclusions. We never log the content
+        // itself, only that something was excluded.
+        if self.excluded_patterns.iter().any(|re| re.is_match(text)) {
+            debug!("skipping clipboard text matching an exclusion pattern");
             return true;
         }
 
@@ -1235,6 +1263,54 @@ mod tests {
             }
             _ => panic!("expected image"),
         }
+    }
+
+    // --- Privacy: sensitive-content exclusions ---
+
+    #[test]
+    fn test_excluded_pattern_blocks_matching_text() {
+        let path = temp_history_path("exclude");
+        let mut manager = ClipboardManager::new(path, 50);
+        manager.set_excluded_patterns(&["secret".to_string(), r"\d{16}".to_string()]);
+
+        assert!(
+            manager
+                .add_text("my secret note".to_string(), None)
+                .is_none(),
+            "text matching an exclusion pattern must not be stored"
+        );
+        assert!(
+            manager
+                .add_text("1234567812345678".to_string(), None)
+                .is_none(),
+            "card-like number should be excluded"
+        );
+        assert!(
+            manager
+                .add_text("ordinary text".to_string(), None)
+                .is_some(),
+            "non-matching text is stored as usual"
+        );
+        assert_eq!(manager.get_history().len(), 1);
+    }
+
+    #[test]
+    fn test_invalid_excluded_pattern_is_ignored() {
+        let path = temp_history_path("exclude_invalid");
+        let mut manager = ClipboardManager::new(path, 50);
+        // First pattern is invalid regex and should be skipped, not panic.
+        manager.set_excluded_patterns(&["[unclosed".to_string(), "blocked".to_string()]);
+
+        assert!(
+            manager
+                .add_text("this is blocked content".to_string(), None)
+                .is_none(),
+            "the valid pattern still applies"
+        );
+        assert!(
+            manager.add_text("totally fine".to_string(), None).is_some(),
+            "the invalid pattern is ignored, not treated as a wildcard"
+        );
     }
 
     // --- Storage hygiene ---

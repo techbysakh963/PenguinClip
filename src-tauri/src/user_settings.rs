@@ -46,6 +46,12 @@ pub struct UserSettings {
     #[serde(default = "default_unit")]
     pub auto_delete_unit: String,
 
+    // --- Privacy ---
+    /// Regex patterns; clipboard text matching any of these is never recorded
+    /// (sensitive-content exclusions). Empty by default.
+    #[serde(default)]
+    pub excluded_patterns: Vec<String>,
+
     // --- Custom Data ---
     /// User-defined Kaomojis
     #[serde(default)]
@@ -102,6 +108,7 @@ impl Default for UserSettings {
             max_history_size: default_max_history_size(),
             auto_delete_interval: 0,
             auto_delete_unit: "hours".to_string(),
+            excluded_patterns: Vec::new(),
             custom_kaomojis: Vec::new(),
             ui_scale: default_ui_scale(),
             tenor_api_key: String::new(),

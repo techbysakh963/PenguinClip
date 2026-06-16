@@ -57,6 +57,9 @@ tauri-plugin-global-shortcut = "2"
 # System information
 whoami = "2.0"
 
+# Regex for user-defined sensitive-content exclusion rules
+regex = "1"
+
 # URL encoding for LXQt shortcuts
 percent-encoding = "2.3"
 

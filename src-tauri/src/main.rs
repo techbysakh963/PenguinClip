@@ -131,12 +131,13 @@ fn set_user_settings(
     let manager = UserSettingsManager::new();
     manager.save(&new_settings)?;
 
-    // Update clipboard manager's max history size if it changed
+    // Update clipboard manager's max history size and exclusion rules if changed
     {
         let mut clipboard_manager = state.clipboard_manager.lock();
         if clipboard_manager.get_max_history_size() != new_settings.max_history_size {
             clipboard_manager.set_max_history_size(new_settings.max_history_size);
         }
+        clipboard_manager.set_excluded_patterns(&new_settings.excluded_patterns);
     }
 
     // Emit event to notify all windows that settings have changed
@@ -818,6 +819,9 @@ fn main() {
         history_path,
         user_settings.max_history_size,
     )));
+    clipboard_manager
+        .lock()
+        .set_excluded_patterns(&user_settings.excluded_patterns);
 
     let emoji_manager = Arc::new(Mutex::new(EmojiManager::new(base_dir.clone())));
 
