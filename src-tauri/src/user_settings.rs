@@ -1,6 +1,7 @@
 //! User Settings Module
 //! Handles persistence of user preferences (theme mode, background opacity) in a separate JSON file.
 
+use log::warn;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -193,18 +194,12 @@ impl UserSettingsManager {
                     settings
                 }
                 Err(e) => {
-                    eprintln!(
-                        "[UserSettings] Failed to parse settings file: {}. Using defaults.",
-                        e
-                    );
+                    warn!("failed to parse settings file: {}. Using defaults.", e);
                     UserSettings::default()
                 }
             },
             Err(e) => {
-                eprintln!(
-                    "[UserSettings] Failed to read settings file: {}. Using defaults.",
-                    e
-                );
+                warn!("failed to read settings file: {}. Using defaults.", e);
                 UserSettings::default()
             }
         }

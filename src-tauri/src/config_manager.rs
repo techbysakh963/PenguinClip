@@ -1,6 +1,7 @@
 //! Config Manager Module
 //! Handles persistence of window state (position, monitor) specifically for Wayland usage.
 
+use log::warn;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -30,8 +31,8 @@ impl ConfigManager {
         };
 
         if let Err(e) = manager.load() {
-            eprintln!(
-                "[ConfigManager] Warning: Failed to load config: {}. Defaulting to empty state.",
+            warn!(
+                "failed to load window state config: {}. Defaulting to empty state.",
                 e
             );
         }
@@ -55,7 +56,7 @@ impl ConfigManager {
     pub fn sync_to_disk(&mut self) {
         if self.dirty {
             if let Err(e) = self.save_to_disk() {
-                eprintln!("[ConfigManager] Failed to save config: {}", e);
+                warn!("failed to save window state config: {}", e);
             } else {
                 self.dirty = false;
             }

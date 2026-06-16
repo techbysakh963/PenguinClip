@@ -1,6 +1,7 @@
 //! Emoji Manager Module
 //! Handles emoji usage tracking with LRU (Least Recently Used) semantics and disk persistence.
 
+use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -50,7 +51,7 @@ impl EmojiManager {
         };
 
         if let Err(e) = manager.load_from_disk() {
-            eprintln!("[EmojiManager] Failed to load history: {}", e);
+            warn!("failed to load emoji history: {}", e);
         }
 
         manager
@@ -84,7 +85,7 @@ impl EmojiManager {
 
         // Persist to disk
         if let Err(e) = self.save_to_disk() {
-            eprintln!("[EmojiManager] Failed to save history: {}", e);
+            warn!("failed to save emoji history: {}", e);
         }
     }
 
@@ -129,7 +130,7 @@ impl EmojiManager {
             self.recent.truncate(MAX_RECENT_EMOJIS);
         }
 
-        eprintln!("[EmojiManager] Loaded {} recent emojis", self.recent.len());
+        debug!("loaded {} recent emojis", self.recent.len());
         Ok(())
     }
 
