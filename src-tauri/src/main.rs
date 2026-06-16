@@ -647,37 +647,49 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
         let mut last_image_hash: Option<u64> = None;
         let mut cleanup_counter = 0;
 
+        use penguinclip_lib::clipboard_manager::{
+            calculate_hash, read_system_html, read_system_image, read_system_text,
+        };
+
         loop {
             std::thread::sleep(Duration::from_millis(500));
             cleanup_counter += 1;
 
-            let mut manager = clipboard_manager.lock();
-
-            // Background cleanup every ~30 seconds (60 * 500ms)
+            // Background cleanup every ~30 seconds (60 * 500ms). Hold the lock
+            // only for the cleanup mutation itself.
             if cleanup_counter >= 60 {
                 cleanup_counter = 0;
-                let settings = UserSettingsManager::new().load();
-                let interval_in_minutes = settings.auto_delete_interval_in_minutes();
+                let interval_in_minutes = UserSettingsManager::new()
+                    .load()
+                    .auto_delete_interval_in_minutes();
 
-                if interval_in_minutes > 0 && manager.cleanup_old_items(interval_in_minutes) {
-                    println!("[Watcher] Background cleanup triggered sync");
-                    let _ = app.emit("history-cleared", ());
+                if interval_in_minutes > 0 {
+                    let cleaned = clipboard_manager
+                        .lock()
+                        .cleanup_old_items(interval_in_minutes);
+                    if cleaned {
+                        println!("[Watcher] Background cleanup triggered sync");
+                        let _ = app.emit("history-cleared", ());
+                    }
                 }
             }
 
+            // Read the OS clipboard WITHOUT holding the manager lock, so paste
+            // and UI commands are never blocked behind a slow clipboard read.
             // Text
-            if let Ok(text) = manager.get_current_text() {
+            if let Ok(text) = read_system_text() {
                 if !text.is_empty() {
-                    let text_hash = penguinclip_lib::clipboard_manager::calculate_hash(&text);
+                    let text_hash = calculate_hash(&text);
 
                     if Some(text_hash) != last_text_hash {
                         last_text_hash = Some(text_hash);
                         last_image_hash = None;
 
-                        // Try to get HTML content for rich text support
-                        let html = manager.get_current_html();
+                        // Fetch HTML (still lock-free) for rich-text support.
+                        let html = read_system_html();
 
-                        if let Some(item) = manager.add_text(text, html) {
+                        let added = clipboard_manager.lock().add_text(text, html);
+                        if let Some(item) = added {
                             let _ = app.emit("clipboard-changed", &item);
                         }
                     }
@@ -685,11 +697,13 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
             }
 
             // Image
-            if let Ok(Some((image_data, hash))) = manager.get_current_image() {
+            if let Ok(Some((image_data, hash))) = read_system_image() {
                 if Some(hash) != last_image_hash {
                     last_image_hash = Some(hash);
                     last_text_hash = None;
-                    if let Some(item) = manager.add_image(image_data, hash) {
+
+                    let added = clipboard_manager.lock().add_image(image_data, hash);
+                    if let Some(item) = added {
                         let _ = app.emit("clipboard-changed", &item);
                     }
                 }

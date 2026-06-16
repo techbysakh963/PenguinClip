@@ -69,6 +69,41 @@ fn get_system_clipboard() -> Result<Clipboard, String> {
     Clipboard::new().map_err(|e| e.to_string())
 }
 
+// --- Lock-free system clipboard reads ---
+//
+// These open a fresh `Clipboard` and touch no `ClipboardManager` state, so the
+// monitoring loop can poll the OS clipboard *without* holding the manager lock.
+// That keeps UI commands (get_history, paste, pin) responsive even while a
+// clipboard read is blocking on the compositor.
+
+/// Reads the current clipboard text from the OS.
+pub fn read_system_text() -> Result<String, arboard::Error> {
+    Clipboard::new()?.get_text()
+}
+
+/// Reads the current clipboard HTML, if any.
+pub fn read_system_html() -> Option<String> {
+    get_system_clipboard().ok()?.get().html().ok()
+}
+
+/// Reads the current clipboard image and its stable content hash, if any.
+pub fn read_system_image() -> Result<Option<(ImageData<'static>, u64)>, arboard::Error> {
+    let mut clipboard = Clipboard::new()?;
+    match clipboard.get_image() {
+        Ok(image) => {
+            let hash = calculate_hash(&image.bytes);
+            let owned = ImageData {
+                width: image.width,
+                height: image.height,
+                bytes: image.bytes.into_owned().into(),
+            };
+            Ok(Some((owned, hash)))
+        }
+        Err(arboard::Error::ContentNotAvailable) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
 // --- Data Structures ---
 
 /// Content type for clipboard items
@@ -361,40 +396,6 @@ impl ClipboardManager {
         fs::rename(&tmp_path, &self.persistence_path)
     }
 
-    // --- Monitoring / Reading ---
-
-    pub fn get_current_text(&mut self) -> Result<String, arboard::Error> {
-        // We unwrap internal map error because arboard::Error is the expected return type here
-        // for the monitoring loop in main.rs
-        Clipboard::new()?.get_text()
-    }
-
-    /// Try to get HTML content from clipboard. Returns None if not available.
-    pub fn get_current_html(&self) -> Option<String> {
-        let mut clipboard = get_system_clipboard().ok()?;
-        clipboard.get().html().ok()
-    }
-
-    pub fn get_current_image(
-        &mut self,
-    ) -> Result<Option<(ImageData<'static>, u64)>, arboard::Error> {
-        let mut clipboard = Clipboard::new()?;
-
-        match clipboard.get_image() {
-            Ok(image) => {
-                let hash = calculate_hash(&image.bytes);
-                let owned = ImageData {
-                    width: image.width,
-                    height: image.height,
-                    bytes: image.bytes.into_owned().into(),
-                };
-                Ok(Some((owned, hash)))
-            }
-            Err(arboard::Error::ContentNotAvailable) => Ok(None),
-            Err(e) => Err(e),
-        }
-    }
-
     // --- Adding Items ---
 
     /// Add text content to history, with optional HTML for rich text
@@ -453,7 +454,8 @@ impl ClipboardManager {
 
         // Keep only a small thumbnail inline; fall back to the full image if
         // thumbnailing somehow fails so the UI still shows something.
-        let thumbnail = Self::thumbnail_from_png(&full_png).unwrap_or_else(|| BASE64.encode(&full_png));
+        let thumbnail =
+            Self::thumbnail_from_png(&full_png).unwrap_or_else(|| BASE64.encode(&full_png));
 
         let item = ClipboardItem::new_image(thumbnail, Some(blob_name), width, height, hash);
         self.insert_item(item.clone());
