@@ -87,12 +87,12 @@ pub fn init() {
 
     if env.transparency_disabled {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
-        println!(
-            "[RenderingEnv] WEBKIT_DISABLE_DMABUF_RENDERER=1 (NVIDIA={}, AppImage={})",
-            env.is_nvidia, env.is_appimage
+        log::info!(
+            "transparency disabled, WEBKIT_DISABLE_DMABUF_RENDERER=1 (nvidia={}, appimage={}, reason={})",
+            env.is_nvidia, env.is_appimage, env.reason
         );
     } else {
-        println!("[RenderingEnv] Transparency enabled (no NVIDIA/AppImage detected)");
+        log::info!("transparency enabled (no NVIDIA/AppImage detected)");
     }
 }
 

@@ -171,10 +171,12 @@ type Result<T> = std::result::Result<T, ShortcutError>;
 
 pub fn register_global_shortcut() {
     let handler = detect_handler();
-    println!("[ShortcutManager] Detected Environment: {}", handler.name());
-
     let command_path = get_command_path();
-    println!("[ShortcutManager] Using command path: {}", command_path);
+    log::info!(
+        "registering global shortcuts for environment '{}' (command: {})",
+        handler.name(),
+        command_path
+    );
 
     for shortcut in SHORTCUTS {
         // Create a new config with the correct command path
@@ -182,17 +184,19 @@ pub fn register_global_shortcut() {
         config.command = command_path;
 
         match handler.register(&config) {
-            Ok(_) => println!("[ShortcutManager] \u{2713} Registered '{}'", config.name),
-            Err(e) => eprintln!("[ShortcutManager] \u{2717} Failed '{}': {}", config.name, e),
+            Ok(_) => log::info!("registered shortcut '{}'", config.name),
+            Err(e) => log::warn!("failed to register shortcut '{}': {}", config.name, e),
         }
     }
 }
 
 pub fn unregister_global_shortcut() {
     let handler = detect_handler();
-    println!("[ShortcutManager] Environment: {}", handler.name());
-
     let command_path = get_command_path();
+    log::info!(
+        "unregistering global shortcuts for environment '{}'",
+        handler.name()
+    );
 
     for shortcut in SHORTCUTS {
         // Create a new config with the correct command path
@@ -200,8 +204,8 @@ pub fn unregister_global_shortcut() {
         config.command = command_path;
 
         match handler.unregister(&config) {
-            Ok(_) => println!("[ShortcutManager] \u{2713} Unregistered '{}'", config.name),
-            Err(e) => eprintln!("[ShortcutManager] \u{2717} Failed '{}': {}", config.name, e),
+            Ok(_) => log::info!("unregistered shortcut '{}'", config.name),
+            Err(e) => log::warn!("failed to unregister shortcut '{}': {}", config.name, e),
         }
     }
 }

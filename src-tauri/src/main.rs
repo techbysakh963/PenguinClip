@@ -477,7 +477,10 @@ impl WindowController {
                 // This waits for the window to actually appear in X11's client list
                 // before attempting activation, solving the race condition.
                 if let Err(e) = x11_robust_activate("Clipboard History") {
-                    eprintln!("[WindowController] X11 activation failed: {}", e);
+                    warn!(
+                        "X11 window activation failed, falling back to xdotool: {}",
+                        e
+                    );
                     // Fallback: try xdotool as last resort
                     let _ = Self::x11_activate_window_xdotool();
                 }
@@ -819,9 +822,6 @@ fn main() {
     let start_in_background_clone = start_in_background;
     let open_emoji_on_start_clone = open_emoji_on_start;
 
-    penguinclip_lib::session::init();
-    penguinclip_lib::rendering_env::init();
-
     let is_mouse_inside = Arc::new(AtomicBool::new(false));
     let base_dir = dirs::data_local_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
@@ -832,13 +832,16 @@ fn main() {
         eprintln!("Failed to create base directory: {}", e);
     }
 
-    // Initialize structured logging and crash capture as early as possible so
-    // the rest of startup is recorded.
+    // Initialize structured logging and crash capture before anything else, so
+    // session/rendering detection and the rest of startup land in the log.
     use penguinclip_lib::diagnostics;
     if let Err(e) = diagnostics::init(&base_dir, diagnostics::default_level()) {
         eprintln!("Failed to initialize logging: {}", e);
     }
     diagnostics::install_panic_hook();
+
+    penguinclip_lib::session::init();
+    penguinclip_lib::rendering_env::init();
     diagnostics::log_startup(&diagnostics::collect_startup_info(&base_dir));
 
     let data_dir = base_dir.clone();
