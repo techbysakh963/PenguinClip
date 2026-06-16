@@ -86,6 +86,21 @@ fn export_diagnostics(state: State<AppState>) -> Result<String, String> {
     penguinclip_lib::diagnostics::export_report(&state.data_dir).map(|p| p.display().to_string())
 }
 
+/// Returns the running application version.
+#[tauri::command]
+fn get_app_version() -> String {
+    VERSION.to_string()
+}
+
+/// Checks GitHub for a newer release. Does not self-update — PenguinClip is
+/// installed via package managers / AppImage, so updating is left to the user.
+#[tauri::command]
+async fn check_for_updates() -> Result<penguinclip_lib::updater::UpdateInfo, String> {
+    tokio::task::spawn_blocking(|| penguinclip_lib::updater::check_for_updates(VERSION))
+        .await
+        .map_err(|e| format!("The update check did not complete: {}", e))?
+}
+
 #[tauri::command]
 fn delete_item(state: State<AppState>, id: String) {
     state.clipboard_manager.lock().remove_item(&id);
@@ -1111,6 +1126,8 @@ fn main() {
             get_history_load_status,
             get_diagnostics_report,
             export_diagnostics,
+            get_app_version,
+            check_for_updates,
             delete_item,
             toggle_pin,
             toggle_favorite,

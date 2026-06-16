@@ -15,6 +15,7 @@ pub mod session;
 pub mod shortcut_conflict_detector;
 pub mod shortcut_setup;
 pub mod theme_manager;
+pub mod updater;
 pub mod user_settings;
 
 pub mod linux_shortcut_manager;
