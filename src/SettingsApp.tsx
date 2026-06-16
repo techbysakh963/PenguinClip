@@ -142,6 +142,25 @@ function SettingsApp() {
   // Custom Kaomoji State
   const [newKaomoji, setNewKaomoji] = useState('')
 
+  // Diagnostics export state
+  const [diagnosticsMessage, setDiagnosticsMessage] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExportDiagnostics = useCallback(async () => {
+    setIsExporting(true)
+    setDiagnosticsMessage(null)
+    try {
+      const path = await invoke<string>('export_diagnostics')
+      setDiagnosticsMessage(`Saved diagnostics to ${path}`)
+    } catch (err) {
+      setDiagnosticsMessage(
+        `Failed to export diagnostics: ${err instanceof Error ? err.message : String(err)}`
+      )
+    } finally {
+      setIsExporting(false)
+    }
+  }, [])
+
   // Apply theme to settings window itself
   const isDark = useThemeMode(settings.theme_mode)
 
@@ -813,6 +832,46 @@ function SettingsApp() {
                 When enabled, search queries are sent to Google's Tenor API. Your IP and search terms are visible to Google.
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* Diagnostics Section */}
+        <section
+          className={clsx(
+            'rounded-xl border shadow-sm overflow-hidden',
+            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+          )}
+        >
+          <div className="p-6 border-b border-inherit">
+            <h2 className="text-base font-semibold mb-1">Diagnostics</h2>
+            <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+              Export a report (app version, environment, and recent logs) to help
+              with troubleshooting. Clipboard content is never included.
+            </p>
+          </div>
+
+          <div className="p-6 space-y-3">
+            <button
+              onClick={handleExportDiagnostics}
+              disabled={isExporting}
+              className={clsx(
+                'px-4 py-2 text-sm font-medium rounded-lg transition-all',
+                'bg-win11-bg-accent text-white hover:opacity-90 active:scale-95',
+                isExporting && 'opacity-60 cursor-not-allowed'
+              )}
+            >
+              {isExporting ? 'Exporting…' : 'Export diagnostics'}
+            </button>
+            {diagnosticsMessage && (
+              <p
+                className={clsx(
+                  'text-[11px] leading-relaxed break-all',
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                )}
+              >
+                {diagnosticsMessage}
+              </p>
+            )}
           </div>
         </section>
 
