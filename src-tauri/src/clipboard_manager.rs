@@ -289,17 +289,40 @@ impl ClipboardManager {
     }
 
     pub fn save_history(&self) {
-        match serde_json::to_string_pretty(&self.history) {
-            Ok(content) => {
-                if let Some(parent) = self.persistence_path.parent() {
-                    let _ = fs::create_dir_all(parent);
-                }
-                if let Err(e) = fs::write(&self.persistence_path, content) {
-                    eprintln!("Failed to save history: {}", e);
-                }
-            }
-            Err(e) => eprintln!("Failed to serialize history: {}", e),
+        if let Err(e) = self.write_history_atomically() {
+            eprintln!("[ClipboardManager] Failed to save history: {}", e);
         }
+    }
+
+    /// Persists history using a write-temp-then-rename strategy.
+    ///
+    /// `rename(2)` within the same directory is atomic on POSIX filesystems,
+    /// so a crash or power loss mid-write can never leave a truncated or
+    /// half-serialized `history.json` behind. The previous file stays intact
+    /// until the new, fully-flushed copy is swapped in.
+    fn write_history_atomically(&self) -> std::io::Result<()> {
+        use std::io::Write;
+
+        let content = serde_json::to_vec_pretty(&self.history)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+        if let Some(parent) = self.persistence_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        // Unique per-process temp name avoids any chance of two writers
+        // clobbering the same scratch file (single-instance makes this rare,
+        // but it keeps the invariant cheap and obvious).
+        let tmp_path = self
+            .persistence_path
+            .with_extension(format!("json.{}.tmp", std::process::id()));
+
+        let mut file = fs::File::create(&tmp_path)?;
+        file.write_all(&content)?;
+        file.sync_all()?;
+        drop(file);
+
+        fs::rename(&tmp_path, &self.persistence_path)
     }
 
     // --- Monitoring / Reading ---
@@ -717,5 +740,61 @@ impl ClipboardManager {
         thread::sleep(Duration::from_millis(250));
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env::temp_dir;
+
+    /// Returns a fresh, isolated history file path under the system temp dir.
+    fn temp_history_path(name: &str) -> PathBuf {
+        let dir = temp_dir().join(format!("penguinclip_test_{}", name));
+        let _ = fs::remove_dir_all(&dir);
+        dir.join("history.json")
+    }
+
+    #[test]
+    fn test_history_round_trips_through_disk() {
+        let path = temp_history_path("roundtrip");
+
+        let mut manager = ClipboardManager::new(path.clone(), 50);
+        manager.add_text("hello world".to_string(), None);
+        manager.add_text("second item".to_string(), None);
+
+        // A fresh manager pointed at the same file must observe what we saved.
+        let reloaded = ClipboardManager::new(path, 50);
+        let history = reloaded.get_history();
+
+        assert_eq!(history.len(), 2);
+        // Newest non-pinned item sits at the top.
+        assert!(
+            matches!(&history[0].content, ClipboardContent::Text(t) if t == "second item"),
+            "expected newest item first, got {:?}",
+            history[0].content
+        );
+    }
+
+    #[test]
+    fn test_save_leaves_no_temp_file_behind() {
+        let path = temp_history_path("notemp");
+
+        let mut manager = ClipboardManager::new(path.clone(), 50);
+        manager.add_text("persisted".to_string(), None);
+
+        let dir = path.parent().unwrap();
+        let leftovers: Vec<String> = fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|name| name != "history.json")
+            .collect();
+
+        assert!(
+            leftovers.is_empty(),
+            "expected only history.json, found stray files: {:?}",
+            leftovers
+        );
     }
 }
