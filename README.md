@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/pengune_logo.png" alt="PenguinClip Logo" width="120">
+<img src="assets/penguinclip-logo.png" alt="PenguinClip Logo" width="120">
 
 # PenguinClip
 

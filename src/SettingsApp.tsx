@@ -28,6 +28,7 @@ interface UpdateInfo {
 }
 import { FeaturesSection } from './components/FeaturesSection'
 import { Switch } from './components/Switch'
+import { PenguinLogo } from './components/PenguinLogo'
 import { useSystemThemePreference } from './utils/systemTheme'
 import {
   loadAppearance,
@@ -1333,6 +1334,67 @@ function SettingsApp() {
           </div>
         </section>
 
+        {/* Brand / identity card */}
+        <section
+          hidden={activeCat !== 'about'}
+          className="rounded-xl p-6 border shadow-sm bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="flex-shrink-0 grid place-items-center w-16 h-16 rounded-2xl"
+              style={{ backgroundColor: 'var(--surface-2)', boxShadow: 'var(--shadow-sm)' }}
+            >
+              <PenguinLogo size={40} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-lg font-bold tracking-tight">PenguinClip</h2>
+                <span className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  {appVersion ? `v${appVersion}` : ''}
+                </span>
+              </div>
+              <p className={clsx('text-sm mt-0.5', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                Fast, private clipboard history for Linux.
+              </p>
+              <p className={clsx('text-xs mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                Developed by <span className="font-semibold">SAKH</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() =>
+                open('https://github.com/techbysakh963/PenguinClip').catch(console.error)
+              }
+              className={clsx(
+                'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                isDark
+                  ? 'border-white/10 text-gray-200 hover:bg-white/5'
+                  : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              GitHub ↗
+            </button>
+            <button
+              onClick={() =>
+                open('https://github.com/techbysakh963/PenguinClip/releases').catch(console.error)
+              }
+              className={clsx(
+                'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                isDark
+                  ? 'border-white/10 text-gray-200 hover:bg-white/5'
+                  : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              Releases ↗
+            </button>
+          </div>
+          <p className={clsx('mt-4 text-[11px]', isDark ? 'text-gray-500' : 'text-gray-400')}>
+            MIT licensed · 100% local · no telemetry
+          </p>
+        </section>
+
         {/* About & Updates Section */}
         <section
           hidden={activeCat !== 'about'}
@@ -1342,7 +1404,7 @@ function SettingsApp() {
           )}
         >
           <div className="p-6 border-b border-inherit">
-            <h2 className="text-base font-semibold mb-1">About &amp; Updates</h2>
+            <h2 className="text-base font-semibold mb-1">Updates</h2>
             <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
               PenguinClip{appVersion ? ` v${appVersion}` : ''}. If installed via a
               package manager (AUR, apt), update through it; otherwise download the
