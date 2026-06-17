@@ -140,8 +140,14 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Run npm audit
-        # Audit only production dependencies: the dev/build toolchain (vite,
-        # esbuild, eslint, …) is not shipped — the app bundles built static
-        # assets, not node_modules — so its advisories don't affect users.
+      - name: Audit production dependencies
+        # Runtime deps ship to users — block on any high+ advisory.
         run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit build toolchain (critical only)
+        # The dev/build toolchain (vite, esbuild, eslint, …) is not shipped to
+        # users, but it runs in CI with repo secrets, so a *critical*
+        # supply-chain advisory must still fail. High-severity dev-only issues
+        # (e.g. dev-server/Deno advisories) don't block a release they can't
+        # affect.
+        run: npm audit --include=dev --audit-level=critical
