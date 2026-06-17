@@ -36,6 +36,13 @@ import {
   ACCENT_PRESETS,
   type AppearanceTokens,
 } from './utils/appearanceTokens'
+import {
+  loadSearchPrefs,
+  saveSearchPrefs,
+  TRIGGER_LABELS,
+  type SearchPrefs,
+  type SearchTrigger,
+} from './utils/searchPrefs'
 
 const MIN_HISTORY_SIZE = 1
 const MAX_HISTORY_SIZE = 100_000
@@ -192,6 +199,17 @@ function SettingsApp() {
       saveAppearance(next)
       applyAppearance(next)
       emit('appearance-changed', next).catch(() => {})
+      return next
+    })
+  }, [])
+
+  const [searchPrefs, setSearchPrefs] = useState<SearchPrefs>(loadSearchPrefs)
+
+  const updateSearchPrefs = useCallback((patch: Partial<SearchPrefs>) => {
+    setSearchPrefs((prev) => {
+      const next = { ...prev, ...patch }
+      saveSearchPrefs(next)
+      emit('search-prefs-changed', next).catch(() => {})
       return next
     })
   }, [])
@@ -518,17 +536,86 @@ function SettingsApp() {
             {SETTINGS_CATEGORIES.find((c) => c.id === activeCat)?.label}
           </h1>
 
-          {/* Shortcuts — placeholder until the dedicated stage lands */}
+          {/* Shortcuts — Search behaviour */}
           <section
             hidden={activeCat !== 'shortcuts'}
             className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
           >
-            <h2 className="text-base font-semibold mb-1">Keyboard Shortcuts</h2>
-            <p className={clsx('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
-              Open clipboard with <kbd className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 text-xs">Super+V</kbd>,
-              search with <kbd className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 text-xs">Ctrl+F</kbd> or just
-              start typing. Configurable triggers and an always-on search bar are coming here.
-            </p>
+            <h2 className="text-base font-semibold mb-4">Search</h2>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium">Always show search bar</div>
+                <div className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  Keep search pinned at the top of the clipboard.
+                </div>
+              </div>
+              <Switch
+                checked={searchPrefs.alwaysShow}
+                onChange={() => updateSearchPrefs({ alwaysShow: !searchPrefs.alwaysShow })}
+                isDark={isDark}
+              />
+            </div>
+
+            <div
+              className={clsx(
+                'mt-5 pt-5 border-t',
+                isDark ? 'border-white/5' : 'border-gray-100',
+                searchPrefs.alwaysShow && 'opacity-40 pointer-events-none'
+              )}
+            >
+              <div className="text-sm font-medium mb-2">Search shortcut</div>
+              <div className="flex flex-wrap gap-2">
+                {(['ctrl-f', 'ctrl-k', 'slash'] as SearchTrigger[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => updateSearchPrefs({ trigger: t })}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                      searchPrefs.trigger === t
+                        ? 'border-[color:var(--accent)] text-[color:var(--accent)]'
+                        : isDark
+                          ? 'border-white/10 text-gray-300 hover:bg-white/5'
+                          : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    )}
+                    style={{
+                      backgroundColor: searchPrefs.trigger === t ? 'var(--accent-subtle)' : undefined,
+                    }}
+                  >
+                    {TRIGGER_LABELS[t]}
+                  </button>
+                ))}
+              </div>
+              {searchPrefs.alwaysShow && (
+                <p className={clsx('text-xs mt-2', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                  Disabled while the search bar is always shown.
+                </p>
+              )}
+            </div>
+          </section>
+
+          {/* Shortcuts — static reference */}
+          <section
+            hidden={activeCat !== 'shortcuts'}
+            className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+          >
+            <h2 className="text-base font-semibold mb-3">Keyboard</h2>
+            <div className="space-y-2 text-sm">
+              {[
+                ['Open clipboard', 'Super + V'],
+                ['Emoji picker', 'Super + .'],
+                ['Paste selected', 'Enter'],
+                ['Navigate items', '↑ / ↓ / Tab'],
+                ['Close window', 'Esc'],
+              ].map(([label, key]) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{label}</span>
+                  <kbd className="px-2 py-0.5 rounded-md text-xs font-mono bg-black/10 dark:bg-white/10">
+                    {key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
           </section>
 
           {/* Logs — placeholder until the dedicated stage lands */}
