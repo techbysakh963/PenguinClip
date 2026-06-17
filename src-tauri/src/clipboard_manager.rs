@@ -32,6 +32,38 @@ const THUMBNAIL_MAX_DIM: u32 = 256;
 /// image blobs, content-addressed by hash.
 const BLOB_DIR_NAME: &str = "blobs";
 
+/// File extensions treated as images when an image file is copied from a file
+/// manager (the clipboard then holds a file:// URI rather than image bytes).
+const IMAGE_FILE_EXTENSIONS: &[&str] = &[
+    "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "tif", "ico", "avif",
+];
+
+/// Extracts a local image-file path from clipboard text. Handles `file://`
+/// URIs (with percent-encoding) and plain absolute paths, and only returns
+/// `Some` when the path has a known image extension. Does not check existence.
+fn parse_image_file_path(text: &str) -> Option<PathBuf> {
+    // A uri-list may contain several lines; consider the first non-empty one.
+    let first = text.lines().map(str::trim).find(|l| !l.is_empty())?;
+
+    let path = if let Some(rest) = first.strip_prefix("file://") {
+        // Skip an optional host component: file://host/path -> /path
+        let path_start = rest.find('/')?;
+        let decoded = percent_encoding::percent_decode_str(&rest[path_start..])
+            .decode_utf8()
+            .ok()?;
+        PathBuf::from(decoded.as_ref())
+    } else if first.starts_with('/') {
+        PathBuf::from(first)
+    } else {
+        return None;
+    };
+
+    let ext = path.extension()?.to_str()?.to_ascii_lowercase();
+    IMAGE_FILE_EXTENSIONS
+        .contains(&ext.as_str())
+        .then_some(path)
+}
+
 // --- Helper Functions ---
 
 // Simple FNV-1a implementation for stable hashing across restarts
@@ -578,6 +610,43 @@ impl ClipboardManager {
         let item = ClipboardItem::new_image(thumbnail, Some(blob_name), width, height, hash);
         self.insert_item(item.clone());
         Some(item)
+    }
+
+    /// Adds clipboard text, transparently upgrading an image-file reference
+    /// (e.g. a `file://` URI copied from a file manager) into a real image
+    /// entry with a thumbnail. Falls back to storing the text when it is not a
+    /// readable image file.
+    pub fn add_clipboard_text(
+        &mut self,
+        text: String,
+        html: Option<String>,
+    ) -> Option<ClipboardItem> {
+        // Internal GIF cache URIs are .gif files but must not be treated as
+        // pasted images; let the text path skip them as before.
+        if !text.contains(GIF_CACHE_MARKER) {
+            if let Some(path) = parse_image_file_path(&text) {
+                if let Some(item) = self.add_image_from_file(&path) {
+                    return Some(item);
+                }
+                // Looked like an image file but could not be read/decoded;
+                // fall through and keep the original text.
+            }
+        }
+        self.add_text(text, html)
+    }
+
+    /// Loads an image file from disk and stores it as a blob-backed image item.
+    fn add_image_from_file(&mut self, path: &std::path::Path) -> Option<ClipboardItem> {
+        let bytes = fs::read(path).ok()?;
+        let rgba = image::load_from_memory(&bytes).ok()?.to_rgba8();
+        let (width, height) = (rgba.width() as usize, rgba.height() as usize);
+        let image_data = ImageData {
+            width,
+            height,
+            bytes: rgba.into_raw().into(),
+        };
+        let hash = calculate_hash(&image_data.bytes);
+        self.add_image(image_data, hash)
     }
 
     // --- Blob store helpers ---
@@ -1263,6 +1332,98 @@ mod tests {
             }
             _ => panic!("expected image"),
         }
+    }
+
+    // --- Image files copied from a file manager ---
+
+    fn write_png_file(dir: &std::path::Path, name: &str, w: usize, h: usize) -> PathBuf {
+        fs::create_dir_all(dir).unwrap();
+        let bytes = BASE64
+            .decode(png_base64(w, h, [10, 120, 200, 255]))
+            .unwrap();
+        let p = dir.join(name);
+        fs::write(&p, bytes).unwrap();
+        p
+    }
+
+    #[test]
+    fn test_parse_image_file_path() {
+        assert_eq!(
+            parse_image_file_path("file:///tmp/a.png"),
+            Some(PathBuf::from("/tmp/a.png"))
+        );
+        assert_eq!(
+            parse_image_file_path("/tmp/a.jpg"),
+            Some(PathBuf::from("/tmp/a.jpg"))
+        );
+        assert_eq!(
+            parse_image_file_path("file:///tmp/a%20b.png"),
+            Some(PathBuf::from("/tmp/a b.png")),
+            "percent-encoded spaces should decode"
+        );
+        assert_eq!(
+            parse_image_file_path("file:///tmp/a.png\r\n"),
+            Some(PathBuf::from("/tmp/a.png")),
+            "uri-list trailing newline should be ignored"
+        );
+        assert_eq!(parse_image_file_path("hello world"), None);
+        assert_eq!(parse_image_file_path("file:///tmp/notes.txt"), None);
+        assert_eq!(parse_image_file_path("/etc/hosts"), None);
+    }
+
+    #[test]
+    fn test_copying_image_file_stores_image_with_thumbnail() {
+        let path = temp_history_path("imgfile");
+        let dir = path.parent().unwrap().to_path_buf();
+        let img_path = write_png_file(&dir, "shot.png", 300, 200);
+
+        let mut manager = ClipboardManager::new(path.clone(), 50);
+        let uri = format!("file://{}", img_path.display());
+        let item = manager
+            .add_clipboard_text(uri, None)
+            .expect("an image file should be stored");
+
+        match &item.content {
+            ClipboardContent::Image { blob, base64, .. } => {
+                assert!(blob.is_some(), "stored as a blob-backed image");
+                let (tw, th) = png_dims(base64);
+                assert!(tw.max(th) <= THUMBNAIL_MAX_DIM, "a thumbnail is generated");
+            }
+            other => panic!("expected an Image item, got {:?}", other),
+        }
+        assert_eq!(fs::read_dir(blobs_dir_of(&path)).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn test_plain_text_still_stored_as_text() {
+        let path = temp_history_path("textstays");
+        let mut manager = ClipboardManager::new(path, 50);
+        let item = manager
+            .add_clipboard_text("just some text".to_string(), None)
+            .unwrap();
+        assert!(matches!(item.content, ClipboardContent::Text(_)));
+    }
+
+    #[test]
+    fn test_missing_image_file_falls_back_to_text() {
+        let path = temp_history_path("missingimg");
+        let mut manager = ClipboardManager::new(path, 50);
+        let item = manager
+            .add_clipboard_text("file:///tmp/penguin_does_not_exist.png".to_string(), None)
+            .expect("unreadable image path is kept as text");
+        assert!(matches!(item.content, ClipboardContent::Text(_)));
+    }
+
+    #[test]
+    fn test_gif_cache_uri_is_not_treated_as_image() {
+        let path = temp_history_path("gifcache");
+        let mut manager = ClipboardManager::new(path, 50);
+        let uri = "file:///home/u/.local/share/penguinclip/gifs/abc.gif".to_string();
+        assert!(
+            manager.add_clipboard_text(uri, None).is_none(),
+            "internal GIF cache URIs must not be recorded as images"
+        );
+        assert!(manager.get_history().is_empty());
     }
 
     // --- Privacy: sensitive-content exclusions ---

@@ -751,7 +751,9 @@ fn start_clipboard_watcher(app: AppHandle, clipboard_manager: Arc<Mutex<Clipboar
                         // Fetch HTML (still lock-free) for rich-text support.
                         let html = read_system_html();
 
-                        let added = clipboard_manager.lock().add_text(text, html);
+                        // Upgrades a copied image-file reference into a real
+                        // image entry; otherwise stores the text.
+                        let added = clipboard_manager.lock().add_clipboard_text(text, html);
                         if let Some(item) = added {
                             let _ = app.emit("clipboard-changed", &item);
                         }
