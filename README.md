@@ -98,7 +98,7 @@ Download the latest `.deb`, `.rpm`, or `.AppImage` from the [Releases Page](http
 <summary><b>Debian / Ubuntu / Pop!_OS / Linux Mint</b></summary>
 
 ```bash
-sudo apt install ./penguinclip_0.8.0_amd64.deb
+sudo apt install ./penguinclip_1.0.0_amd64.deb
 ```
 
 </details>
@@ -107,7 +107,7 @@ sudo apt install ./penguinclip_0.8.0_amd64.deb
 <summary><b>Fedora / openSUSE / RHEL</b></summary>
 
 ```bash
-sudo dnf install ./penguinclip-0.8.0-1.x86_64.rpm
+sudo dnf install ./penguinclip-1.0.0-1.x86_64.rpm
 ```
 
 </details>
@@ -116,8 +116,8 @@ sudo dnf install ./penguinclip-0.8.0-1.x86_64.rpm
 <summary><b>AppImage (Any Distro)</b></summary>
 
 ```bash
-chmod +x penguinclip_0.8.0_amd64.AppImage
-./penguinclip_0.8.0_amd64.AppImage
+chmod +x penguinclip_1.0.0_amd64.AppImage
+./penguinclip_1.0.0_amd64.AppImage
 ```
 
 </details>
