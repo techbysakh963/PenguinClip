@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { clsx } from 'clsx'
+import { SearchX } from 'lucide-react'
 
 import type { ClipboardItem, UserSettings } from '../types/clipboard'
 import type { TabBarRef } from './TabBar'
@@ -287,15 +288,36 @@ export function ClipboardTab(props: {
       )}
 
       {filteredHistory.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-8 text-center opacity-60">
-          <p
-            className={clsx(
-              'text-sm',
-              isDark ? 'text-win11-text-secondary' : 'text-win11Light-text-secondary'
-            )}
+        <div className="animate-in flex flex-col items-center justify-center gap-3 p-8 text-center">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: 'var(--surface-2)' }}
           >
-            No items found
-          </p>
+            <SearchX
+              className={clsx(
+                'h-6 w-6',
+                isDark ? 'text-win11-text-tertiary' : 'text-win11Light-text-secondary'
+              )}
+            />
+          </div>
+          <div>
+            <p
+              className={clsx(
+                'text-sm font-medium',
+                isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
+              )}
+            >
+              No matches
+            </p>
+            <p
+              className={clsx(
+                'mt-0.5 text-xs',
+                isDark ? 'text-win11-text-tertiary' : 'text-win11Light-text-secondary'
+              )}
+            >
+              Nothing here matches “{searchQuery}”.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2 p-3" role="listbox" aria-label="Clipboard history">

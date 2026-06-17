@@ -18,6 +18,8 @@ import { useRenderingEnv } from './hooks/useRenderingEnv'
 import type { ActiveTab, UserSettings } from './types/clipboard'
 import { ClipboardTab } from './components/ClipboardTab'
 import { NotificationBanner } from './components/NotificationBanner'
+import { ToastViewport } from './components/ToastViewport'
+import { useToasts } from './hooks/useToasts'
 
 // Real window-level acrylic needs tauri.conf `transparent: true` + a transparent
 // <body>, and must be verified on a transparent compositor (it glitches on some
@@ -126,6 +128,42 @@ function ClipboardApp() {
     toggleFavorite,
     pasteItem,
   } = useClipboardHistory()
+
+  // Transient confirmation toasts for actions that keep the window open
+  // (pin/favourite/delete/clear). Paste deliberately stays silent because the
+  // window hides immediately after.
+  const { toasts, push } = useToasts()
+
+  const handleTogglePin = useCallback(
+    (id: string) => {
+      const wasPinned = history.find((i) => i.id === id)?.pinned
+      togglePin(id)
+      push(wasPinned ? 'Unpinned' : 'Pinned', 'pin')
+    },
+    [history, togglePin, push]
+  )
+
+  const handleToggleFavorite = useCallback(
+    (id: string) => {
+      const wasFavorited = history.find((i) => i.id === id)?.favorited
+      toggleFavorite(id)
+      push(wasFavorited ? 'Removed from favorites' : 'Added to favorites', 'star')
+    },
+    [history, toggleFavorite, push]
+  )
+
+  const handleDeleteItem = useCallback(
+    (id: string) => {
+      deleteItem(id)
+      push('Removed', 'trash')
+    },
+    [deleteItem, push]
+  )
+
+  const handleClearHistory = useCallback(() => {
+    clearHistory()
+    push('History cleared', 'trash')
+  }, [clearHistory, push])
 
   // Refs for focus management
   const tabBarRef = useRef<TabBarRef>(null)
@@ -278,10 +316,10 @@ function ClipboardApp() {
             isDark={isDark}
             tertiaryOpacity={tertiaryOpacity}
             secondaryOpacity={secondaryOpacity}
-            clearHistory={clearHistory}
-            deleteItem={deleteItem}
-            togglePin={togglePin}
-            toggleFavorite={toggleFavorite}
+            clearHistory={handleClearHistory}
+            deleteItem={handleDeleteItem}
+            togglePin={handleTogglePin}
+            toggleFavorite={handleToggleFavorite}
             onPaste={pasteItem}
             settings={settings}
             tabBarRef={tabBarRef}
@@ -296,10 +334,10 @@ function ClipboardApp() {
             isDark={isDark}
             tertiaryOpacity={tertiaryOpacity}
             secondaryOpacity={secondaryOpacity}
-            clearHistory={clearHistory}
-            deleteItem={deleteItem}
-            togglePin={togglePin}
-            toggleFavorite={toggleFavorite}
+            clearHistory={handleClearHistory}
+            deleteItem={handleDeleteItem}
+            togglePin={handleTogglePin}
+            toggleFavorite={handleToggleFavorite}
             onPaste={pasteItem}
             settings={settings}
             tabBarRef={tabBarRef}
@@ -349,7 +387,7 @@ function ClipboardApp() {
   return (
     <div
       className={clsx(
-        'app-shell h-screen w-screen overflow-hidden flex flex-col select-none',
+        'app-shell relative h-screen w-screen overflow-hidden flex flex-col select-none',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
       onMouseEnter={handleMouseEnter}
@@ -395,6 +433,9 @@ function ClipboardApp() {
       >
         {renderContent()}
       </div>
+
+      {/* Transient action confirmations */}
+      <ToastViewport toasts={toasts} isDark={isDark} />
     </div>
   )
 }
