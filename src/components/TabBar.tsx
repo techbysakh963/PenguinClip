@@ -3,8 +3,6 @@ import { clsx } from 'clsx'
 import { ClipboardList, Star, Smile, Image, Type, Omega } from 'lucide-react'
 import type { ActiveTab } from '../types/clipboard'
 
-import { getTertiaryBackgroundStyle } from '../utils/themeUtils'
-
 interface TabBarProps {
   activeTab: ActiveTab
   onTabChange: (tab: ActiveTab) => void
@@ -26,7 +24,7 @@ const ALL_TABS: { id: ActiveTab; label: string; icon: typeof ClipboardList }[] =
 ]
 
 export const TabBar = forwardRef<TabBarRef, TabBarProps>(function TabBar(
-  { activeTab, onTabChange, isDark, tertiaryOpacity },
+  { activeTab, onTabChange, isDark },
   ref
 ) {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -68,10 +66,7 @@ export const TabBar = forwardRef<TabBarRef, TabBarProps>(function TabBar(
 
   return (
     <div
-      className={clsx(
-        'flex items-center gap-1 p-2 px-4 border-b',
-        isDark ? 'border-win11-border-subtle' : 'border-win11Light-border'
-      )}
+      className="flex items-center gap-1 p-2 px-4 border-b border-[color:var(--surface-border)]"
       data-tauri-drag-region
       role="tablist"
     >
@@ -95,18 +90,25 @@ export const TabBar = forwardRef<TabBarRef, TabBarProps>(function TabBar(
             tabIndex={isActive ? 0 : -1}
             className={clsx(
               'no-drag',
-              'flex items-center justify-center gap-2 px-4 py-2 rounded-md',
-              'text-sm font-medium transition-all duration-150',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-win11-bg-accent',
+              'flex items-center justify-center gap-2 px-3.5 py-2 rounded-[var(--radius-control)]',
+              'text-sm font-medium',
+              '[transition:background-color_var(--motion-fast)_var(--ease-out),color_var(--motion-fast)_var(--ease-out)]',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-ring)]',
+              // Active tab is tinted with the accent (the "you are here"
+              // indicator); inactive tabs stay quiet.
               isActive
-                ? [isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary']
-                : [isDark ? 'text-win11-text-secondary' : 'text-win11Light-text-secondary']
+                ? 'text-[color:var(--accent)]'
+                : isDark
+                  ? 'text-win11-text-secondary'
+                  : 'text-win11Light-text-secondary'
             )}
-            style={
-              isActive || isHovered
-                ? getTertiaryBackgroundStyle(isDark, tertiaryOpacity)
-                : undefined
-            }
+            style={{
+              backgroundColor: isActive
+                ? 'var(--accent-subtle)'
+                : isHovered
+                  ? 'var(--surface-2)'
+                  : undefined,
+            }}
           >
             <Icon className="w-4 h-4" />
             <span className="hidden sm:inline">{tab.label}</span>

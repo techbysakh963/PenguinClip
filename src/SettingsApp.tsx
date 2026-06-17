@@ -366,8 +366,7 @@ function SettingsApp() {
     return (
       <div
         className={clsx(
-          'h-screen w-screen flex items-center justify-center select-none rounded-xl',
-          isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
+          'app-shell h-screen w-screen flex items-center justify-center select-none',
           isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
         )}
       >
@@ -382,8 +381,7 @@ function SettingsApp() {
   return (
     <div
       className={clsx(
-        'h-screen w-screen overflow-hidden flex flex-col font-sans select-none rounded-xl',
-        isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
+        'app-shell h-screen w-screen overflow-hidden flex flex-col font-sans select-none',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
     >
