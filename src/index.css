@@ -276,6 +276,34 @@ body {
     border: 1px solid var(--surface-border);
   }
 
+  /* Floating glass search field. Blurs the app's own content behind it, so the
+   * frosted look renders on every machine — including opaque/NVIDIA. The accent
+   * focus ring + soft lift make it the primary visual focus when active. */
+  .search-field {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-search);
+    box-shadow: var(--shadow-sm);
+    transition:
+      border-color var(--motion-base) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out),
+      background-color var(--motion-base) var(--ease-out);
+  }
+  .search-field:focus {
+    outline: none;
+    border-color: var(--accent-ring);
+    box-shadow:
+      0 0 0 3px var(--accent-subtle),
+      var(--shadow-md);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .search-field {
+      background: var(--surface-2);
+    }
+  }
+
   /* Hover-raise interaction used by cards/buttons in later slices */
   .elevate {
     transition:

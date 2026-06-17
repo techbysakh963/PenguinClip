@@ -266,15 +266,15 @@ export function ClipboardTab(props: {
         isCompact={isCompact}
         onToggleCompact={() => setIsCompact(!isCompact)}
       />
-      {/* Search Bar - only visible when Ctrl+F is pressed */}
+      {/* Search Bar — appears when you press Ctrl+F or just start typing. The
+          glass field floats over the list and animates in. */}
       {isSearchVisible && (
-        <div className="px-3 pb-2 pt-1">
+        <div className="animate-in px-3 pb-2 pt-1">
           <SearchBar
             ref={searchInputRef}
             value={searchQuery}
             onChange={setSearchQuery}
             isDark={isDark}
-            opacity={secondaryOpacity}
             placeholder="Search history..."
             isRegex={isRegexMode}
             onToggleRegex={() => setIsRegexMode(!isRegexMode)}
