@@ -239,9 +239,13 @@ body {
     /* No border-radius on the opaque shell: the window is a non-transparent
      * rectangle, so a rounded radius would expose dark <body> triangles at the
      * corners. Rounding is reserved for the glass path, where the window is
-     * transparent and the corners are actually masked. */
+     * transparent and the corners are actually masked. Instead, frame the
+     * rectangle with a crisp hairline border and a subtly lit top edge so the
+     * square reads as intentional rather than abruptly cut. */
     background: var(--surface-0);
-    box-shadow: var(--shadow-lg);
+    box-shadow:
+      inset 0 0 0 1px var(--surface-border-strong),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   :root[data-fx='glass'] .app-shell {
