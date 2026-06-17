@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow, Window } from '@tauri-apps/api/window'
 import { listen } from '@tauri-apps/api/event'
@@ -184,6 +184,14 @@ function SettingsApp() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
   const [activeCat, setActiveCat] = useState<SettingsCat>('appearance')
   const [appearance, setAppearance] = useState<AppearanceTokens>(loadAppearance)
+
+  // Each category shares one scroll container (cards are just hidden), so reset
+  // the scroll to the top whenever the category changes — otherwise a short
+  // panel looks empty after scrolling a long one.
+  const contentRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 })
+  }, [activeCat])
 
   // Apply appearance tokens on mount so this window matches, and provide a
   // single updater that persists, applies live, and broadcasts to the clipboard
@@ -569,7 +577,7 @@ function SettingsApp() {
         </nav>
 
         {/* Content panel — only the selected category's cards are shown */}
-        <main className="flex-1 overflow-y-auto px-8 py-6 space-y-6 scrollbar-win11">
+        <main ref={contentRef} className="flex-1 overflow-y-auto px-8 py-6 space-y-6 scrollbar-win11">
           <h1 className="text-xl font-bold tracking-tight">
             {SETTINGS_CATEGORIES.find((c) => c.id === activeCat)?.label}
           </h1>
@@ -814,13 +822,13 @@ function SettingsApp() {
           hidden={activeCat !== 'appearance'}
           className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
         >
-          <h2 className="text-base font-semibold mb-1">Personalization</h2>
+          <h2 className="text-base font-semibold mb-1">Accent</h2>
           <p className={clsx('text-xs mb-5', isDark ? 'text-gray-400' : 'text-gray-500')}>
-            Tune the accent colour, glass, and corners — changes apply instantly.
+            Pick the highlight colour — it applies instantly across both windows.
           </p>
 
           {/* Accent colour */}
-          <div className="mb-6">
+          <div>
             <label className="text-sm font-medium">Accent color</label>
             <div className="flex flex-wrap items-center gap-2.5 mt-2">
               {ACCENT_PRESETS.map((c) => (
@@ -850,46 +858,6 @@ function SettingsApp() {
                 />
               </label>
             </div>
-          </div>
-
-          {/* Glass strength */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <label htmlFor="glass-strength" className="text-sm font-medium">
-                Glass strength
-              </label>
-              <span className="text-xs opacity-60">{Math.round(appearance.glassStrength * 100)}%</span>
-            </div>
-            <input
-              id="glass-strength"
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={appearance.glassStrength}
-              onChange={(e) => updateAppearance({ glassStrength: Number(e.target.value) })}
-              className="w-full mt-2 accent-[var(--accent)] cursor-pointer"
-            />
-          </div>
-
-          {/* Corner roundness */}
-          <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="roundness" className="text-sm font-medium">
-                Corner roundness
-              </label>
-              <span className="text-xs opacity-60">{Math.round(appearance.roundness * 100)}%</span>
-            </div>
-            <input
-              id="roundness"
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={appearance.roundness}
-              onChange={(e) => updateAppearance({ roundness: Number(e.target.value) })}
-              className="w-full mt-2 accent-[var(--accent)] cursor-pointer"
-            />
           </div>
         </section>
 
@@ -997,9 +965,9 @@ function SettingsApp() {
           )}
         >
           <div className="p-6 border-b border-inherit">
-            <h2 className="text-base font-semibold mb-1">UI Scale</h2>
+            <h2 className="text-base font-semibold mb-1">Clipboard Text Size</h2>
             <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
-              Adjust the clipboard window size for your display
+              Make the copied text in history items larger or smaller
             </p>
           </div>
 
@@ -1007,7 +975,7 @@ function SettingsApp() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <label htmlFor="ui-scale" className="text-sm font-medium">
-                  Clipboard Window Scale
+                  Text size
                 </label>
                 <div
                   className={clsx(
@@ -1034,7 +1002,7 @@ function SettingsApp() {
                 className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-win11-bg-accent"
               />
               <p className={clsx('text-xs', isDark ? 'text-gray-500' : 'text-gray-400')}>
-                This setting only affects the clipboard popup, not this settings window
+                Only scales the copied text — icons, padding, and layout stay the same
               </p>
             </div>
           </div>

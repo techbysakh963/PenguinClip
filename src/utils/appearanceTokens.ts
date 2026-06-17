@@ -1,28 +1,20 @@
 /**
- * User-tunable appearance tokens (accent, glass strength, corner roundness).
+ * User-tunable appearance (accent colour).
  *
- * These are intentionally frontend-only: they live in localStorage, which is
- * shared across every window of the same origin (clipboard + settings), and are
- * applied by writing CSS custom properties on :root. That keeps them instant and
- * avoids round-tripping through the Rust settings store for what is purely a
- * visual preference.
+ * Frontend-only: stored in localStorage (shared across every window of the same
+ * origin) and applied by writing CSS custom properties on :root, so it is
+ * instant and doesn't round-trip through the Rust settings store.
  */
 
 export interface AppearanceTokens {
   /** Accent colour as #rrggbb. Drives active states, focus rings, primary actions. */
   accent: string
-  /** 0 = subtle blur, 1 = heavily frosted. Maps to the glass blur radius. */
-  glassStrength: number
-  /** 0 = tight corners, 1 = very rounded. Scales every radius token. */
-  roundness: number
 }
 
 const STORAGE_KEY = 'penguinclip-appearance'
 
 export const DEFAULT_APPEARANCE: AppearanceTokens = {
   accent: '#0078d4',
-  glassStrength: 0.5,
-  roundness: 0.5,
 }
 
 /** Preset accent swatches offered in Settings. */
@@ -70,29 +62,13 @@ function lighten({ r, g, b }: { r: number; g: number; b: number }, amount: numbe
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`
 }
 
-/** Write the tokens onto :root so the whole app re-themes immediately. */
+/** Write the accent tokens onto :root so the whole app re-themes immediately. */
 export function applyAppearance(tokens: AppearanceTokens): void {
   const root = document.documentElement
   const rgb = hexToRgb(tokens.accent)
 
-  // Accent family
   root.style.setProperty('--accent', tokens.accent)
   root.style.setProperty('--accent-hover', lighten(rgb, 0.12))
   root.style.setProperty('--accent-subtle', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.12)`)
   root.style.setProperty('--accent-ring', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`)
-
-  // Glass blur: 8px (subtle) → 28px (heavy)
-  const blur = Math.round(8 + clamp01(tokens.glassStrength) * 20)
-  root.style.setProperty('--glass-blur', `${blur}px`)
-
-  // Roundness scales every radius token (0.5× → 1.5× of the design defaults)
-  const scale = 0.5 + clamp01(tokens.roundness)
-  root.style.setProperty('--radius-window', px(18 * scale))
-  root.style.setProperty('--radius-card', px(14 * scale))
-  root.style.setProperty('--radius-control', px(11 * scale))
-  root.style.setProperty('--radius-menu', px(12 * scale))
-  root.style.setProperty('--radius-search', px(16 * scale))
 }
-
-const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
-const px = (n: number) => `${Math.round(n)}px`

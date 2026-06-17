@@ -17,10 +17,13 @@ export function TextContent({
   return (
     <p
       className={clsx(
-        'text-sm break-words whitespace-pre-wrap',
+        'break-words whitespace-pre-wrap',
         effectiveCompact ? 'line-clamp-1' : 'line-clamp-3',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
+      // Copied text scales with the "Clipboard text size" setting; the rest of
+      // the UI (icons, padding, chrome) stays fixed.
+      style={{ fontSize: 'calc(0.875rem * var(--clip-text-scale, 1))', lineHeight: 1.4 }}
     >
       {textToDisplay}
     </p>

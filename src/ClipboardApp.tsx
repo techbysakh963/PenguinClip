@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { clsx } from 'clsx'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { useClipboardHistory } from './hooks/useClipboardHistory'
@@ -89,14 +88,12 @@ function applyThemeClass(isDark: boolean) {
 }
 
 /**
- * Applies the UI scale/zoom level to the webview
+ * Applies the clipboard text size. Rather than zooming the whole webview (which
+ * also scaled icons, padding, and chrome), this only scales the copied-text in
+ * history items via the --clip-text-scale CSS variable.
  */
-async function applyUIScale(scale: number) {
-  try {
-    await getCurrentWebview().setZoom(scale)
-  } catch (err) {
-    console.error('Failed to apply UI scale:', err)
-  }
+function applyUIScale(scale: number) {
+  document.documentElement.style.setProperty('--clip-text-scale', String(scale || 1))
 }
 
 /**
