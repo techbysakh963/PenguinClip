@@ -29,6 +29,82 @@
   --win11-light-bg-alpha-end: 0.65;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * Design tokens (premium UI foundation)
+ *
+ * One source of truth for surfaces, glass, radii, shadows, accent and motion.
+ * Light values live on :root, dark overrides on :root.dark. These are additive
+ * to the existing win11* palette so nothing regresses while components migrate.
+ * ──────────────────────────────────────────────────────────────────────────*/
+:root {
+  /* Elevation surfaces */
+  --surface-0: #f3f3f3; /* window background      */
+  --surface-1: #ffffff; /* cards / primary panels */
+  --surface-2: #f7f7f8; /* raised / hover / search */
+  --surface-3: #ffffff; /* popovers / menus / toasts */
+  --surface-border: rgba(0, 0, 0, 0.08);
+  --surface-border-strong: rgba(0, 0, 0, 0.14);
+
+  /* Glass (translucent + blur where supported) */
+  --glass-bg: rgba(243, 243, 243, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+
+  /* Corner radii */
+  --radius-window: 18px;
+  --radius-card: 14px;
+  --radius-control: 11px;
+  --radius-menu: 12px;
+  --radius-search: 16px;
+
+  /* Soft, layered shadows (no harsh black) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-glass: 0 16px 48px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+
+  /* Accent (tokenised now, user-customisable later) */
+  --accent: #0078d4;
+  --accent-hover: #1a86d9;
+  --accent-contrast: #ffffff;
+  --accent-subtle: rgba(0, 120, 212, 0.12);
+  --accent-ring: rgba(0, 120, 212, 0.5);
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 260ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.9, 0.1, 1);
+}
+
+:root.dark {
+  --surface-0: #1f1f1f;
+  --surface-1: #2a2a2a;
+  --surface-2: #323232;
+  --surface-3: #2d2d2d;
+  --surface-border: rgba(255, 255, 255, 0.07);
+  --surface-border-strong: rgba(255, 255, 255, 0.12);
+
+  --glass-bg: rgba(32, 32, 32, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-glass: 0 16px 48px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Honour reduced-motion: collapse animation durations to ~instant */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
+
 /* Reset for Tauri */
 html,
 body,
@@ -143,6 +219,72 @@ body {
   .glass-effect-opaque-light {
     background: rgb(243, 243, 243);
     border-radius: inherit;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Premium surfaces — adaptive glass shell + in-app panels
+ * ──────────────────────────────────────────────────────────────────────────*/
+@layer components {
+  /* Window shell. Defaults to premium-opaque so there is no flash before the
+   * rendering environment resolves; [data-fx='glass'] upgrades it to real
+   * acrylic where the compositor supports window transparency. */
+  .app-shell {
+    border-radius: var(--radius-window);
+    background: var(--surface-0);
+    box-shadow: var(--shadow-lg);
+  }
+
+  :root[data-fx='glass'] .app-shell {
+    /* --shell-glass-bg is set from the user's Background-Opacity setting so the
+     * existing slider keeps controlling window translucency; falls back to the
+     * default glass tint before settings load. */
+    background: var(--shell-glass-bg, var(--glass-bg));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* In-app glass panel (search bar, menus, toasts). Blurs the app's OWN content
+   * behind it, so it renders on every machine — including NVIDIA/opaque, where
+   * window transparency is off. */
+  .glass-panel {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-md);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-panel {
+      background: var(--surface-3);
+    }
+  }
+
+  /* Elevation helpers */
+  .surface-1 {
+    background: var(--surface-1);
+    border: 1px solid var(--surface-border);
+  }
+  .surface-2 {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-border);
+  }
+  .surface-3 {
+    background: var(--surface-3);
+    border: 1px solid var(--surface-border);
+  }
+
+  /* Hover-raise interaction used by cards/buttons in later slices */
+  .elevate {
+    transition:
+      transform var(--motion-base) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out);
+  }
+  .elevate:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
 }
 

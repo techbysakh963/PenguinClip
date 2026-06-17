@@ -19,6 +19,12 @@ import type { ActiveTab, UserSettings } from './types/clipboard'
 import { ClipboardTab } from './components/ClipboardTab'
 import { NotificationBanner } from './components/NotificationBanner'
 
+// Real window-level acrylic needs tauri.conf `transparent: true` + a transparent
+// <body>, and must be verified on a transparent compositor (it glitches on some
+// NVIDIA setups — see useRenderingEnv). Until then the shell stays premium-opaque
+// everywhere; in-app `.glass-panel` blur still renders real glass regardless.
+const WINDOW_ACRYLIC_ENABLED = false
+
 const DEFAULT_SETTINGS: UserSettings = {
   theme_mode: 'system',
   dark_background_opacity: 1,
@@ -181,6 +187,25 @@ function ClipboardApp() {
     applyThemeClass(isDark)
   }, [isDark])
 
+  // Pick the rendering path for the adaptive glass shell. Real window acrylic
+  // additionally requires the main window to be OS-transparent
+  // (tauri.conf `transparent: true`) plus a transparent <body>; until that is
+  // enabled and verified on a transparent compositor, every machine uses the
+  // premium-opaque shell. The CSS keys off :root[data-fx], so flipping
+  // WINDOW_ACRYLIC_ENABLED on is all that's needed once tested.
+  useEffect(() => {
+    const glass = WINDOW_ACRYLIC_ENABLED && !renderingEnv.transparency_disabled
+    document.documentElement.dataset.fx = glass ? 'glass' : 'opaque'
+  }, [renderingEnv.transparency_disabled])
+
+  // Keep the shell's glass tint in sync with the Background-Opacity setting so
+  // the existing slider still controls window translucency on transparent DEs.
+  useEffect(() => {
+    const rgb = isDark ? '32, 32, 32' : '243, 243, 243'
+    const alpha = isDark ? settings.dark_background_opacity : settings.light_background_opacity
+    document.documentElement.style.setProperty('--shell-glass-bg', `rgba(${rgb}, ${alpha})`)
+  }, [isDark, settings.dark_background_opacity, settings.light_background_opacity])
+
   // Handle ESC key to close/hide window
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -324,9 +349,7 @@ function ClipboardApp() {
   return (
     <div
       className={clsx(
-        'h-screen w-screen overflow-hidden flex flex-col select-none rounded-xl',
-        isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
-        isDark ? 'bg-win11-acrylic-bg' : 'bg-win11Light-acrylic-bg',
+        'app-shell h-screen w-screen overflow-hidden flex flex-col select-none',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
       onMouseEnter={handleMouseEnter}
