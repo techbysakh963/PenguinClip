@@ -90,6 +90,30 @@ fn export_diagnostics(state: State<AppState>) -> Result<String, String> {
     penguinclip_lib::diagnostics::export_report(&state.data_dir).map(|p| p.display().to_string())
 }
 
+/// Returns the most recent log lines for display in Settings → Logs.
+#[tauri::command]
+fn get_recent_logs(state: State<AppState>) -> String {
+    penguinclip_lib::diagnostics::recent_logs(&state.data_dir, 400)
+}
+
+/// Truncates the log file (and removes the rotated one) to free disk.
+#[tauri::command]
+fn clear_logs(state: State<AppState>) -> Result<(), String> {
+    penguinclip_lib::diagnostics::clear_logs(&state.data_dir)
+}
+
+/// Enables or disables file logging at runtime (persists across restarts).
+#[tauri::command]
+fn set_logging_enabled(state: State<AppState>, enabled: bool) {
+    penguinclip_lib::diagnostics::set_logging_enabled(&state.data_dir, enabled);
+}
+
+/// Whether file logging is currently enabled.
+#[tauri::command]
+fn is_logging_enabled() -> bool {
+    penguinclip_lib::diagnostics::logging_enabled()
+}
+
 /// Returns the running application version.
 #[tauri::command]
 fn get_app_version() -> String {
@@ -1135,6 +1159,10 @@ fn main() {
             get_history_load_status,
             get_diagnostics_report,
             export_diagnostics,
+            get_recent_logs,
+            clear_logs,
+            set_logging_enabled,
+            is_logging_enabled,
             get_app_version,
             check_for_updates,
             delete_item,

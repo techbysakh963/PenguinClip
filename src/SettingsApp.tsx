@@ -213,6 +213,44 @@ function SettingsApp() {
       return next
     })
   }, [])
+
+  // --- Logs ---
+  const [logsText, setLogsText] = useState('')
+  const [loadingLogs, setLoadingLogs] = useState(false)
+  const [loggingEnabled, setLoggingEnabled] = useState(true)
+
+  useEffect(() => {
+    invoke<boolean>('is_logging_enabled')
+      .then(setLoggingEnabled)
+      .catch(() => {})
+  }, [])
+
+  const refreshLogs = useCallback(() => {
+    setLoadingLogs(true)
+    invoke<string>('get_recent_logs')
+      .then((t) => setLogsText(t))
+      .catch((e) => setLogsText(`Failed to read logs: ${e}`))
+      .finally(() => setLoadingLogs(false))
+  }, [])
+
+  // Load logs the first time the user opens the Logs category.
+  useEffect(() => {
+    if (activeCat === 'logs' && !logsText && !loadingLogs) refreshLogs()
+  }, [activeCat, logsText, loadingLogs, refreshLogs])
+
+  const clearLogs = useCallback(() => {
+    invoke('clear_logs')
+      .then(() => setLogsText(''))
+      .catch((e) => setLogsText(`Failed to clear logs: ${e}`))
+  }, [])
+
+  const toggleLogging = useCallback(() => {
+    setLoggingEnabled((prev) => {
+      const next = !prev
+      invoke('set_logging_enabled', { enabled: next }).catch(() => {})
+      return next
+    })
+  }, [])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -618,15 +656,53 @@ function SettingsApp() {
             </div>
           </section>
 
-          {/* Logs — placeholder until the dedicated stage lands */}
+          {/* Logs */}
           <section
             hidden={activeCat !== 'logs'}
             className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
           >
-            <h2 className="text-base font-semibold mb-1">Logs</h2>
-            <p className={clsx('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
-              Viewing, clearing, and disabling diagnostic logs will live here.
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Diagnostic logging</h2>
+                <p className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  Local error/warning logs only — never clipboard content.
+                </p>
+              </div>
+              <Switch checked={loggingEnabled} onChange={toggleLogging} isDark={isDark} />
+            </div>
+
+            <div className="mt-5 flex items-center gap-2">
+              <button
+                onClick={refreshLogs}
+                className={clsx(
+                  'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                  isDark
+                    ? 'border-white/10 text-gray-300 hover:bg-white/5'
+                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                )}
+              >
+                Refresh
+              </button>
+              <button
+                onClick={clearLogs}
+                className={clsx(
+                  'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                  'hover:text-red-500',
+                  isDark ? 'border-white/10 text-gray-300' : 'border-gray-200 text-gray-700'
+                )}
+              >
+                Clear logs
+              </button>
+            </div>
+
+            <pre
+              className={clsx(
+                'mt-4 max-h-72 overflow-auto rounded-lg p-3 text-[11px] font-mono leading-relaxed whitespace-pre-wrap break-words',
+                isDark ? 'bg-white/5 text-gray-300' : 'bg-black/5 text-gray-700'
+              )}
+            >
+              {loadingLogs ? 'Loading…' : logsText || 'No log entries.'}
+            </pre>
           </section>
         {/* Theme Selection Card */}
         <section
