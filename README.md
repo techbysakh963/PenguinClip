@@ -4,9 +4,9 @@
 
 # PenguinClip
 
-**A security-hardened clipboard history manager for Linux.**
+**Fast, private clipboard history for Linux.**
 
-Developed by **SAKH** | Hardened fork of [Windows-11-Clipboard-History-For-Linux](https://github.com/techbysakh963/Windows-11-Clipboard-History-For-Linux) by [gustavosett](https://github.com/gustavosett).
+Instant fuzzy search · image previews · privacy controls · crash-safe · 100% local. By **SAKH**.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Rust](https://img.shields.io/badge/rust-1.77+-orange.svg)
@@ -26,9 +26,18 @@ Built with Rust + Tauri v2 + React + Tailwind CSS
 
 ## What is PenguinClip?
 
-PenguinClip is a **security-focused fork** of the excellent Windows-11-Clipboard-History-For-Linux project. It provides a beautiful clipboard history UI while addressing security concerns for enterprise and privacy-conscious users.
+PenguinClip is a native clipboard history manager for Linux that's fast, private, and easy on memory. Copy anything — text, rich text, or images — and bring it back instantly with `Super+V`.
 
-### What Changed from Upstream
+### Why PenguinClip
+
+- **Instant fuzzy search** — find anything you've copied, typos and all.
+- **Private by design** — 100% local, no telemetry. Exclusion rules and a recording-pause keep sensitive content out of your history.
+- **Light on memory** — images are thumbnailed in the UI and kept on disk, so idle RAM stays low even with a large history.
+- **Crash-safe** — history is written atomically and recovers from corruption instead of silently losing your data.
+- **Works everywhere** — GNOME, KDE, COSMIC, Sway, Hyprland — on Wayland or X11.
+- **Security-hardened** — built with privacy and supply-chain safety as defaults (details below).
+
+### Security hardening
 
 | Area | Before (Upstream) | After (PenguinClip) |
 |---|---|---|
