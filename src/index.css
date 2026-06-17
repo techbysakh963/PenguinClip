@@ -236,12 +236,16 @@ body {
    * rendering environment resolves; [data-fx='glass'] upgrades it to real
    * acrylic where the compositor supports window transparency. */
   .app-shell {
-    border-radius: var(--radius-window);
+    /* No border-radius on the opaque shell: the window is a non-transparent
+     * rectangle, so a rounded radius would expose dark <body> triangles at the
+     * corners. Rounding is reserved for the glass path, where the window is
+     * transparent and the corners are actually masked. */
     background: var(--surface-0);
     box-shadow: var(--shadow-lg);
   }
 
   :root[data-fx='glass'] .app-shell {
+    border-radius: var(--radius-window);
     /* --shell-glass-bg is set from the user's Background-Opacity setting so the
      * existing slider keeps controlling window translucency; falls back to the
      * default glass tint before settings load. */
