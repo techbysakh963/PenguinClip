@@ -435,9 +435,9 @@ function SettingsApp() {
 
       {/* Header */}
       <header className="px-8 pt-2 pb-4 flex-shrink-0">
-        <h1 className="text-2xl font-bold tracking-tight">Personalization</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className={clsx('text-sm mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
-          Customize the look and feel of your clipboard history
+          Customize how PenguinClip looks and behaves
         </p>
       </header>
 
@@ -447,7 +447,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -551,7 +551,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -645,7 +645,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -696,7 +696,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -748,7 +748,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -839,7 +839,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -898,7 +898,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -976,7 +976,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -1016,7 +1016,7 @@ function SettingsApp() {
         <section
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
