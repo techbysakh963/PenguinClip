@@ -5,7 +5,17 @@ import { listen } from '@tauri-apps/api/event'
 import { emit } from '@tauri-apps/api/event'
 import { open } from '@tauri-apps/plugin-shell'
 import { clsx } from 'clsx'
-import { X } from 'lucide-react'
+import {
+  X,
+  Palette,
+  ClipboardList,
+  ShieldCheck,
+  Keyboard,
+  Image as ImageIcon,
+  Wrench,
+  ScrollText,
+  Info,
+} from 'lucide-react'
 
 import type { UserSettings, CustomKaomoji, BooleanSettingKey } from './types/clipboard'
 
@@ -143,8 +153,22 @@ function applyBackgroundOpacity(settings: UserSettings) {
 /**
  * Settings App Component - Configuration UI for PenguinClip
  */
+const SETTINGS_CATEGORIES = [
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'clipboard', label: 'Clipboard', icon: ClipboardList },
+  { id: 'privacy', label: 'Privacy', icon: ShieldCheck },
+  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+  { id: 'integrations', label: 'Integrations', icon: ImageIcon },
+  { id: 'advanced', label: 'Advanced', icon: Wrench },
+  { id: 'logs', label: 'Logs', icon: ScrollText },
+  { id: 'about', label: 'About', icon: Info },
+] as const
+
+type SettingsCat = (typeof SETTINGS_CATEGORIES)[number]['id']
+
 function SettingsApp() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
+  const [activeCat, setActiveCat] = useState<SettingsCat>('appearance')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -433,18 +457,67 @@ function SettingsApp() {
         </div>
       </div>
 
-      {/* Header */}
-      <header className="px-8 pt-2 pb-4 flex-shrink-0">
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className={clsx('text-sm mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
-          Customize how PenguinClip looks and behaves
-        </p>
-      </header>
+      {/* Body: sidebar nav + content panel */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Sidebar (navigation layer) */}
+        <nav className="bar-glass w-44 flex-shrink-0 overflow-y-auto p-3 space-y-0.5 border-r border-[color:var(--surface-border)] scrollbar-hide">
+          {SETTINGS_CATEGORIES.map((cat) => {
+            const Icon = cat.icon
+            const active = activeCat === cat.id
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCat(cat.id)}
+                className={clsx(
+                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-control)] text-sm font-medium',
+                  '[transition:background-color_var(--motion-fast)_var(--ease-out),color_var(--motion-fast)_var(--ease-out)]',
+                  active
+                    ? 'text-[color:var(--accent)]'
+                    : isDark
+                      ? 'text-win11-text-secondary hover:text-win11-text-primary'
+                      : 'text-win11Light-text-secondary hover:text-win11Light-text-primary'
+                )}
+                style={{ backgroundColor: active ? 'var(--accent-subtle)' : undefined }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {cat.label}
+              </button>
+            )
+          })}
+        </nav>
 
-      {/* Content */}
-      <main className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 scrollbar-win11">
+        {/* Content panel — only the selected category's cards are shown */}
+        <main className="flex-1 overflow-y-auto px-8 py-6 space-y-6 scrollbar-win11">
+          <h1 className="text-xl font-bold tracking-tight">
+            {SETTINGS_CATEGORIES.find((c) => c.id === activeCat)?.label}
+          </h1>
+
+          {/* Shortcuts — placeholder until the dedicated stage lands */}
+          <section
+            hidden={activeCat !== 'shortcuts'}
+            className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+          >
+            <h2 className="text-base font-semibold mb-1">Keyboard Shortcuts</h2>
+            <p className={clsx('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+              Open clipboard with <kbd className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 text-xs">Super+V</kbd>,
+              search with <kbd className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 text-xs">Ctrl+F</kbd> or just
+              start typing. Configurable triggers and an always-on search bar are coming here.
+            </p>
+          </section>
+
+          {/* Logs — placeholder until the dedicated stage lands */}
+          <section
+            hidden={activeCat !== 'logs'}
+            className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+          >
+            <h2 className="text-base font-semibold mb-1">Logs</h2>
+            <p className={clsx('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+              Viewing, clearing, and disabling diagnostic logs will live here.
+            </p>
+          </section>
         {/* Theme Selection Card */}
         <section
+          hidden={activeCat !== 'appearance'}
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -549,6 +622,7 @@ function SettingsApp() {
 
         {/* Auto Delete Section */}
         <section
+          hidden={activeCat !== 'clipboard'}
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -643,6 +717,7 @@ function SettingsApp() {
 
         {/* UI Scale Section */}
         <section
+          hidden={activeCat !== 'appearance'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -694,6 +769,7 @@ function SettingsApp() {
 
         {/* History Settings Section */}
         <section
+          hidden={activeCat !== 'clipboard'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -746,6 +822,7 @@ function SettingsApp() {
 
         {/* Custom Kaomoji Section */}
         <section
+          hidden={activeCat !== 'clipboard'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -837,6 +914,7 @@ function SettingsApp() {
 
         {/* GIF Integration Section */}
         <section
+          hidden={activeCat !== 'integrations'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -896,6 +974,7 @@ function SettingsApp() {
 
         {/* Privacy Section */}
         <section
+          hidden={activeCat !== 'privacy'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -974,6 +1053,7 @@ function SettingsApp() {
 
         {/* Diagnostics Section */}
         <section
+          hidden={activeCat !== 'advanced'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -1014,6 +1094,7 @@ function SettingsApp() {
 
         {/* About & Updates Section */}
         <section
+          hidden={activeCat !== 'about'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
             'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
@@ -1059,10 +1140,12 @@ function SettingsApp() {
         </section>
 
         {/* Features Section */}
-        <FeaturesSection settings={settings} isDark={isDark} onToggle={handleToggle} />
+        {activeCat === 'advanced' && (
+          <FeaturesSection settings={settings} isDark={isDark} onToggle={handleToggle} />
+        )}
 
         {/* Reset Section */}
-        <div className="flex justify-end pt-2">
+        <div hidden={activeCat !== 'advanced'} className="flex justify-end pt-2">
           <button
             onClick={async () => {
               setSettings(DEFAULT_SETTINGS)
@@ -1082,7 +1165,8 @@ function SettingsApp() {
             Reset to defaults
           </button>
         </div>
-      </main>
+        </main>
+      </div>
 
       {/* Footer */}
       <footer
