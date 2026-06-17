@@ -62,7 +62,8 @@ export default {
         'win11-elevated': '0 16px 48px rgba(0, 0, 0, 0.35)',
       },
       fontFamily: {
-        'segoe': ['"Segoe UI Variable"', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        'sans': ['"Inter Variable"', '"Inter"', '"Segoe UI Variable"', 'system-ui', 'sans-serif'],
+        'segoe': ['"Inter Variable"', '"Segoe UI Variable"', '"Segoe UI"', 'system-ui', 'sans-serif'],
       },
     },
   },

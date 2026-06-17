@@ -7,6 +7,9 @@ import { listen } from '@tauri-apps/api/event'
 import ClipboardApp from './ClipboardApp'
 import SettingsApp from './SettingsApp'
 import { SetupApp } from './setup'
+// Bundled variable font (no network/CSP dependency) — gives the UI a crisp,
+// premium developer-tool typeface instead of falling back to a system font.
+import '@fontsource-variable/inter'
 import './index.css'
 
 /**

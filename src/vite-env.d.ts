@@ -7,3 +7,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// @fontsource packages ship CSS for a side-effect import but no type declarations.
+declare module '@fontsource-variable/inter'
