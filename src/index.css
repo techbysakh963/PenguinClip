@@ -253,7 +253,11 @@ body {
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     backdrop-filter: blur(16px) saturate(160%);
     border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-md);
+    /* Inner top highlight = the light-source reflection that makes glass read
+     * as glass rather than a flat translucent panel. */
+    box-shadow:
+      var(--shadow-md),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -285,7 +289,9 @@ body {
     backdrop-filter: blur(16px) saturate(160%);
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-search);
-    box-shadow: var(--shadow-sm);
+    box-shadow:
+      var(--shadow-sm),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition:
       border-color var(--motion-base) var(--ease-out),
       box-shadow var(--motion-base) var(--ease-out),
@@ -296,7 +302,8 @@ body {
     border-color: var(--accent-ring);
     box-shadow:
       0 0 0 3px var(--accent-subtle),
-      var(--shadow-md);
+      var(--shadow-md),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .search-field {

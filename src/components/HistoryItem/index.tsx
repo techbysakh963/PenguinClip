@@ -141,9 +141,10 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
         // Base styles
         'group relative rounded-[var(--radius-card)] cursor-pointer',
         effectiveCompact ? 'p-2' : 'p-3',
-        // Smooth, premium feel: lift slightly and cast a soft shadow on hover.
+        // Smooth, premium feel: lift slightly and cast a soft shadow on hover,
+        // then settle back with a subtle press so clicks feel tactile.
         '[transition:transform_var(--motion-base)_var(--ease-out),box-shadow_var(--motion-base)_var(--ease-out),background-color_var(--motion-fast)_var(--ease-out)]',
-        'hover:-translate-y-px hover:shadow-[var(--shadow-md)]',
+        'hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:translate-y-0 active:scale-[0.99]',
         // Skip layout/paint for off-screen rows so long histories stay cheap to
         // render, while keeping every row mounted (so keyboard focus and
         // scrollIntoView still work). contain-intrinsic-size reserves a
