@@ -1,0 +1,37 @@
+# cargo-audit configuration.
+#
+# The advisories ignored below are all "unmaintained"/"unsound" *warnings*
+# (not vulnerabilities) for transitive dependencies we do not control:
+#
+#  - gtk-rs GTK3 bindings (atk*, gdk*, gtk*, glib) come from Tauri's Linux
+#    stack. gtk-rs has moved to GTK4; these update only when Tauri does, and
+#    they cannot be bumped independently of Tauri.
+#  - paste / proc-macro-error / unic-* are transitive build/macro helpers.
+#
+# None are exploitable in PenguinClip (e.g. the glib "unsound" item is in a
+# VariantStrIter path the app never calls). Actual *vulnerability* advisories
+# are NOT ignored and will still fail the audit. Revisit when Tauri moves off
+# GTK3.
+[advisories]
+ignore = [
+    # gtk-rs GTK3 bindings — unmaintained (via Tauri)
+    "RUSTSEC-2024-0411", # gdkwayland-sys
+    "RUSTSEC-2024-0412", # gdk
+    "RUSTSEC-2024-0413", # atk
+    "RUSTSEC-2024-0414", # gdkx11-sys
+    "RUSTSEC-2024-0415", # gtk
+    "RUSTSEC-2024-0416", # atk-sys
+    "RUSTSEC-2024-0417", # gdkx11
+    "RUSTSEC-2024-0418", # gdk-sys
+    "RUSTSEC-2024-0419", # gtk3-macros
+    "RUSTSEC-2024-0420", # gtk-sys
+    "RUSTSEC-2024-0429", # glib — unsound VariantStrIter (unused path)
+    # transitive build / proc-macro helpers — unmaintained
+    "RUSTSEC-2024-0370", # proc-macro-error
+    "RUSTSEC-2024-0436", # paste
+    "RUSTSEC-2025-0075", # unic-char-range
+    "RUSTSEC-2025-0080", # unic-common
+    "RUSTSEC-2025-0081", # unic-char-property
+    "RUSTSEC-2025-0098", # unic-ucd-version
+    "RUSTSEC-2025-0100", # unic-ucd-ident
+]
