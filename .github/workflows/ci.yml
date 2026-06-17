@@ -141,4 +141,7 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        run: npm audit --audit-level=high
+        # Audit only production dependencies: the dev/build toolchain (vite,
+        # esbuild, eslint, …) is not shipped — the app bundles built static
+        # assets, not node_modules — so its advisories don't affect users.
+        run: npm audit --omit=dev --audit-level=high
