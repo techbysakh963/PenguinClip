@@ -61,9 +61,9 @@ export function ImageContent({
         decoding="async"
         width={width}
         height={height}
-        className="max-w-full max-h-24 rounded object-contain bg-black/10"
+        className="max-w-full max-h-28 rounded-[10px] border border-[var(--surface-border)] object-contain bg-black/10"
       />
-      <span className="absolute bottom-1 right-1 text-xs px-1.5 py-0.5 rounded bg-black/60 text-white">
+      <span className="absolute bottom-1 right-1 text-xs px-1.5 py-0.5 rounded-md bg-black/55 text-white backdrop-blur-sm">
         {width}×{height}
       </span>
     </div>

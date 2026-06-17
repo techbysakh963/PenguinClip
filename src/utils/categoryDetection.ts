@@ -30,15 +30,18 @@ export function detectCategory(item: ClipboardItem): ClipboardCategory {
   return 'Text'
 }
 
+// `accent` is the category's signature colour (hex). It drives both the badge
+// (above) and the tinted icon container on each card, so content type is
+// scannable at a glance.
 export const CATEGORY_CONFIG: Record<
   ClipboardCategory,
-  { label: string; color: string; darkColor: string }
+  { label: string; color: string; darkColor: string; accent: string }
 > = {
-  URL: { label: 'URL', color: 'bg-blue-100 text-blue-700', darkColor: 'bg-blue-500/20 text-blue-400' },
-  Email: { label: 'Email', color: 'bg-purple-100 text-purple-700', darkColor: 'bg-purple-500/20 text-purple-400' },
-  Color: { label: 'Color', color: 'bg-pink-100 text-pink-700', darkColor: 'bg-pink-500/20 text-pink-400' },
-  Code: { label: 'Code', color: 'bg-green-100 text-green-700', darkColor: 'bg-green-500/20 text-green-400' },
-  Phone: { label: 'Phone', color: 'bg-orange-100 text-orange-700', darkColor: 'bg-orange-500/20 text-orange-400' },
-  Image: { label: 'Image', color: 'bg-cyan-100 text-cyan-700', darkColor: 'bg-cyan-500/20 text-cyan-400' },
-  Text: { label: 'Text', color: 'bg-gray-100 text-gray-600', darkColor: 'bg-gray-500/20 text-gray-400' },
+  URL: { label: 'URL', color: 'bg-blue-100 text-blue-700', darkColor: 'bg-blue-500/20 text-blue-400', accent: '#3b82f6' },
+  Email: { label: 'Email', color: 'bg-purple-100 text-purple-700', darkColor: 'bg-purple-500/20 text-purple-400', accent: '#a855f7' },
+  Color: { label: 'Color', color: 'bg-pink-100 text-pink-700', darkColor: 'bg-pink-500/20 text-pink-400', accent: '#ec4899' },
+  Code: { label: 'Code', color: 'bg-green-100 text-green-700', darkColor: 'bg-green-500/20 text-green-400', accent: '#22c55e' },
+  Phone: { label: 'Phone', color: 'bg-orange-100 text-orange-700', darkColor: 'bg-orange-500/20 text-orange-400', accent: '#f97316' },
+  Image: { label: 'Image', color: 'bg-cyan-100 text-cyan-700', darkColor: 'bg-cyan-500/20 text-cyan-400', accent: '#06b6d4' },
+  Text: { label: 'Text', color: 'bg-gray-100 text-gray-600', darkColor: 'bg-gray-500/20 text-gray-400', accent: '#94a3b8' },
 }
