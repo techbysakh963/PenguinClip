@@ -29,6 +29,13 @@ interface UpdateInfo {
 import { FeaturesSection } from './components/FeaturesSection'
 import { Switch } from './components/Switch'
 import { useSystemThemePreference } from './utils/systemTheme'
+import {
+  loadAppearance,
+  saveAppearance,
+  applyAppearance,
+  ACCENT_PRESETS,
+  type AppearanceTokens,
+} from './utils/appearanceTokens'
 
 const MIN_HISTORY_SIZE = 1
 const MAX_HISTORY_SIZE = 100_000
@@ -169,6 +176,25 @@ type SettingsCat = (typeof SETTINGS_CATEGORIES)[number]['id']
 function SettingsApp() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
   const [activeCat, setActiveCat] = useState<SettingsCat>('appearance')
+  const [appearance, setAppearance] = useState<AppearanceTokens>(loadAppearance)
+
+  // Apply appearance tokens on mount so this window matches, and provide a
+  // single updater that persists, applies live, and broadcasts to the clipboard
+  // window so both re-theme instantly.
+  useEffect(() => {
+    applyAppearance(appearance)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const updateAppearance = useCallback((patch: Partial<AppearanceTokens>) => {
+    setAppearance((prev) => {
+      const next = { ...prev, ...patch }
+      saveAppearance(next)
+      applyAppearance(next)
+      emit('appearance-changed', next).catch(() => {})
+      return next
+    })
+  }, [])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -617,6 +643,90 @@ function SettingsApp() {
                 isDark={isDark}
               />
             </div>
+          </div>
+        </section>
+
+        {/* Personalization (accent / glass / roundness) */}
+        <section
+          hidden={activeCat !== 'appearance'}
+          className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+        >
+          <h2 className="text-base font-semibold mb-1">Personalization</h2>
+          <p className={clsx('text-xs mb-5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+            Tune the accent colour, glass, and corners — changes apply instantly.
+          </p>
+
+          {/* Accent colour */}
+          <div className="mb-6">
+            <label className="text-sm font-medium">Accent color</label>
+            <div className="flex flex-wrap items-center gap-2.5 mt-2">
+              {ACCENT_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateAppearance({ accent: c })}
+                  className="w-7 h-7 rounded-full transition-transform hover:scale-110"
+                  style={{
+                    backgroundColor: c,
+                    boxShadow:
+                      appearance.accent.toLowerCase() === c.toLowerCase()
+                        ? `0 0 0 2px var(--surface-1), 0 0 0 4px ${c}`
+                        : undefined,
+                  }}
+                  aria-label={`Accent ${c}`}
+                />
+              ))}
+              <label
+                className="w-7 h-7 rounded-full overflow-hidden cursor-pointer border border-[color:var(--surface-border)] grid place-items-center"
+                title="Custom color"
+              >
+                <input
+                  type="color"
+                  value={appearance.accent}
+                  onChange={(e) => updateAppearance({ accent: e.target.value })}
+                  className="w-10 h-10 cursor-pointer border-0 bg-transparent p-0"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Glass strength */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <label htmlFor="glass-strength" className="text-sm font-medium">
+                Glass strength
+              </label>
+              <span className="text-xs opacity-60">{Math.round(appearance.glassStrength * 100)}%</span>
+            </div>
+            <input
+              id="glass-strength"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={appearance.glassStrength}
+              onChange={(e) => updateAppearance({ glassStrength: Number(e.target.value) })}
+              className="w-full mt-2 accent-[var(--accent)] cursor-pointer"
+            />
+          </div>
+
+          {/* Corner roundness */}
+          <div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="roundness" className="text-sm font-medium">
+                Corner roundness
+              </label>
+              <span className="text-xs opacity-60">{Math.round(appearance.roundness * 100)}%</span>
+            </div>
+            <input
+              id="roundness"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={appearance.roundness}
+              onChange={(e) => updateAppearance({ roundness: Number(e.target.value) })}
+              className="w-full mt-2 accent-[var(--accent)] cursor-pointer"
+            />
           </div>
         </section>
 

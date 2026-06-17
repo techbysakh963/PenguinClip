@@ -20,6 +20,7 @@ import { ClipboardTab } from './components/ClipboardTab'
 import { NotificationBanner } from './components/NotificationBanner'
 import { ToastViewport } from './components/ToastViewport'
 import { useToasts } from './hooks/useToasts'
+import { applyAppearance, loadAppearance, type AppearanceTokens } from './utils/appearanceTokens'
 
 // Real window-level acrylic needs tauri.conf `transparent: true` + a transparent
 // <body>, and must be verified on a transparent compositor (it glitches on some
@@ -224,6 +225,18 @@ function ClipboardApp() {
   useEffect(() => {
     applyThemeClass(isDark)
   }, [isDark])
+
+  // Apply user appearance tokens (accent / glass / roundness) on load, and keep
+  // them in sync live when changed from the Settings window.
+  useEffect(() => {
+    applyAppearance(loadAppearance())
+    const unlisten = listen<AppearanceTokens>('appearance-changed', (event) => {
+      applyAppearance(event.payload)
+    })
+    return () => {
+      unlisten.then((fn) => fn())
+    }
+  }, [])
 
   // Pick the rendering path for the adaptive glass shell. Real window acrylic
   // additionally requires the main window to be OS-transparent
