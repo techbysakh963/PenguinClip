@@ -29,7 +29,10 @@ export function Header({
   const [isCompactHovered, setIsCompactHovered] = useState(false)
 
   return (
-    <div className="flex items-center justify-between px-4 py-3" data-tauri-drag-region>
+    <div
+      className="bar-glass sticky top-0 z-20 flex items-center justify-between px-4 py-3"
+      data-tauri-drag-region
+    >
       <div className="flex items-center gap-2">
         <h1
           className={clsx(
