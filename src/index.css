@@ -122,9 +122,16 @@ body,
   overflow: hidden;
 }
 
-/* Solid background for Tauri window */
+/* Solid background for Tauri window (opaque path). */
 body {
   background: rgb(40, 40, 40);
+}
+
+/* Real glass: the window is OS-transparent, so html/body must be transparent for
+ * the shell's translucent acrylic to reveal the compositor-blurred desktop. */
+:root[data-fx='glass'],
+:root[data-fx='glass'] body {
+  background: transparent;
 }
 
 /* Make the app draggable from certain areas */

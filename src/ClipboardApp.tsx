@@ -21,11 +21,12 @@ import { ToastViewport } from './components/ToastViewport'
 import { useToasts } from './hooks/useToasts'
 import { applyAppearance, loadAppearance, type AppearanceTokens } from './utils/appearanceTokens'
 
-// Real window-level acrylic needs tauri.conf `transparent: true` + a transparent
-// <body>, and must be verified on a transparent compositor (it glitches on some
-// NVIDIA setups — see useRenderingEnv). Until then the shell stays premium-opaque
-// everywhere; in-app `.glass-panel` blur still renders real glass regardless.
-const WINDOW_ACRYLIC_ENABLED = false
+// Real window-level acrylic. The window is now tauri `transparent: true` and the
+// <body> goes transparent under [data-fx='glass'], so the shell becomes real
+// translucent acrylic wherever the rendering env reports transparency is safe
+// (i.e. not NVIDIA/AppImage, unless force-enabled via PENGUINCLIP_FORCE_TRANSPARENCY).
+// NVIDIA/AppImage still fall back to the premium-opaque shell.
+const WINDOW_ACRYLIC_ENABLED = true
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme_mode: 'system',
