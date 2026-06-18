@@ -1,11 +1,21 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow, Window } from '@tauri-apps/api/window'
 import { listen } from '@tauri-apps/api/event'
 import { emit } from '@tauri-apps/api/event'
 import { open } from '@tauri-apps/plugin-shell'
 import { clsx } from 'clsx'
-import { X } from 'lucide-react'
+import {
+  X,
+  Palette,
+  ClipboardList,
+  ShieldCheck,
+  Keyboard,
+  Image as ImageIcon,
+  Wrench,
+  ScrollText,
+  Info,
+} from 'lucide-react'
 
 import type { UserSettings, CustomKaomoji, BooleanSettingKey } from './types/clipboard'
 
@@ -18,7 +28,22 @@ interface UpdateInfo {
 }
 import { FeaturesSection } from './components/FeaturesSection'
 import { Switch } from './components/Switch'
+import { PenguinLogo } from './components/PenguinLogo'
 import { useSystemThemePreference } from './utils/systemTheme'
+import {
+  loadAppearance,
+  saveAppearance,
+  applyAppearance,
+  ACCENT_PRESETS,
+  type AppearanceTokens,
+} from './utils/appearanceTokens'
+import {
+  loadSearchPrefs,
+  saveSearchPrefs,
+  TRIGGER_LABELS,
+  type SearchPrefs,
+  type SearchTrigger,
+} from './utils/searchPrefs'
 
 const MIN_HISTORY_SIZE = 1
 const MAX_HISTORY_SIZE = 100_000
@@ -143,8 +168,98 @@ function applyBackgroundOpacity(settings: UserSettings) {
 /**
  * Settings App Component - Configuration UI for PenguinClip
  */
+const SETTINGS_CATEGORIES = [
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'clipboard', label: 'Clipboard', icon: ClipboardList },
+  { id: 'privacy', label: 'Privacy', icon: ShieldCheck },
+  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+  { id: 'integrations', label: 'Integrations', icon: ImageIcon },
+  { id: 'advanced', label: 'Advanced', icon: Wrench },
+  { id: 'logs', label: 'Logs', icon: ScrollText },
+  { id: 'about', label: 'About', icon: Info },
+] as const
+
+type SettingsCat = (typeof SETTINGS_CATEGORIES)[number]['id']
+
 function SettingsApp() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS)
+  const [activeCat, setActiveCat] = useState<SettingsCat>('appearance')
+  const [appearance, setAppearance] = useState<AppearanceTokens>(loadAppearance)
+
+  // Each category shares one scroll container (cards are just hidden), so reset
+  // the scroll to the top whenever the category changes — otherwise a short
+  // panel looks empty after scrolling a long one.
+  const contentRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 })
+  }, [activeCat])
+
+  // Apply appearance tokens on mount so this window matches, and provide a
+  // single updater that persists, applies live, and broadcasts to the clipboard
+  // window so both re-theme instantly.
+  useEffect(() => {
+    applyAppearance(appearance)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const updateAppearance = useCallback((patch: Partial<AppearanceTokens>) => {
+    setAppearance((prev) => {
+      const next = { ...prev, ...patch }
+      saveAppearance(next)
+      applyAppearance(next)
+      emit('appearance-changed', next).catch(() => {})
+      return next
+    })
+  }, [])
+
+  const [searchPrefs, setSearchPrefs] = useState<SearchPrefs>(loadSearchPrefs)
+
+  const updateSearchPrefs = useCallback((patch: Partial<SearchPrefs>) => {
+    setSearchPrefs((prev) => {
+      const next = { ...prev, ...patch }
+      saveSearchPrefs(next)
+      emit('search-prefs-changed', next).catch(() => {})
+      return next
+    })
+  }, [])
+
+  // --- Logs ---
+  const [logsText, setLogsText] = useState('')
+  const [loadingLogs, setLoadingLogs] = useState(false)
+  const [loggingEnabled, setLoggingEnabled] = useState(true)
+
+  useEffect(() => {
+    invoke<boolean>('is_logging_enabled')
+      .then(setLoggingEnabled)
+      .catch(() => {})
+  }, [])
+
+  const refreshLogs = useCallback(() => {
+    setLoadingLogs(true)
+    invoke<string>('get_recent_logs')
+      .then((t) => setLogsText(t))
+      .catch((e) => setLogsText(`Failed to read logs: ${e}`))
+      .finally(() => setLoadingLogs(false))
+  }, [])
+
+  // Load logs the first time the user opens the Logs category.
+  useEffect(() => {
+    if (activeCat === 'logs' && !logsText && !loadingLogs) refreshLogs()
+  }, [activeCat, logsText, loadingLogs, refreshLogs])
+
+  const clearLogs = useCallback(() => {
+    invoke('clear_logs')
+      .then(() => setLogsText(''))
+      .catch((e) => setLogsText(`Failed to clear logs: ${e}`))
+  }, [])
+
+  const toggleLogging = useCallback(() => {
+    setLoggingEnabled((prev) => {
+      const next = !prev
+      invoke('set_logging_enabled', { enabled: next }).catch(() => {})
+      return next
+    })
+  }, [])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -366,8 +481,7 @@ function SettingsApp() {
     return (
       <div
         className={clsx(
-          'h-screen w-screen flex items-center justify-center select-none rounded-xl',
-          isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
+          'app-shell h-screen w-screen flex items-center justify-center select-none',
           isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
         )}
       >
@@ -382,8 +496,7 @@ function SettingsApp() {
   return (
     <div
       className={clsx(
-        'h-screen w-screen overflow-hidden flex flex-col font-sans select-none rounded-xl',
-        isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
+        'app-shell h-screen w-screen overflow-hidden flex flex-col font-sans select-none',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
     >
@@ -435,21 +548,177 @@ function SettingsApp() {
         </div>
       </div>
 
-      {/* Header */}
-      <header className="px-8 pt-2 pb-4 flex-shrink-0">
-        <h1 className="text-2xl font-bold tracking-tight">Personalization</h1>
-        <p className={clsx('text-sm mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
-          Customize the look and feel of your clipboard history
-        </p>
-      </header>
+      {/* Body: sidebar nav + content panel */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Sidebar (navigation layer) */}
+        <nav className="bar-glass w-44 flex-shrink-0 overflow-y-auto p-3 space-y-0.5 border-r border-[color:var(--surface-border)] scrollbar-hide">
+          {SETTINGS_CATEGORIES.map((cat) => {
+            const Icon = cat.icon
+            const active = activeCat === cat.id
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCat(cat.id)}
+                className={clsx(
+                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-control)] text-sm font-medium',
+                  '[transition:background-color_var(--motion-fast)_var(--ease-out),color_var(--motion-fast)_var(--ease-out)]',
+                  active
+                    ? 'text-[color:var(--accent)]'
+                    : isDark
+                      ? 'text-win11-text-secondary hover:text-win11-text-primary'
+                      : 'text-win11Light-text-secondary hover:text-win11Light-text-primary'
+                )}
+                style={{ backgroundColor: active ? 'var(--accent-subtle)' : undefined }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {cat.label}
+              </button>
+            )
+          })}
+        </nav>
 
-      {/* Content */}
-      <main className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 scrollbar-win11">
+        {/* Content panel — only the selected category's cards are shown */}
+        <main ref={contentRef} className="flex-1 overflow-y-auto px-8 py-6 space-y-6 scrollbar-win11">
+          <h1 className="text-xl font-bold tracking-tight">
+            {SETTINGS_CATEGORIES.find((c) => c.id === activeCat)?.label}
+          </h1>
+
+          {/* Shortcuts — Search behaviour */}
+          <section
+            hidden={activeCat !== 'shortcuts'}
+            className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+          >
+            <h2 className="text-base font-semibold mb-4">Search</h2>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium">Always show search bar</div>
+                <div className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  Keep search pinned at the top of the clipboard.
+                </div>
+              </div>
+              <Switch
+                checked={searchPrefs.alwaysShow}
+                onChange={() => updateSearchPrefs({ alwaysShow: !searchPrefs.alwaysShow })}
+                isDark={isDark}
+              />
+            </div>
+
+            <div
+              className={clsx(
+                'mt-5 pt-5 border-t',
+                isDark ? 'border-white/5' : 'border-gray-100',
+                searchPrefs.alwaysShow && 'opacity-40 pointer-events-none'
+              )}
+            >
+              <div className="text-sm font-medium mb-2">Search shortcut</div>
+              <div className="flex flex-wrap gap-2">
+                {(['ctrl-f', 'ctrl-k', 'slash'] as SearchTrigger[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => updateSearchPrefs({ trigger: t })}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                      searchPrefs.trigger === t
+                        ? 'border-[color:var(--accent)] text-[color:var(--accent)]'
+                        : isDark
+                          ? 'border-white/10 text-gray-300 hover:bg-white/5'
+                          : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    )}
+                    style={{
+                      backgroundColor: searchPrefs.trigger === t ? 'var(--accent-subtle)' : undefined,
+                    }}
+                  >
+                    {TRIGGER_LABELS[t]}
+                  </button>
+                ))}
+              </div>
+              {searchPrefs.alwaysShow && (
+                <p className={clsx('text-xs mt-2', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                  Disabled while the search bar is always shown.
+                </p>
+              )}
+            </div>
+          </section>
+
+          {/* Shortcuts — static reference */}
+          <section
+            hidden={activeCat !== 'shortcuts'}
+            className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+          >
+            <h2 className="text-base font-semibold mb-3">Keyboard</h2>
+            <div className="space-y-2 text-sm">
+              {[
+                ['Open clipboard', 'Super + V'],
+                ['Emoji picker', 'Super + .'],
+                ['Paste selected', 'Enter'],
+                ['Navigate items', '↑ / ↓ / Tab'],
+                ['Close window', 'Esc'],
+              ].map(([label, key]) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{label}</span>
+                  <kbd className="px-2 py-0.5 rounded-md text-xs font-mono bg-black/10 dark:bg-white/10">
+                    {key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Logs */}
+          <section
+            hidden={activeCat !== 'logs'}
+            className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Diagnostic logging</h2>
+                <p className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  Local error/warning logs only — never clipboard content.
+                </p>
+              </div>
+              <Switch checked={loggingEnabled} onChange={toggleLogging} isDark={isDark} />
+            </div>
+
+            <div className="mt-5 flex items-center gap-2">
+              <button
+                onClick={refreshLogs}
+                className={clsx(
+                  'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                  isDark
+                    ? 'border-white/10 text-gray-300 hover:bg-white/5'
+                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                )}
+              >
+                Refresh
+              </button>
+              <button
+                onClick={clearLogs}
+                className={clsx(
+                  'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                  'hover:text-red-500',
+                  isDark ? 'border-white/10 text-gray-300' : 'border-gray-200 text-gray-700'
+                )}
+              >
+                Clear logs
+              </button>
+            </div>
+
+            <pre
+              className={clsx(
+                'mt-4 max-h-72 overflow-auto rounded-lg p-3 text-[11px] font-mono leading-relaxed whitespace-pre-wrap break-words',
+                isDark ? 'bg-white/5 text-gray-300' : 'bg-black/5 text-gray-700'
+              )}
+            >
+              {loadingLogs ? 'Loading…' : logsText || 'No log entries.'}
+            </pre>
+          </section>
         {/* Theme Selection Card */}
         <section
+          hidden={activeCat !== 'appearance'}
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -549,11 +818,56 @@ function SettingsApp() {
           </div>
         </section>
 
+        {/* Personalization (accent / glass / roundness) */}
+        <section
+          hidden={activeCat !== 'appearance'}
+          className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+        >
+          <h2 className="text-base font-semibold mb-1">Accent</h2>
+          <p className={clsx('text-xs mb-5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+            Pick the highlight colour — it applies instantly across both windows.
+          </p>
+
+          {/* Accent colour */}
+          <div>
+            <label className="text-sm font-medium">Accent color</label>
+            <div className="flex flex-wrap items-center gap-2.5 mt-2">
+              {ACCENT_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateAppearance({ accent: c })}
+                  className="w-7 h-7 rounded-full transition-transform hover:scale-110"
+                  style={{
+                    backgroundColor: c,
+                    boxShadow:
+                      appearance.accent.toLowerCase() === c.toLowerCase()
+                        ? `0 0 0 2px var(--surface-1), 0 0 0 4px ${c}`
+                        : undefined,
+                  }}
+                  aria-label={`Accent ${c}`}
+                />
+              ))}
+              <label
+                className="w-7 h-7 rounded-full overflow-hidden cursor-pointer border border-[color:var(--surface-border)] grid place-items-center"
+                title="Custom color"
+              >
+                <input
+                  type="color"
+                  value={appearance.accent}
+                  onChange={(e) => updateAppearance({ accent: e.target.value })}
+                  className="w-10 h-10 cursor-pointer border-0 bg-transparent p-0"
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
         {/* Auto Delete Section */}
         <section
+          hidden={activeCat !== 'clipboard'}
           className={clsx(
             'rounded-xl p-6 border shadow-sm transition-all',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -645,15 +959,16 @@ function SettingsApp() {
 
         {/* UI Scale Section */}
         <section
+          hidden={activeCat !== 'appearance'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
-            <h2 className="text-base font-semibold mb-1">UI Scale</h2>
+            <h2 className="text-base font-semibold mb-1">Clipboard Text Size</h2>
             <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
-              Adjust the clipboard window size for your display
+              Make the copied text in history items larger or smaller
             </p>
           </div>
 
@@ -661,7 +976,7 @@ function SettingsApp() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <label htmlFor="ui-scale" className="text-sm font-medium">
-                  Clipboard Window Scale
+                  Text size
                 </label>
                 <div
                   className={clsx(
@@ -688,7 +1003,7 @@ function SettingsApp() {
                 className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-win11-bg-accent"
               />
               <p className={clsx('text-xs', isDark ? 'text-gray-500' : 'text-gray-400')}>
-                This setting only affects the clipboard popup, not this settings window
+                Only scales the copied text — icons, padding, and layout stay the same
               </p>
             </div>
           </div>
@@ -696,9 +1011,10 @@ function SettingsApp() {
 
         {/* History Settings Section */}
         <section
+          hidden={activeCat !== 'clipboard'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -748,9 +1064,10 @@ function SettingsApp() {
 
         {/* Custom Kaomoji Section */}
         <section
+          hidden={activeCat !== 'clipboard'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -839,9 +1156,10 @@ function SettingsApp() {
 
         {/* GIF Integration Section */}
         <section
+          hidden={activeCat !== 'integrations'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -898,9 +1216,10 @@ function SettingsApp() {
 
         {/* Privacy Section */}
         <section
+          hidden={activeCat !== 'privacy'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -976,9 +1295,10 @@ function SettingsApp() {
 
         {/* Diagnostics Section */}
         <section
+          hidden={activeCat !== 'advanced'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
@@ -1014,15 +1334,77 @@ function SettingsApp() {
           </div>
         </section>
 
+        {/* Brand / identity card */}
+        <section
+          hidden={activeCat !== 'about'}
+          className="rounded-xl p-6 border shadow-sm bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="flex-shrink-0 grid place-items-center w-16 h-16 rounded-2xl"
+              style={{ backgroundColor: 'var(--surface-2)', boxShadow: 'var(--shadow-sm)' }}
+            >
+              <PenguinLogo size={40} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-lg font-bold tracking-tight">PenguinClip</h2>
+                <span className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  {appVersion ? `v${appVersion}` : ''}
+                </span>
+              </div>
+              <p className={clsx('text-sm mt-0.5', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                Fast, private clipboard history for Linux.
+              </p>
+              <p className={clsx('text-xs mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                Developed by <span className="font-semibold">SAKH</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() =>
+                open('https://github.com/techbysakh963/PenguinClip').catch(console.error)
+              }
+              className={clsx(
+                'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                isDark
+                  ? 'border-white/10 text-gray-200 hover:bg-white/5'
+                  : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              GitHub ↗
+            </button>
+            <button
+              onClick={() =>
+                open('https://github.com/techbysakh963/PenguinClip/releases').catch(console.error)
+              }
+              className={clsx(
+                'px-3 py-1.5 rounded-[var(--radius-control)] text-sm font-medium border transition-colors',
+                isDark
+                  ? 'border-white/10 text-gray-200 hover:bg-white/5'
+                  : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              Releases ↗
+            </button>
+          </div>
+          <p className={clsx('mt-4 text-[11px]', isDark ? 'text-gray-500' : 'text-gray-400')}>
+            MIT licensed · 100% local · no telemetry
+          </p>
+        </section>
+
         {/* About & Updates Section */}
         <section
+          hidden={activeCat !== 'about'}
           className={clsx(
             'rounded-xl border shadow-sm overflow-hidden',
-            isDark ? 'bg-white/5 border-white/8' : 'bg-white/60 border-white/40'
+            'bg-[var(--surface-1)] border-[color:var(--surface-border)]'
           )}
         >
           <div className="p-6 border-b border-inherit">
-            <h2 className="text-base font-semibold mb-1">About &amp; Updates</h2>
+            <h2 className="text-base font-semibold mb-1">Updates</h2>
             <p className={clsx('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
               PenguinClip{appVersion ? ` v${appVersion}` : ''}. If installed via a
               package manager (AUR, apt), update through it; otherwise download the
@@ -1061,10 +1443,12 @@ function SettingsApp() {
         </section>
 
         {/* Features Section */}
-        <FeaturesSection settings={settings} isDark={isDark} onToggle={handleToggle} />
+        {activeCat === 'advanced' && (
+          <FeaturesSection settings={settings} isDark={isDark} onToggle={handleToggle} />
+        )}
 
         {/* Reset Section */}
-        <div className="flex justify-end pt-2">
+        <div hidden={activeCat !== 'advanced'} className="flex justify-end pt-2">
           <button
             onClick={async () => {
               setSettings(DEFAULT_SETTINGS)
@@ -1084,7 +1468,8 @@ function SettingsApp() {
             Reset to defaults
           </button>
         </div>
-      </main>
+        </main>
+      </div>
 
       {/* Footer */}
       <footer

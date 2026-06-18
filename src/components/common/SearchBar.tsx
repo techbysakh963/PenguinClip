@@ -1,7 +1,6 @@
 import { forwardRef, memo, type ReactNode } from 'react'
 import { clsx } from 'clsx'
 import { Search, X, Regex } from 'lucide-react'
-import { getTertiaryBackgroundStyle } from '../../utils/themeUtils'
 
 export interface SearchBarProps {
   value: string
@@ -11,7 +10,8 @@ export interface SearchBarProps {
   rightActions?: ReactNode
   'aria-label'?: string
   isDark: boolean
-  opacity: number
+  /** Retained for API compatibility; the field now uses the glass token surface. */
+  opacity?: number
   isRegex?: boolean
   onToggleRegex?: () => void
 }
@@ -25,15 +25,11 @@ export const SearchBar = memo(
       onClear,
       rightActions,
       'aria-label': ariaLabel,
-      isDark,
-      opacity,
       isRegex = false,
       onToggleRegex,
     },
     ref
   ) {
-    const backgroundColor = getTertiaryBackgroundStyle(isDark, opacity).backgroundColor
-
     const handleClear = () => {
       onChange('')
       onClear?.()
@@ -54,12 +50,10 @@ export const SearchBar = memo(
           placeholder={placeholder}
           aria-label={ariaLabel ?? placeholder}
           className={clsx(
-            'w-full h-9 pl-9 rounded-lg',
+            'search-field w-full h-10 pl-10',
             'text-sm',
             'dark:text-win11-text-primary text-win11Light-text-primary',
             'placeholder:dark:text-win11-text-disabled placeholder:text-win11Light-text-disabled',
-            'focus:outline-none focus:ring-2 focus:ring-win11-bg-accent',
-            'transition-all duration-150',
             // Adjust padding-right based on what buttons are present
             (() => {
               let padding = 'pr-8' // Default padding for clearing button
@@ -68,7 +62,6 @@ export const SearchBar = memo(
               return padding
             })()
           )}
-          style={{ backgroundColor }}
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {value && (

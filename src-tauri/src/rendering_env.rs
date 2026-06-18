@@ -62,12 +62,21 @@ fn detect_appimage() -> bool {
 }
 
 pub fn init() {
+    // Escape hatch for testing real window transparency on capable compositors
+    // (e.g. KDE, which blurs behind windows) even on hardware we'd normally
+    // treat as unsafe. Launch with PENGUINCLIP_FORCE_TRANSPARENCY=1.
+    let force_transparency = std::env::var("PENGUINCLIP_FORCE_TRANSPARENCY")
+        .map(|v| v == "1")
+        .unwrap_or(false);
+
     let env = RENDERING_ENV.get_or_init(|| {
         let is_nvidia = detect_nvidia();
         let is_appimage = detect_appimage();
-        let transparency_disabled = is_nvidia || is_appimage;
+        let transparency_disabled = !force_transparency && (is_nvidia || is_appimage);
 
-        let reason = if is_nvidia && is_appimage {
+        let reason = if force_transparency {
+            "Transparency force-enabled via PENGUINCLIP_FORCE_TRANSPARENCY.".to_string()
+        } else if is_nvidia && is_appimage {
             "Transparency is not supported on NVIDIA GPUs running via AppImage.".to_string()
         } else if is_nvidia {
             "Transparency is not supported on NVIDIA GPUs due to rendering issues.".to_string()

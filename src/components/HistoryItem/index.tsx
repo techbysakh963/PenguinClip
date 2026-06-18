@@ -1,12 +1,17 @@
 import { useCallback, forwardRef, useRef, useMemo } from 'react'
 import { clsx } from 'clsx'
-import { Pin, Star, X, Image as ImageIcon, Type } from 'lucide-react'
+import { Pin, Star, X } from 'lucide-react'
 import type { ClipboardItem } from '../../types/clipboard'
-import { getCardBackgroundStyle, getTertiaryBackgroundStyle } from '../../utils/themeUtils'
+import { getCardBackgroundStyle } from '../../utils/themeUtils'
 import { useSmartActions } from '../../hooks/useSmartActions'
 import { HistorySmartActions } from '../HistorySmartActions'
 import { TextContent, ImageContent, Timestamp } from './_HistoryItemContent'
-import { getIconSize, getIconContainerClasses } from './_HistoryItemUtils'
+import {
+  getIconSize,
+  getIconContainerClasses,
+  CATEGORY_ICON,
+  hexToRgba,
+} from './_HistoryItemUtils'
 import { detectCategory, CATEGORY_CONFIG } from '../../utils/categoryDetection'
 
 interface HistoryItemProps {
@@ -63,8 +68,6 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
     },
     [ref]
   )
-  const isText = item.content.type === 'Text' || item.content.type === 'RichText'
-
   // Use compact mode only if enabled by flag
   const effectiveCompact = enableUiPolish ? isCompact : false
   const iconSize = getIconSize(effectiveCompact)
@@ -117,6 +120,7 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
   // Detect content category
   const category = useMemo(() => detectCategory(item), [item])
   const categoryConfig = CATEGORY_CONFIG[category]
+  const CategoryIcon = CATEGORY_ICON[category]
 
   // Prevent buttons from taking focus on pointer down (covers mouse/touch/pen)
   const handlePointerDownPreventDefault = useCallback((e: React.PointerEvent) => {
@@ -135,9 +139,12 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
       ref={setRefs}
       className={clsx(
         // Base styles
-        'group relative rounded-win11 cursor-pointer',
+        'group relative rounded-[var(--radius-card)] cursor-pointer',
         effectiveCompact ? 'p-2' : 'p-3',
-        'transition-all duration-150 ease-out',
+        // Smooth, premium feel: lift slightly and cast a soft shadow on hover,
+        // then settle back with a subtle press so clicks feel tactile.
+        '[transition:transform_var(--motion-base)_var(--ease-out),box-shadow_var(--motion-base)_var(--ease-out),background-color_var(--motion-fast)_var(--ease-out)]',
+        'hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:translate-y-0 active:scale-[0.99]',
         // Skip layout/paint for off-screen rows so long histories stay cheap to
         // render, while keeping every row mounted (so keyboard focus and
         // scrollIntoView still work). contain-intrinsic-size reserves a
@@ -177,30 +184,19 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
     >
       {/* Content type indicator */}
       <div className="flex items-start gap-3">
-        {/* Icon */}
+        {/* Category icon — tinted by content type so the kind of item is
+            readable at a glance. Color swatches keep showing the real colour. */}
         <div
           className={clsx(iconContainerClasses, colorPreview && 'shadow-sm')}
           style={
             colorPreview && colorPreview.data
               ? { backgroundColor: colorPreview.data }
-              : getTertiaryBackgroundStyle(isDark, secondaryOpacity)
+              : { backgroundColor: hexToRgba(categoryConfig.accent, isDark ? 0.22 : 0.14) }
           }
-          title={colorPreview ? `Color: ${colorPreview.data}` : undefined}
+          title={colorPreview ? `Color: ${colorPreview.data}` : categoryConfig.label}
         >
-          {colorPreview ? null : isText ? (
-            <Type
-              className={clsx(
-                iconSize,
-                isDark ? 'text-win11-text-secondary' : 'text-win11Light-text-secondary'
-              )}
-            />
-          ) : (
-            <ImageIcon
-              className={clsx(
-                iconSize,
-                isDark ? 'text-win11-text-secondary' : 'text-win11Light-text-secondary'
-              )}
-            />
+          {colorPreview ? null : (
+            <CategoryIcon className={iconSize} style={{ color: categoryConfig.accent }} />
           )}
         </div>
 

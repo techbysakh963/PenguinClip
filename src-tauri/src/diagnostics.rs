@@ -11,6 +11,7 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use chrono::Utc;
@@ -19,6 +20,46 @@ use log::{LevelFilter, Metadata, Record};
 const LOG_FILE_NAME: &str = "penguinclip.log";
 const MAX_LOG_BYTES: u64 = 2 * 1024 * 1024; // rotate at 2 MiB
 const DEFAULT_RECENT_LINES: usize = 200;
+const DISABLED_MARKER: &str = "logging.disabled";
+
+/// Runtime switch the user can flip from Settings → Logs. The file logger checks
+/// it on every record, so disabling stops new writes immediately (and a marker
+/// file persists the choice across restarts).
+static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// Whether file logging is currently enabled.
+pub fn logging_enabled() -> bool {
+    LOGGING_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Enable/disable file logging at runtime and persist the choice.
+pub fn set_logging_enabled(data_dir: &Path, enabled: bool) {
+    LOGGING_ENABLED.store(enabled, Ordering::Relaxed);
+    let marker = log_dir(data_dir).join(DISABLED_MARKER);
+    if enabled {
+        let _ = fs::remove_file(&marker);
+    } else {
+        let _ = fs::write(&marker, b"1");
+    }
+}
+
+/// Reads the most recent log lines for display in the UI.
+pub fn recent_logs(data_dir: &Path, max_lines: usize) -> String {
+    read_recent_log(&log_file(data_dir), max_lines)
+}
+
+/// Truncates the active log and removes the rotated file, freeing disk. The
+/// append-mode logger keeps writing cleanly afterwards (O_APPEND writes at the
+/// new end-of-file, which is 0).
+pub fn clear_logs(data_dir: &Path) -> Result<(), String> {
+    let path = log_file(data_dir);
+    File::create(&path).map_err(|e| format!("could not clear log: {}", e))?;
+    let rotated = path.with_extension("log.1");
+    if rotated.exists() {
+        let _ = fs::remove_file(&rotated);
+    }
+    Ok(())
+}
 
 /// Directory holding log files (under the app data dir).
 pub fn log_dir(data_dir: &Path) -> PathBuf {
@@ -126,6 +167,10 @@ impl log::Log for FileLogger {
         if !self.enabled(record.metadata()) {
             return;
         }
+        // Respect the user's runtime logging toggle (Settings → Logs).
+        if !LOGGING_ENABLED.load(Ordering::Relaxed) {
+            return;
+        }
         let line = format!(
             "{} [{:<5}] {}: {}\n",
             Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ"),
@@ -171,6 +216,9 @@ pub fn init(data_dir: &Path, level: LevelFilter) -> Result<PathBuf, String> {
     let dir = log_dir(data_dir);
     fs::create_dir_all(&dir).map_err(|e| format!("could not create log dir: {}", e))?;
     let path = dir.join(LOG_FILE_NAME);
+
+    // Honour a persisted "logging disabled" choice from a previous session.
+    LOGGING_ENABLED.store(!dir.join(DISABLED_MARKER).exists(), Ordering::Relaxed);
 
     rotate_if_needed(&path, MAX_LOG_BYTES);
 

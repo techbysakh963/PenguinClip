@@ -17,10 +17,13 @@ export function TextContent({
   return (
     <p
       className={clsx(
-        'text-sm break-words whitespace-pre-wrap',
+        'break-words whitespace-pre-wrap',
         effectiveCompact ? 'line-clamp-1' : 'line-clamp-3',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
+      // Copied text scales with the "Clipboard text size" setting; the rest of
+      // the UI (icons, padding, chrome) stays fixed.
+      style={{ fontSize: 'calc(0.875rem * var(--clip-text-scale, 1))', lineHeight: 1.4 }}
     >
       {textToDisplay}
     </p>
@@ -61,9 +64,9 @@ export function ImageContent({
         decoding="async"
         width={width}
         height={height}
-        className="max-w-full max-h-24 rounded object-contain bg-black/10"
+        className="max-w-full max-h-28 rounded-[10px] border border-[var(--surface-border)] object-contain bg-black/10"
       />
-      <span className="absolute bottom-1 right-1 text-xs px-1.5 py-0.5 rounded bg-black/60 text-white">
+      <span className="absolute bottom-1 right-1 text-xs px-1.5 py-0.5 rounded-md bg-black/55 text-white backdrop-blur-sm">
         {width}×{height}
       </span>
     </div>

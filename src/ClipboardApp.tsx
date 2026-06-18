@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { clsx } from 'clsx'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { useClipboardHistory } from './hooks/useClipboardHistory'
@@ -18,6 +17,16 @@ import { useRenderingEnv } from './hooks/useRenderingEnv'
 import type { ActiveTab, UserSettings } from './types/clipboard'
 import { ClipboardTab } from './components/ClipboardTab'
 import { NotificationBanner } from './components/NotificationBanner'
+import { ToastViewport } from './components/ToastViewport'
+import { useToasts } from './hooks/useToasts'
+import { applyAppearance, loadAppearance, type AppearanceTokens } from './utils/appearanceTokens'
+
+// Real window-level acrylic. The window is now tauri `transparent: true` and the
+// <body> goes transparent under [data-fx='glass'], so the shell becomes real
+// translucent acrylic wherever the rendering env reports transparency is safe
+// (i.e. not NVIDIA/AppImage, unless force-enabled via PENGUINCLIP_FORCE_TRANSPARENCY).
+// NVIDIA/AppImage still fall back to the premium-opaque shell.
+const WINDOW_ACRYLIC_ENABLED = true
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme_mode: 'system',
@@ -80,14 +89,12 @@ function applyThemeClass(isDark: boolean) {
 }
 
 /**
- * Applies the UI scale/zoom level to the webview
+ * Applies the clipboard text size. Rather than zooming the whole webview (which
+ * also scaled icons, padding, and chrome), this only scales the copied-text in
+ * history items via the --clip-text-scale CSS variable.
  */
-async function applyUIScale(scale: number) {
-  try {
-    await getCurrentWebview().setZoom(scale)
-  } catch (err) {
-    console.error('Failed to apply UI scale:', err)
-  }
+function applyUIScale(scale: number) {
+  document.documentElement.style.setProperty('--clip-text-scale', String(scale || 1))
 }
 
 /**
@@ -120,6 +127,42 @@ function ClipboardApp() {
     toggleFavorite,
     pasteItem,
   } = useClipboardHistory()
+
+  // Transient confirmation toasts for actions that keep the window open
+  // (pin/favourite/delete/clear). Paste deliberately stays silent because the
+  // window hides immediately after.
+  const { toasts, push } = useToasts()
+
+  const handleTogglePin = useCallback(
+    (id: string) => {
+      const wasPinned = history.find((i) => i.id === id)?.pinned
+      togglePin(id)
+      push(wasPinned ? 'Unpinned' : 'Pinned', 'pin')
+    },
+    [history, togglePin, push]
+  )
+
+  const handleToggleFavorite = useCallback(
+    (id: string) => {
+      const wasFavorited = history.find((i) => i.id === id)?.favorited
+      toggleFavorite(id)
+      push(wasFavorited ? 'Removed from favorites' : 'Added to favorites', 'star')
+    },
+    [history, toggleFavorite, push]
+  )
+
+  const handleDeleteItem = useCallback(
+    (id: string) => {
+      deleteItem(id)
+      push('Removed', 'trash')
+    },
+    [deleteItem, push]
+  )
+
+  const handleClearHistory = useCallback(() => {
+    clearHistory()
+    push('History cleared', 'trash')
+  }, [clearHistory, push])
 
   // Refs for focus management
   const tabBarRef = useRef<TabBarRef>(null)
@@ -180,6 +223,37 @@ function ClipboardApp() {
   useEffect(() => {
     applyThemeClass(isDark)
   }, [isDark])
+
+  // Apply user appearance tokens (accent / glass / roundness) on load, and keep
+  // them in sync live when changed from the Settings window.
+  useEffect(() => {
+    applyAppearance(loadAppearance())
+    const unlisten = listen<AppearanceTokens>('appearance-changed', (event) => {
+      applyAppearance(event.payload)
+    })
+    return () => {
+      unlisten.then((fn) => fn())
+    }
+  }, [])
+
+  // Pick the rendering path for the adaptive glass shell. Real window acrylic
+  // additionally requires the main window to be OS-transparent
+  // (tauri.conf `transparent: true`) plus a transparent <body>; until that is
+  // enabled and verified on a transparent compositor, every machine uses the
+  // premium-opaque shell. The CSS keys off :root[data-fx], so flipping
+  // WINDOW_ACRYLIC_ENABLED on is all that's needed once tested.
+  useEffect(() => {
+    const glass = WINDOW_ACRYLIC_ENABLED && !renderingEnv.transparency_disabled
+    document.documentElement.dataset.fx = glass ? 'glass' : 'opaque'
+  }, [renderingEnv.transparency_disabled])
+
+  // Keep the shell's glass tint in sync with the Background-Opacity setting so
+  // the existing slider still controls window translucency on transparent DEs.
+  useEffect(() => {
+    const rgb = isDark ? '32, 32, 32' : '243, 243, 243'
+    const alpha = isDark ? settings.dark_background_opacity : settings.light_background_opacity
+    document.documentElement.style.setProperty('--shell-glass-bg', `rgba(${rgb}, ${alpha})`)
+  }, [isDark, settings.dark_background_opacity, settings.light_background_opacity])
 
   // Handle ESC key to close/hide window
   useEffect(() => {
@@ -253,10 +327,10 @@ function ClipboardApp() {
             isDark={isDark}
             tertiaryOpacity={tertiaryOpacity}
             secondaryOpacity={secondaryOpacity}
-            clearHistory={clearHistory}
-            deleteItem={deleteItem}
-            togglePin={togglePin}
-            toggleFavorite={toggleFavorite}
+            clearHistory={handleClearHistory}
+            deleteItem={handleDeleteItem}
+            togglePin={handleTogglePin}
+            toggleFavorite={handleToggleFavorite}
             onPaste={pasteItem}
             settings={settings}
             tabBarRef={tabBarRef}
@@ -271,10 +345,10 @@ function ClipboardApp() {
             isDark={isDark}
             tertiaryOpacity={tertiaryOpacity}
             secondaryOpacity={secondaryOpacity}
-            clearHistory={clearHistory}
-            deleteItem={deleteItem}
-            togglePin={togglePin}
-            toggleFavorite={toggleFavorite}
+            clearHistory={handleClearHistory}
+            deleteItem={handleDeleteItem}
+            togglePin={handleTogglePin}
+            toggleFavorite={handleToggleFavorite}
             onPaste={pasteItem}
             settings={settings}
             tabBarRef={tabBarRef}
@@ -324,9 +398,7 @@ function ClipboardApp() {
   return (
     <div
       className={clsx(
-        'h-screen w-screen overflow-hidden flex flex-col select-none rounded-xl',
-        isDark ? 'glass-effect-opaque' : 'glass-effect-opaque-light',
-        isDark ? 'bg-win11-acrylic-bg' : 'bg-win11Light-acrylic-bg',
+        'app-shell relative h-screen w-screen overflow-hidden flex flex-col select-none',
         isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
       )}
       onMouseEnter={handleMouseEnter}
@@ -372,6 +444,9 @@ function ClipboardApp() {
       >
         {renderContent()}
       </div>
+
+      {/* Transient action confirmations */}
+      <ToastViewport toasts={toasts} isDark={isDark} />
     </div>
   )
 }

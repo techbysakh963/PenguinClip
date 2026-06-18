@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { clsx } from 'clsx'
+import { SearchX } from 'lucide-react'
 
 import type { ClipboardItem, UserSettings } from '../types/clipboard'
 import type { TabBarRef } from './TabBar'
@@ -10,6 +11,7 @@ import { EmptyState } from './EmptyState'
 import { HistoryItem } from './HistoryItem'
 import { useHistoryKeyboardNavigation } from '../hooks/useHistoryKeyboardNavigation'
 import { createHistoryFuse, getSearchableText, searchHistory } from '../utils/historySearch'
+import { loadSearchPrefs, matchesTrigger, type SearchPrefs } from '../utils/searchPrefs'
 
 export function ClipboardTab(props: {
   history: ClipboardItem[]
@@ -54,7 +56,25 @@ export function ClipboardTab(props: {
     localStorage.setItem('clipboard-history-compact-mode', String(isCompact))
   }, [isCompact])
   const [isSearchVisible, setIsSearchVisible] = useState(false)
+  const [searchPrefs, setSearchPrefs] = useState<SearchPrefs>(loadSearchPrefs)
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // The bar is shown when pinned (alwaysShow) or toggled open.
+  const searchVisible = searchPrefs.alwaysShow || isSearchVisible
+
+  // Keep search prefs live when changed from the Settings window.
+  useEffect(() => {
+    const unlisten = listen<SearchPrefs>('search-prefs-changed', (e) => setSearchPrefs(e.payload))
+    return () => {
+      unlisten.then((fn) => fn())
+    }
+  }, [])
+
+  // Read current query without re-subscribing the global key listener each keystroke.
+  const searchQueryRef = useRef('')
+  useEffect(() => {
+    searchQueryRef.current = searchQuery
+  }, [searchQuery])
 
   const [focusedIndex, setFocusedIndex] = useState(0)
 
@@ -116,8 +136,8 @@ export function ClipboardTab(props: {
     (e: KeyboardEvent) => {
       const activeElement = document.activeElement
 
-      // Global shortcuts that should work regardless of focus
-      if (e.ctrlKey && e.key.toLowerCase() === 'f') {
+      // Open/close search with the configured trigger (inert when the bar is pinned).
+      if (!searchPrefs.alwaysShow && matchesTrigger(e, searchPrefs.trigger)) {
         e.preventDefault()
         setIsSearchVisible((prev) => {
           const newValue = !prev
@@ -130,8 +150,16 @@ export function ClipboardTab(props: {
         return
       }
 
-      // Close search with Escape - should work even when search input is focused
-      if (e.key.toLowerCase() === 'escape' && isSearchVisible) {
+      // Escape clears the query; when not pinned it also closes the bar. When
+      // pinned and the query is already empty, let it bubble so the window hides.
+      if (e.key.toLowerCase() === 'escape' && (searchPrefs.alwaysShow || isSearchVisible)) {
+        if (searchPrefs.alwaysShow) {
+          if (searchQueryRef.current) {
+            e.preventDefault()
+            setSearchQuery('')
+          }
+          return
+        }
         e.preventDefault()
         setIsSearchVisible(false)
         setSearchQuery('')
@@ -157,7 +185,7 @@ export function ClipboardTab(props: {
         // Focus will be set by the useEffect that watches isSearchVisible
       }
     },
-    [isSearchVisible, isPrintableKey]
+    [isSearchVisible, isPrintableKey, searchPrefs]
   )
 
   // Listen for Ctrl+F
@@ -266,36 +294,58 @@ export function ClipboardTab(props: {
         isCompact={isCompact}
         onToggleCompact={() => setIsCompact(!isCompact)}
       />
-      {/* Search Bar - only visible when Ctrl+F is pressed */}
-      {isSearchVisible && (
-        <div className="px-3 pb-2 pt-1">
+      {/* Search Bar — appears when you press Ctrl+F or just start typing. The
+          glass field floats over the list and animates in. */}
+      {searchVisible && (
+        <div className="animate-in px-3 pb-2 pt-1">
           <SearchBar
             ref={searchInputRef}
             value={searchQuery}
             onChange={setSearchQuery}
             isDark={isDark}
-            opacity={secondaryOpacity}
             placeholder="Search history..."
             isRegex={isRegexMode}
             onToggleRegex={() => setIsRegexMode(!isRegexMode)}
             onClear={() => {
               setSearchQuery('')
-              setIsSearchVisible(false)
+              // Keep the bar when it's pinned; otherwise close it.
+              if (!searchPrefs.alwaysShow) setIsSearchVisible(false)
             }}
           />
         </div>
       )}
 
       {filteredHistory.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-8 text-center opacity-60">
-          <p
-            className={clsx(
-              'text-sm',
-              isDark ? 'text-win11-text-secondary' : 'text-win11Light-text-secondary'
-            )}
+        <div className="animate-in flex flex-col items-center justify-center gap-3 p-8 text-center">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: 'var(--surface-2)' }}
           >
-            No items found
-          </p>
+            <SearchX
+              className={clsx(
+                'h-6 w-6',
+                isDark ? 'text-win11-text-tertiary' : 'text-win11Light-text-secondary'
+              )}
+            />
+          </div>
+          <div>
+            <p
+              className={clsx(
+                'text-sm font-medium',
+                isDark ? 'text-win11-text-primary' : 'text-win11Light-text-primary'
+              )}
+            >
+              No matches
+            </p>
+            <p
+              className={clsx(
+                'mt-0.5 text-xs',
+                isDark ? 'text-win11-text-tertiary' : 'text-win11Light-text-secondary'
+              )}
+            >
+              Nothing here matches “{searchQuery}”.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2 p-3" role="listbox" aria-label="Clipboard history">
