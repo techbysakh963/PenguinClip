@@ -13,7 +13,7 @@ import { useHistoryKeyboardNavigation } from '../hooks/useHistoryKeyboardNavigat
 import { createHistoryFuse, getSearchableText, searchHistory } from '../utils/historySearch'
 import { loadSearchPrefs, matchesTrigger, type SearchPrefs } from '../utils/searchPrefs'
 import { groupHistoryByTime } from '../utils/timelineGrouping'
-import { ScopeChips } from './common/ScopeChips'
+import { ScopeMenu } from './common/ScopeMenu'
 import { filterByScope, type SearchScope } from '../utils/searchScopes'
 
 export function ClipboardTab(props: {
@@ -359,7 +359,7 @@ export function ClipboardTab(props: {
       {/* Search Bar — appears when you press Ctrl+F or just start typing. The
           glass field floats over the list and animates in. */}
       {searchVisible && (
-        <div className="animate-in flex flex-col gap-2 px-3 pb-2 pt-1">
+        <div className="animate-in px-3 pb-2 pt-1">
           <SearchBar
             ref={searchInputRef}
             value={searchQuery}
@@ -368,6 +368,7 @@ export function ClipboardTab(props: {
             placeholder="Search history..."
             isRegex={isRegexMode}
             onToggleRegex={() => setIsRegexMode(!isRegexMode)}
+            rightActions={<ScopeMenu scope={scope} onChange={setScope} />}
             onClear={() => {
               setSearchQuery('')
               // Keep the bar when it's pinned; otherwise close it and drop the scope.
@@ -376,12 +377,6 @@ export function ClipboardTab(props: {
                 setScope('all')
               }
             }}
-          />
-          <ScopeChips
-            scope={scope}
-            onChange={setScope}
-            isDark={isDark}
-            opacity={tertiaryOpacity}
           />
         </div>
       )}
