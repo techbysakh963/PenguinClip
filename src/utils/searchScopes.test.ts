@@ -25,11 +25,14 @@ function image(id: string): ClipboardItem {
 }
 
 const link = text('link', 'https://example.com/page')
+const email = text('email', 'someone@example.com')
 const color = text('color', '#ff8800')
 const code = text('code', 'const x = () => { return 1 }')
+const phone = text('phone', '+963991234567')
+const number = text('number', '2024')
 const plain = text('plain', 'just some words')
 const pic = image('pic')
-const ALL = [link, color, code, plain, pic]
+const ALL = [link, email, color, code, phone, number, plain, pic]
 
 describe('SEARCH_SCOPES', () => {
   it('leads with an unfiltered "All" scope', () => {
@@ -58,7 +61,19 @@ describe('filterByScope', () => {
     expect(filterByScope(ALL, 'images').map((i) => i.id)).toEqual(['pic'])
   })
 
-  it('keeps plain text for "text" while excluding links, colors, code and images', () => {
+  it('keeps only emails for "email"', () => {
+    expect(filterByScope(ALL, 'email').map((i) => i.id)).toEqual(['email'])
+  })
+
+  it('keeps only phone numbers for "phone"', () => {
+    expect(filterByScope(ALL, 'phone').map((i) => i.id)).toEqual(['phone'])
+  })
+
+  it('keeps only raw numbers for "numbers"', () => {
+    expect(filterByScope(ALL, 'numbers').map((i) => i.id)).toEqual(['number'])
+  })
+
+  it('keeps plain text for "text" while excluding every other type', () => {
     expect(filterByScope(ALL, 'text').map((i) => i.id)).toEqual(['plain'])
   })
 

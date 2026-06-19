@@ -46,7 +46,15 @@ export interface ClipboardItem {
 export type ActiveTab = 'clipboard' | 'favorites' | 'gifs' | 'emoji' | 'kaomoji' | 'symbols'
 
 /** Auto-detected content category */
-export type ClipboardCategory = 'URL' | 'Email' | 'Color' | 'Code' | 'Phone' | 'Image' | 'Text'
+export type ClipboardCategory =
+  | 'URL'
+  | 'Email'
+  | 'Color'
+  | 'Code'
+  | 'Phone'
+  | 'Number'
+  | 'Image'
+  | 'Text'
 
 /** Theme mode */
 export type ThemeMode = 'light' | 'dark' | 'system'

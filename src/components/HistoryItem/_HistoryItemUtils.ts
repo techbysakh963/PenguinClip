@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { Link, Mail, Palette, Code2, Phone, Image as ImageIcon, Type } from 'lucide-react'
+import { Link, Mail, Palette, Code2, Phone, Hash, Image as ImageIcon, Type } from 'lucide-react'
 import type { ClipboardCategory } from '../../types/clipboard'
 
 export function getIconSize(effectiveCompact: boolean) {
@@ -20,6 +20,7 @@ export const CATEGORY_ICON: Record<ClipboardCategory, typeof Type> = {
   Color: Palette,
   Code: Code2,
   Phone: Phone,
+  Number: Hash,
   Image: ImageIcon,
   Text: Type,
 }

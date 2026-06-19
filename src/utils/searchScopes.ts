@@ -3,7 +3,16 @@ import { detectCategory } from './categoryDetection'
 
 /** A search/browse scope. `all` is the unfiltered default; the rest narrow the
  * list to a single detected content category. */
-export type SearchScope = 'all' | 'text' | 'links' | 'code' | 'colors' | 'images'
+export type SearchScope =
+  | 'all'
+  | 'text'
+  | 'links'
+  | 'email'
+  | 'code'
+  | 'colors'
+  | 'numbers'
+  | 'phone'
+  | 'images'
 
 export interface ScopeDef {
   id: SearchScope
@@ -12,14 +21,18 @@ export interface ScopeDef {
   category: ClipboardCategory | null
 }
 
-/** Ordered chip set. Mirrors the detector's categories so scoping reuses the
- * exact same classification that drives the per-card badges. */
+/** Ordered scope list shown in the filter menu. Mirrors the detector's
+ * categories so scoping reuses the exact same classification that drives the
+ * per-card badges. */
 export const SEARCH_SCOPES: ScopeDef[] = [
   { id: 'all', label: 'All', category: null },
   { id: 'text', label: 'Text', category: 'Text' },
   { id: 'links', label: 'Links', category: 'URL' },
+  { id: 'email', label: 'Email', category: 'Email' },
   { id: 'code', label: 'Code', category: 'Code' },
   { id: 'colors', label: 'Colors', category: 'Color' },
+  { id: 'numbers', label: 'Numbers', category: 'Number' },
+  { id: 'phone', label: 'Phone', category: 'Phone' },
   { id: 'images', label: 'Images', category: 'Image' },
 ]
 
