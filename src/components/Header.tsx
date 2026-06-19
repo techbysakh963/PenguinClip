@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import { useState } from 'react'
-import { LayoutList } from 'lucide-react'
+import { LayoutList, CalendarClock } from 'lucide-react'
 import { getTertiaryBackgroundStyle } from '../utils/themeUtils'
 
 interface HeaderProps {
@@ -11,6 +11,9 @@ interface HeaderProps {
   isCompact: boolean
   onToggleCompact: () => void
   showCompactToggle?: boolean
+  isTimeline: boolean
+  onToggleTimeline: () => void
+  showTimelineToggle?: boolean
 }
 
 /**
@@ -24,9 +27,13 @@ export function Header({
   isCompact,
   onToggleCompact,
   showCompactToggle = true,
+  isTimeline,
+  onToggleTimeline,
+  showTimelineToggle = true,
 }: HeaderProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isCompactHovered, setIsCompactHovered] = useState(false)
+  const [isTimelineHovered, setIsTimelineHovered] = useState(false)
 
   return (
     <div className="flex items-center justify-between px-4 py-3" data-tauri-drag-region>
@@ -55,6 +62,29 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-1">
+        {/* Timeline (date grouping) Toggle */}
+        {showTimelineToggle && (
+          <button
+            onClick={onToggleTimeline}
+            tabIndex={-1}
+            onMouseEnter={() => setIsTimelineHovered(true)}
+            onMouseLeave={() => setIsTimelineHovered(false)}
+            className={clsx(
+              'no-drag',
+              'p-2 rounded-md transition-colors',
+              'select-none',
+              isDark ? 'text-win11-text-secondary' : 'text-win11Light-text-secondary',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-win11-bg-accent'
+            )}
+            style={
+              isTimelineHovered ? getTertiaryBackgroundStyle(isDark, tertiaryOpacity) : undefined
+            }
+            title={isTimeline ? 'Flat View' : 'Group by Date'}
+          >
+            <CalendarClock size={16} className={clsx(!isTimeline && 'opacity-50')} />
+          </button>
+        )}
+
         {/* Compact Mode Toggle */}
         {showCompactToggle && (
           <button

@@ -12,6 +12,7 @@ import { HistoryItem } from './HistoryItem'
 import { useHistoryKeyboardNavigation } from '../hooks/useHistoryKeyboardNavigation'
 import { createHistoryFuse, getSearchableText, searchHistory } from '../utils/historySearch'
 import { loadSearchPrefs, matchesTrigger, type SearchPrefs } from '../utils/searchPrefs'
+import { groupHistoryByTime } from '../utils/timelineGrouping'
 
 export function ClipboardTab(props: {
   history: ClipboardItem[]
@@ -55,6 +56,19 @@ export function ClipboardTab(props: {
   useEffect(() => {
     localStorage.setItem('clipboard-history-compact-mode', String(isCompact))
   }, [isCompact])
+
+  // Timeline grouping: opt-in date buckets. Flat list stays the default so the
+  // fast path is unchanged for anyone who never turns it on.
+  const [isTimeline, setIsTimeline] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('clipboard-history-timeline-view') === 'true'
+    }
+    return false
+  })
+
+  useEffect(() => {
+    localStorage.setItem('clipboard-history-timeline-view', String(isTimeline))
+  }, [isTimeline])
   const [isSearchVisible, setIsSearchVisible] = useState(false)
   const [searchPrefs, setSearchPrefs] = useState<SearchPrefs>(loadSearchPrefs)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -241,6 +255,14 @@ export function ClipboardTab(props: {
     return searchHistory(fuse, history, searchQuery)
   }, [history, searchQuery, isRegexMode, fuse])
 
+  // Grouped view is only meaningful when browsing; an active search ranks by
+  // relevance, so we fall back to the flat ranked list until the query clears.
+  const isGrouped = isTimeline && !searchQuery
+  const timelineGroups = useMemo(
+    () => (isGrouped ? groupHistoryByTime(filteredHistory) : []),
+    [isGrouped, filteredHistory]
+  )
+
   // Keyboard navigation
   useHistoryKeyboardNavigation({
     activeTab: 'clipboard', // Always 'clipboard' when this component is mounted
@@ -272,6 +294,30 @@ export function ClipboardTab(props: {
     }
   }, [])
 
+  // Render one row. `index` is the item's position in the flat filtered list so
+  // keyboard focus/refs line up identically in both the flat and grouped views.
+  const renderHistoryItem = (item: ClipboardItem, index: number) => (
+    <HistoryItem
+      key={item.id}
+      ref={(el) => {
+        historyItemRefs.current[index] = el
+      }}
+      item={item}
+      index={index}
+      isFocused={index === focusedIndex}
+      onPaste={onPaste}
+      onDelete={deleteItem}
+      onTogglePin={togglePin}
+      onToggleFavorite={toggleFavorite}
+      onFocus={() => setFocusedIndex(index)}
+      isDark={isDark}
+      secondaryOpacity={secondaryOpacity}
+      isCompact={isCompact}
+      enableSmartActions={settings.enable_smart_actions}
+      enableUiPolish={settings.enable_ui_polish}
+    />
+  )
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full select-none">
@@ -293,6 +339,8 @@ export function ClipboardTab(props: {
         tertiaryOpacity={tertiaryOpacity}
         isCompact={isCompact}
         onToggleCompact={() => setIsCompact(!isCompact)}
+        isTimeline={isTimeline}
+        onToggleTimeline={() => setIsTimeline(!isTimeline)}
       />
       {/* Search Bar — appears when you press Ctrl+F or just start typing. The
           glass field floats over the list and animates in. */}
@@ -347,29 +395,32 @@ export function ClipboardTab(props: {
             </p>
           </div>
         </div>
+      ) : isGrouped ? (
+        <div className="flex flex-col p-3 pt-0" role="listbox" aria-label="Clipboard history">
+          {(() => {
+            // Walk a running offset so each item keeps its flat-list index for
+            // focus/refs even though it's rendered inside a group.
+            let offset = 0
+            return timelineGroups.map((groupSection) => {
+              const start = offset
+              offset += groupSection.items.length
+              return (
+                <section key={groupSection.label} className="flex flex-col">
+                  <div className="timeline-header" role="presentation">
+                    <span className="timeline-header__label">{groupSection.label}</span>
+                    <span className="timeline-header__count">{groupSection.items.length}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 pb-3">
+                    {groupSection.items.map((item, i) => renderHistoryItem(item, start + i))}
+                  </div>
+                </section>
+              )
+            })
+          })()}
+        </div>
       ) : (
         <div className="flex flex-col gap-2 p-3" role="listbox" aria-label="Clipboard history">
-          {filteredHistory.map((item, index) => (
-            <HistoryItem
-              key={item.id}
-              ref={(el) => {
-                historyItemRefs.current[index] = el
-              }}
-              item={item}
-              index={index}
-              isFocused={index === focusedIndex}
-              onPaste={onPaste}
-              onDelete={deleteItem}
-              onTogglePin={togglePin}
-              onToggleFavorite={toggleFavorite}
-              onFocus={() => setFocusedIndex(index)}
-              isDark={isDark}
-              secondaryOpacity={secondaryOpacity}
-              isCompact={isCompact}
-              enableSmartActions={settings.enable_smart_actions}
-              enableUiPolish={settings.enable_ui_polish}
-            />
-          ))}
+          {filteredHistory.map((item, index) => renderHistoryItem(item, index))}
         </div>
       )}
     </>
