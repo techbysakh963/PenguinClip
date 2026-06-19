@@ -13,6 +13,8 @@ import { useHistoryKeyboardNavigation } from '../hooks/useHistoryKeyboardNavigat
 import { createHistoryFuse, getSearchableText, searchHistory } from '../utils/historySearch'
 import { loadSearchPrefs, matchesTrigger, type SearchPrefs } from '../utils/searchPrefs'
 import { groupHistoryByTime } from '../utils/timelineGrouping'
+import { ScopeChips } from './common/ScopeChips'
+import { filterByScope, type SearchScope } from '../utils/searchScopes'
 
 export function ClipboardTab(props: {
   history: ClipboardItem[]
@@ -45,6 +47,9 @@ export function ClipboardTab(props: {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [isRegexMode, setIsRegexMode] = useState(false)
+  // Active content-type scope. Resets to "all" whenever search is dismissed or
+  // the window is reopened so the list never opens silently pre-filtered.
+  const [scope, setScope] = useState<SearchScope>('all')
 
   const [isCompact, setIsCompact] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -156,8 +161,9 @@ export function ClipboardTab(props: {
         setIsSearchVisible((prev) => {
           const newValue = !prev
           if (!newValue) {
-            // Clear search when hiding
+            // Clear search and scope when hiding
             setSearchQuery('')
+            setScope('all')
           }
           return newValue
         })
@@ -177,6 +183,7 @@ export function ClipboardTab(props: {
         e.preventDefault()
         setIsSearchVisible(false)
         setSearchQuery('')
+        setScope('all')
         return
       }
 
@@ -220,6 +227,7 @@ export function ClipboardTab(props: {
     const resetSearch = () => {
       setIsSearchVisible(false)
       setSearchQuery('')
+      setScope('all')
     }
     const unlistenWindowShown = listen('window-shown', resetSearch)
     return () => {
@@ -231,13 +239,17 @@ export function ClipboardTab(props: {
   // per-keystroke searching stays fast even with large histories.
   const fuse = useMemo(() => createHistoryFuse(history), [history])
 
-  // Filter history
+  // Filter history: first by text query (fuzzy or regex), then narrow to the
+  // active content-type scope. Both run over the in-memory list so the combined
+  // filter stays instant.
   const filteredHistory = useMemo(() => {
-    if (!searchQuery) return history
+    let result: ClipboardItem[]
 
-    // Regex mode is the exact, power-user path — kept as-is. Images have no
-    // searchable text and stay excluded from search results.
-    if (isRegexMode) {
+    if (!searchQuery) {
+      result = history
+    } else if (isRegexMode) {
+      // Regex mode is the exact, power-user path — kept as-is. Images have no
+      // searchable text and stay excluded from search results.
       let regex: RegExp
       try {
         regex = new RegExp(searchQuery, 'i')
@@ -245,15 +257,17 @@ export function ClipboardTab(props: {
         console.error('Invalid regex pattern in clipboard search query:', searchQuery, err)
         return []
       }
-      return history.filter((item) => {
+      result = history.filter((item) => {
         const text = getSearchableText(item)
         return text ? regex.test(text) : false
       })
+    } else {
+      // Default: fuzzy search ranked by relevance.
+      result = searchHistory(fuse, history, searchQuery)
     }
 
-    // Default: fuzzy search ranked by relevance.
-    return searchHistory(fuse, history, searchQuery)
-  }, [history, searchQuery, isRegexMode, fuse])
+    return filterByScope(result, scope)
+  }, [history, searchQuery, isRegexMode, fuse, scope])
 
   // Grouped view is only meaningful when browsing; an active search ranks by
   // relevance, so we fall back to the flat ranked list until the query clears.
@@ -345,7 +359,7 @@ export function ClipboardTab(props: {
       {/* Search Bar — appears when you press Ctrl+F or just start typing. The
           glass field floats over the list and animates in. */}
       {searchVisible && (
-        <div className="animate-in px-3 pb-2 pt-1">
+        <div className="animate-in flex flex-col gap-2 px-3 pb-2 pt-1">
           <SearchBar
             ref={searchInputRef}
             value={searchQuery}
@@ -356,9 +370,18 @@ export function ClipboardTab(props: {
             onToggleRegex={() => setIsRegexMode(!isRegexMode)}
             onClear={() => {
               setSearchQuery('')
-              // Keep the bar when it's pinned; otherwise close it.
-              if (!searchPrefs.alwaysShow) setIsSearchVisible(false)
+              // Keep the bar when it's pinned; otherwise close it and drop the scope.
+              if (!searchPrefs.alwaysShow) {
+                setIsSearchVisible(false)
+                setScope('all')
+              }
             }}
+          />
+          <ScopeChips
+            scope={scope}
+            onChange={setScope}
+            isDark={isDark}
+            opacity={tertiaryOpacity}
           />
         </div>
       )}
@@ -391,7 +414,9 @@ export function ClipboardTab(props: {
                 isDark ? 'text-win11-text-tertiary' : 'text-win11Light-text-secondary'
               )}
             >
-              Nothing here matches “{searchQuery}”.
+              {searchQuery
+                ? `Nothing here matches “${searchQuery}”.`
+                : 'No items of this type yet.'}
             </p>
           </div>
         </div>
