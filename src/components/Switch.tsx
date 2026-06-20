@@ -13,7 +13,9 @@ export function Switch({
     <button
       onClick={() => onChange(!checked)}
       className={clsx(
-        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-win11-bg-accent focus:ring-offset-2',
+        // shrink-0 keeps the 44px track from being squeezed by a long label in a
+        // flex row (which would push the thumb past the track on the "on" state).
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-win11-bg-accent focus:ring-offset-2',
         checked ? 'bg-win11-bg-accent' : isDark ? 'bg-white/10' : 'bg-gray-300',
         isDark ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
       )}
