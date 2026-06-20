@@ -10,9 +10,19 @@ export function useHistoryKeyboardNavigation(params: {
   setFocusedIndex: (i: number) => void
   historyItemRefs: MutableRefObject<(HTMLElement | null)[]>
   tabBarRef: RefObject<TabBarRef | null>
+  /** Called when ArrowUp is pressed on the first result, to hand focus back to
+   * the search field above the list (keeping the keyboard loop unbroken). */
+  onArrowUpAtTop?: () => void
 }) {
-  const { activeTab, itemsLength, focusedIndex, setFocusedIndex, historyItemRefs, tabBarRef } =
-    params
+  const {
+    activeTab,
+    itemsLength,
+    focusedIndex,
+    setFocusedIndex,
+    historyItemRefs,
+    tabBarRef,
+    onArrowUpAtTop,
+  } = params
 
   useEffect(() => {
     if (activeTab !== 'clipboard' || itemsLength === 0) return
@@ -38,6 +48,12 @@ export function useHistoryKeyboardNavigation(params: {
         historyItemRefs.current[newIndex]?.scrollIntoView({ block: 'nearest' })
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
+        // At the top of the list, step back up into the search field if one is
+        // wired; otherwise stay put on the first item.
+        if (focusedIndex === 0 && onArrowUpAtTop) {
+          onArrowUpAtTop()
+          return
+        }
         const newIndex = Math.max(focusedIndex - 1, 0)
         setFocusedIndex(newIndex)
         historyItemRefs.current[newIndex]?.focus()
@@ -62,5 +78,13 @@ export function useHistoryKeyboardNavigation(params: {
 
     globalThis.addEventListener('keydown', handleArrowKeys)
     return () => globalThis.removeEventListener('keydown', handleArrowKeys)
-  }, [activeTab, itemsLength, focusedIndex, setFocusedIndex, historyItemRefs, tabBarRef])
+  }, [
+    activeTab,
+    itemsLength,
+    focusedIndex,
+    setFocusedIndex,
+    historyItemRefs,
+    tabBarRef,
+    onArrowUpAtTop,
+  ])
 }

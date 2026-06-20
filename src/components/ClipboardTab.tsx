@@ -210,7 +210,8 @@ export function ClipboardTab(props: {
         } else {
           setSearchQuery((prev) => prev + e.key)
         }
-        // Focus will be set by the useEffect that watches isSearchVisible
+        // Highlight the top hit; focus is set by the isSearchVisible effect.
+        setFocusedIndex(0)
       }
     },
     [isSearchVisible, isPrintableKey, searchPrefs]
@@ -294,7 +295,8 @@ export function ClipboardTab(props: {
     [isGrouped, filteredHistory]
   )
 
-  // Keyboard navigation
+  // Keyboard navigation. ArrowUp on the first result steps back into the search
+  // field (when it's open) so the field ↔ results loop stays unbroken.
   useHistoryKeyboardNavigation({
     activeTab: 'clipboard', // Always 'clipboard' when this component is mounted
     itemsLength: filteredHistory.length,
@@ -302,7 +304,24 @@ export function ClipboardTab(props: {
     setFocusedIndex,
     historyItemRefs,
     tabBarRef,
+    onArrowUpAtTop: searchVisible ? () => searchInputRef.current?.focus() : undefined,
   })
+
+  // Keyboard handoff from the search field into the results: ArrowDown moves
+  // focus to the first row; Enter pastes the highlighted (top) result.
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (filteredHistory.length > 0) {
+        setFocusedIndex(0)
+        historyItemRefs.current[0]?.focus()
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const target = filteredHistory[focusedIndex] ?? filteredHistory[0]
+      if (target) onPaste(target.id)
+    }
+  }
 
   // Ref for stable access to filtered history in event listener
   const filteredHistoryRef = useRef(filteredHistory)
@@ -383,12 +402,25 @@ export function ClipboardTab(props: {
           <SearchBar
             ref={searchInputRef}
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(v) => {
+              // New query → keep the top hit highlighted / as the Enter target.
+              setSearchQuery(v)
+              setFocusedIndex(0)
+            }}
             isDark={isDark}
             placeholder="Search history..."
             isRegex={isRegexMode}
             onToggleRegex={() => setIsRegexMode(!isRegexMode)}
-            rightActions={<ScopeMenu scope={scope} onChange={setScope} />}
+            onKeyDown={handleSearchKeyDown}
+            rightActions={
+              <ScopeMenu
+                scope={scope}
+                onChange={(s) => {
+                  setScope(s)
+                  setFocusedIndex(0)
+                }}
+              />
+            }
             onClear={() => {
               setSearchQuery('')
               // Keep the bar when it's pinned; otherwise close it and drop the scope.
