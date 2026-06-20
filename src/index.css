@@ -355,6 +355,22 @@ body {
   }
   /* data-hover='none' keeps only the colour tint (still applied by the card). */
 
+  /* Retro CRT: scanline overlay across the whole window (pointer-events off so
+   * it never blocks clicks) for an unmistakable old-monitor look. */
+  :root[data-theme='retro'] .app-shell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      rgba(0, 0, 0, 0.22) 0,
+      rgba(0, 0, 0, 0.22) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
   /* The Glass theme frosts the cards themselves (translucent + blur) so the
    * whole window reads as layered glass, not just the search bar. */
   :root[data-theme='glass'] .clip-card {
