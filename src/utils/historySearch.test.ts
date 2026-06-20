@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import type { ClipboardItem } from '../types/clipboard'
-import { createHistoryFuse, getSearchableText, searchHistory } from './historySearch'
+import {
+  createHistoryFuse,
+  getSearchableText,
+  searchHistory,
+  searchHistoryWithMatches,
+  regexMatchRanges,
+} from './historySearch'
 
 function text(id: string, data: string): ClipboardItem {
   return {
@@ -76,5 +82,41 @@ describe('searchHistory', () => {
     const history = [text('a', 'screenshot notes'), image('b')]
     const results = run(history, 'screenshot')
     expect(results.map((r) => r.id)).toEqual(['a'])
+  })
+})
+
+describe('searchHistoryWithMatches', () => {
+  it('returns the matched character ranges for an exact substring', () => {
+    const history = [text('a', 'the quick brown fox')]
+    const matches = searchHistoryWithMatches(createHistoryFuse(history), 'brown')
+    expect(matches[0].item.id).toBe('a')
+    // "brown" sits at indices 10..14 of "the quick brown fox"
+    expect(matches[0].ranges).toContainEqual([10, 14])
+  })
+
+  it('returns nothing for an empty query', () => {
+    const history = [text('a', 'anything')]
+    expect(searchHistoryWithMatches(createHistoryFuse(history), '')).toEqual([])
+  })
+})
+
+describe('regexMatchRanges', () => {
+  it('returns every inclusive match range', () => {
+    expect(regexMatchRanges('a1b2c3', '\\d')).toEqual([
+      [1, 1],
+      [3, 3],
+      [5, 5],
+    ])
+  })
+
+  it('is case-insensitive', () => {
+    expect(regexMatchRanges('Hello hello', 'hello')).toEqual([
+      [0, 4],
+      [6, 10],
+    ])
+  })
+
+  it('yields no ranges for an invalid pattern', () => {
+    expect(regexMatchRanges('text', '[')).toEqual([])
   })
 })

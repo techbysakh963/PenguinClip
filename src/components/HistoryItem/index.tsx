@@ -2,6 +2,7 @@ import { useCallback, forwardRef, useRef, useMemo } from 'react'
 import { clsx } from 'clsx'
 import { Pin, Star, X } from 'lucide-react'
 import type { ClipboardItem } from '../../types/clipboard'
+import type { MatchRange } from '../../utils/highlightMatches'
 import { getCardBackgroundStyle } from '../../utils/themeUtils'
 import { useSmartActions } from '../../hooks/useSmartActions'
 import { HistorySmartActions } from '../HistorySmartActions'
@@ -29,6 +30,8 @@ interface HistoryItemProps {
   // Feature flags passed from parent
   enableSmartActions: boolean
   enableUiPolish: boolean
+  /** Character ranges in the item's text that matched the active search. */
+  highlightRanges?: MatchRange[]
 }
 
 export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function HistoryItem(
@@ -46,6 +49,7 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
     isCompact = false,
     enableSmartActions,
     enableUiPolish,
+    highlightRanges,
   },
   ref
 ) {
@@ -202,7 +206,12 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <TextContent item={item} isDark={isDark} effectiveCompact={effectiveCompact} />
+          <TextContent
+            item={item}
+            isDark={isDark}
+            effectiveCompact={effectiveCompact}
+            highlightRanges={highlightRanges}
+          />
           <ImageContent item={item} isDark={isDark} effectiveCompact={effectiveCompact} />
           <div className="flex items-center gap-2">
             <Timestamp show={!effectiveCompact} isDark={isDark} timestamp={item.timestamp} />

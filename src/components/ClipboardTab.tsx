@@ -10,7 +10,13 @@ import { SearchBar } from './common/SearchBar'
 import { EmptyState } from './EmptyState'
 import { HistoryItem } from './HistoryItem'
 import { useHistoryKeyboardNavigation } from '../hooks/useHistoryKeyboardNavigation'
-import { createHistoryFuse, getSearchableText, searchHistory } from '../utils/historySearch'
+import {
+  createHistoryFuse,
+  getSearchableText,
+  searchHistoryWithMatches,
+  regexMatchRanges,
+} from '../utils/historySearch'
+import type { MatchRange } from '../utils/highlightMatches'
 import { loadSearchPrefs, matchesTrigger, type SearchPrefs } from '../utils/searchPrefs'
 import { groupHistoryByTime } from '../utils/timelineGrouping'
 import { ScopeMenu } from './common/ScopeMenu'
@@ -241,32 +247,40 @@ export function ClipboardTab(props: {
 
   // Filter history: first by text query (fuzzy or regex), then narrow to the
   // active content-type scope. Both run over the in-memory list so the combined
-  // filter stays instant.
-  const filteredHistory = useMemo(() => {
+  // filter stays instant. Alongside the list we collect, per item, the matched
+  // character ranges so the rows can highlight why each result matched.
+  const { filteredHistory, highlightRanges } = useMemo(() => {
+    const ranges = new Map<string, MatchRange[]>()
     let result: ClipboardItem[]
 
     if (!searchQuery) {
       result = history
     } else if (isRegexMode) {
-      // Regex mode is the exact, power-user path — kept as-is. Images have no
-      // searchable text and stay excluded from search results.
+      // Regex mode is the exact, power-user path. Images have no searchable text
+      // and stay excluded from search results.
       let regex: RegExp
       try {
         regex = new RegExp(searchQuery, 'i')
       } catch (err) {
         console.error('Invalid regex pattern in clipboard search query:', searchQuery, err)
-        return []
+        return { filteredHistory: [], highlightRanges: ranges }
       }
       result = history.filter((item) => {
         const text = getSearchableText(item)
-        return text ? regex.test(text) : false
+        if (!text || !regex.test(text)) return false
+        ranges.set(item.id, regexMatchRanges(text, searchQuery))
+        return true
       })
     } else {
       // Default: fuzzy search ranked by relevance.
-      result = searchHistory(fuse, history, searchQuery)
+      const matches = searchHistoryWithMatches(fuse, searchQuery)
+      result = matches.map((m) => m.item)
+      for (const m of matches) {
+        if (m.ranges.length) ranges.set(m.item.id, m.ranges)
+      }
     }
 
-    return filterByScope(result, scope)
+    return { filteredHistory: filterByScope(result, scope), highlightRanges: ranges }
   }, [history, searchQuery, isRegexMode, fuse, scope])
 
   // Grouped view is only meaningful when browsing; an active search ranks by
@@ -329,6 +343,7 @@ export function ClipboardTab(props: {
       isCompact={isCompact}
       enableSmartActions={settings.enable_smart_actions}
       enableUiPolish={settings.enable_ui_polish}
+      highlightRanges={highlightRanges.get(item.id)}
     />
   )
 

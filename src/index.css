@@ -281,6 +281,18 @@ body {
       inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
 
+  /* Matched-substring highlight in search results. Accent-tinted so it ties to
+   * the user's chosen accent; text colour is inherited so contrast holds in
+   * both themes. The solid rgba is a fallback for engines without color-mix. */
+  .search-highlight {
+    border-radius: 3px;
+    padding: 0 1px;
+    color: inherit;
+    font-weight: 600;
+    background-color: rgba(0, 120, 212, 0.28);
+    background-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
   /* Solid popover surface for dropdown menus. Unlike .glass-panel, this is
    * fully opaque (surface-3) so menu text stays readable and never lets the
    * list bleed through — including on hardware where backdrop blur is weak. */

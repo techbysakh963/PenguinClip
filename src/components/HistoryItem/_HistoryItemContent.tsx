@@ -1,18 +1,36 @@
 import { clsx } from 'clsx'
 import type { ClipboardItem } from '../../types/clipboard'
+import { buildHighlightSegments, type MatchRange } from '../../utils/highlightMatches'
 
 export function TextContent({
   item,
   isDark,
   effectiveCompact,
+  highlightRanges,
 }: {
   item: ClipboardItem
   isDark: boolean
   effectiveCompact: boolean
+  highlightRanges?: MatchRange[]
 }) {
   if (item.content.type !== 'Text' && item.content.type !== 'RichText') return null
 
   const textToDisplay = item.content.type === 'Text' ? item.content.data : item.content.data.plain
+
+  // Wrap the matched substrings in <mark> when a search is highlighting this
+  // row; otherwise render the plain string so the non-search path is untouched.
+  const content =
+    highlightRanges && highlightRanges.length
+      ? buildHighlightSegments(textToDisplay, highlightRanges).map((seg, i) =>
+          seg.highlighted ? (
+            <mark key={i} className="search-highlight">
+              {seg.text}
+            </mark>
+          ) : (
+            <span key={i}>{seg.text}</span>
+          )
+        )
+      : textToDisplay
 
   return (
     <p
@@ -25,7 +43,7 @@ export function TextContent({
       // the UI (icons, padding, chrome) stays fixed.
       style={{ fontSize: 'calc(0.875rem * var(--clip-text-scale, 1))', lineHeight: 1.4 }}
     >
-      {textToDisplay}
+      {content}
     </p>
   )
 }
