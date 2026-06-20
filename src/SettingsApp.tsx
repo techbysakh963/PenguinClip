@@ -38,6 +38,13 @@ import {
   type AppearanceTokens,
 } from './utils/appearanceTokens'
 import {
+  loadThemeId,
+  saveThemeId,
+  applyTheme,
+  applyStoredTheme,
+} from './utils/applyTheme'
+import { THEME_PACKS } from './utils/themePacks'
+import {
   loadSearchPrefs,
   saveSearchPrefs,
   TRIGGER_LABELS,
@@ -194,11 +201,14 @@ function SettingsApp() {
     contentRef.current?.scrollTo({ top: 0 })
   }, [activeCat])
 
-  // Apply appearance tokens on mount so this window matches, and provide a
-  // single updater that persists, applies live, and broadcasts to the clipboard
-  // window so both re-theme instantly.
+  const [themeId, setThemeId] = useState<string>(loadThemeId)
+
+  // Apply appearance tokens + the stored theme on mount so this window matches,
+  // and provide single updaters that persist, apply live, and broadcast to the
+  // clipboard window so both re-theme instantly.
   useEffect(() => {
     applyAppearance(appearance)
+    applyStoredTheme()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -210,6 +220,13 @@ function SettingsApp() {
       emit('appearance-changed', next).catch(() => {})
       return next
     })
+  }, [])
+
+  const selectTheme = useCallback((id: string) => {
+    setThemeId(id)
+    saveThemeId(id)
+    applyTheme(id)
+    emit('theme-changed', id).catch(() => {})
   }, [])
 
   const [searchPrefs, setSearchPrefs] = useState<SearchPrefs>(loadSearchPrefs)
@@ -815,6 +832,81 @@ function SettingsApp() {
                 isDark={isDark}
               />
             </div>
+          </div>
+        </section>
+
+        {/* Theme picker — full visual styles (colours / corners / font) */}
+        <section
+          hidden={activeCat !== 'appearance'}
+          className="rounded-xl p-6 border shadow-sm transition-all bg-[var(--surface-1)] border-[color:var(--surface-border)]"
+        >
+          <h2 className="text-base font-semibold mb-1">Theme</h2>
+          <p className={clsx('text-xs mb-5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+            A complete visual style — colours, corners and font. The Light / Dark choice above
+            still applies on top.
+          </p>
+
+          <div className="grid grid-cols-3 gap-3">
+            {THEME_PACKS.map((theme) => {
+              const p = isDark ? theme.dark : theme.light
+              const active = theme.id === themeId
+              const mono = theme.layout.font === 'mono'
+              return (
+                <button
+                  key={theme.id}
+                  onClick={() => selectTheme(theme.id)}
+                  aria-pressed={active}
+                  className={clsx(
+                    'flex flex-col items-stretch gap-2 rounded-xl p-2 border text-left transition-all',
+                    active
+                      ? 'border-[color:var(--accent)] ring-2 ring-[color:var(--accent)]'
+                      : 'border-[color:var(--surface-border)] hover:border-[color:var(--surface-border-strong)]'
+                  )}
+                >
+                  {/* Live preview painted straight from the theme's palette. */}
+                  <div
+                    className="h-16 overflow-hidden p-2 flex flex-col justify-end"
+                    style={{ background: p.bgPrimary, borderRadius: theme.layout.radius[1] }}
+                  >
+                    <div
+                      className="px-2 py-1.5"
+                      style={{
+                        background: p.bgCard,
+                        borderRadius: theme.layout.radius[0],
+                        border: `1px solid ${p.surfaceBorder}`,
+                      }}
+                    >
+                      <div
+                        className="h-1.5 w-3/4 rounded-full"
+                        style={{ background: p.textPrimary }}
+                      />
+                      <div
+                        className="mt-1 h-1.5 w-1/2 rounded-full"
+                        style={{ background: p.textSecondary }}
+                      />
+                    </div>
+                  </div>
+                  <div className="px-0.5">
+                    <div className="text-xs font-medium flex items-center gap-1">
+                      {theme.label}
+                      {mono && (
+                        <span className="text-[9px] font-mono opacity-50 uppercase tracking-wide">
+                          mono
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className={clsx(
+                        'text-[10px] leading-tight',
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      )}
+                    >
+                      {theme.blurb}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </section>
 

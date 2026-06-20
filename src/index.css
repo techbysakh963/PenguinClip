@@ -302,6 +302,22 @@ body {
     box-shadow: var(--shadow-lg);
   }
 
+  /* Themes can switch off in-app frosting (glass: false). The frosted surfaces
+   * then render solid — no backdrop blur, opaque fills — so Minimal, GNOME and
+   * Terminal read as flat designs rather than translucent ones. */
+  :root[data-glass='off'] .glass-panel,
+  :root[data-glass='off'] .search-field {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-2);
+  }
+  :root[data-glass='off'] .bar-glass,
+  :root[data-glass='off'] .timeline-header {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-0);
+  }
+
   /* Full-bleed glass bar (sticky headers/toolbars). The content list scrolls
    * UNDER it, so its backdrop blur actually has content to lens — this is what
    * makes the glass read as real frosted glass instead of a flat fill. */

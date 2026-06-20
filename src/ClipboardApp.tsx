@@ -20,6 +20,7 @@ import { NotificationBanner } from './components/NotificationBanner'
 import { ToastViewport } from './components/ToastViewport'
 import { useToasts } from './hooks/useToasts'
 import { applyAppearance, loadAppearance, type AppearanceTokens } from './utils/appearanceTokens'
+import { applyStoredTheme, applyTheme } from './utils/applyTheme'
 
 // Real window-level acrylic. The window is now tauri `transparent: true` and the
 // <body> goes transparent under [data-fx='glass'], so the shell becomes real
@@ -228,11 +229,16 @@ function ClipboardApp() {
   // them in sync live when changed from the Settings window.
   useEffect(() => {
     applyAppearance(loadAppearance())
-    const unlisten = listen<AppearanceTokens>('appearance-changed', (event) => {
+    applyStoredTheme()
+    const unlistenAppearance = listen<AppearanceTokens>('appearance-changed', (event) => {
       applyAppearance(event.payload)
     })
+    const unlistenTheme = listen<string>('theme-changed', (event) => {
+      applyTheme(event.payload)
+    })
     return () => {
-      unlisten.then((fn) => fn())
+      unlistenAppearance.then((fn) => fn())
+      unlistenTheme.then((fn) => fn())
     }
   }, [])
 
