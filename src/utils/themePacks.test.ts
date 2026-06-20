@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { THEME_PACKS, getThemePack, DEFAULT_THEME_ID, type Palette } from './themePacks'
-import { buildThemeCss } from './applyTheme'
+import { buildThemeCss, paletteVarEntries } from './applyTheme'
+
+function vars(themeId: string): Record<string, string> {
+  return Object.fromEntries(paletteVarEntries(getThemePack(themeId)))
+}
 
 const PALETTE_KEYS: (keyof Palette)[] = [
   'bgPrimary',
@@ -50,7 +54,7 @@ describe('getThemePack', () => {
   })
 })
 
-describe('buildThemeCss', () => {
+describe('buildThemeCss (mode-specific surfaces)', () => {
   it('puts light surfaces on :root and dark surfaces on :root.dark', () => {
     const css = buildThemeCss(getThemePack('modern'))
     expect(css).toContain(':root{')
@@ -58,22 +62,24 @@ describe('buildThemeCss', () => {
     expect(css).toContain(':root.dark{')
     expect(css).toContain('--surface-0:#1f1f1f') // modern dark surface
   })
+})
 
+describe('paletteVarEntries (inline :root vars)', () => {
   it('emits both the dark (win11) and light (win11Light) palette vars', () => {
-    const css = buildThemeCss(getThemePack('modern'))
-    expect(css).toContain('--w-text-primary:#ffffff')
-    expect(css).toContain('--wl-text-primary:#1a1a1a')
+    const v = vars('modern')
+    expect(v['--w-text-primary']).toBe('#ffffff')
+    expect(v['--wl-text-primary']).toBe('#1a1a1a')
+    expect(v['--w-bg-card']).toBe('#2d2d2d')
   })
 
   it('switches the font stack to monospace for the terminal theme', () => {
-    expect(buildThemeCss(getThemePack('terminal'))).toContain('--font-ui:"JetBrains Mono"')
-    expect(buildThemeCss(getThemePack('modern'))).toContain('--font-ui:"Inter Variable"')
+    expect(vars('terminal')['--font-ui']).toContain('JetBrains Mono')
+    expect(vars('modern')['--font-ui']).toContain('Inter Variable')
   })
 
   it('applies the theme corner radii', () => {
-    // terminal uses sharp [2, 3]px corners
-    const css = buildThemeCss(getThemePack('terminal'))
-    expect(css).toContain('--w-radius:2px')
-    expect(css).toContain('--w-radius-lg:3px')
+    const v = vars('terminal') // sharp [2, 3]px corners
+    expect(v['--w-radius']).toBe('2px')
+    expect(v['--w-radius-lg']).toBe('3px')
   })
 })
