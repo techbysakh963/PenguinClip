@@ -4,8 +4,8 @@ import {
   createHistoryFuse,
   getSearchableText,
   searchHistory,
-  searchHistoryWithMatches,
   regexMatchRanges,
+  literalMatchRanges,
 } from './historySearch'
 
 function text(id: string, data: string): ClipboardItem {
@@ -85,18 +85,32 @@ describe('searchHistory', () => {
   })
 })
 
-describe('searchHistoryWithMatches', () => {
-  it('returns the matched character ranges for an exact substring', () => {
-    const history = [text('a', 'the quick brown fox')]
-    const matches = searchHistoryWithMatches(createHistoryFuse(history), 'brown')
-    expect(matches[0].item.id).toBe('a')
-    // "brown" sits at indices 10..14 of "the quick brown fox"
-    expect(matches[0].ranges).toContainEqual([10, 14])
+describe('literalMatchRanges', () => {
+  it('finds every case-insensitive occurrence of the query', () => {
+    // "home" sits at 1..4 and 6..9 of "/home/home"
+    expect(literalMatchRanges('/home/home', 'home')).toEqual([
+      [1, 4],
+      [6, 9],
+    ])
+    expect(literalMatchRanges('Home home', 'home')).toEqual([
+      [0, 3],
+      [5, 8],
+    ])
   })
 
-  it('returns nothing for an empty query', () => {
-    const history = [text('a', 'anything')]
-    expect(searchHistoryWithMatches(createHistoryFuse(history), '')).toEqual([])
+  it('treats the query literally, not as a regex', () => {
+    // The "." must match a literal dot, so "axb" is not a match.
+    expect(literalMatchRanges('a.b axb', 'a.b')).toEqual([[0, 2]])
+  })
+
+  it('highlights each whitespace-separated term independently', () => {
+    const ranges = literalMatchRanges('screen shot', 'shot screen')
+    expect(ranges).toContainEqual([0, 5]) // "screen"
+    expect(ranges).toContainEqual([7, 10]) // "shot"
+  })
+
+  it('returns nothing for a blank query', () => {
+    expect(literalMatchRanges('anything', '   ')).toEqual([])
   })
 })
 

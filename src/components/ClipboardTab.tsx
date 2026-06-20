@@ -13,8 +13,9 @@ import { useHistoryKeyboardNavigation } from '../hooks/useHistoryKeyboardNavigat
 import {
   createHistoryFuse,
   getSearchableText,
-  searchHistoryWithMatches,
+  searchHistory,
   regexMatchRanges,
+  literalMatchRanges,
 } from '../utils/historySearch'
 import type { MatchRange } from '../utils/highlightMatches'
 import { loadSearchPrefs, matchesTrigger, type SearchPrefs } from '../utils/searchPrefs'
@@ -272,11 +273,13 @@ export function ClipboardTab(props: {
         return true
       })
     } else {
-      // Default: fuzzy search ranked by relevance.
-      const matches = searchHistoryWithMatches(fuse, searchQuery)
-      result = matches.map((m) => m.item)
-      for (const m of matches) {
-        if (m.ranges.length) ranges.set(m.item.id, m.ranges)
+      // Default: fuzzy search ranks WHICH items match; highlighting paints only
+      // the literal typed substrings, so it stays crisp instead of scattering
+      // across the single characters a fuzzy match would otherwise light up.
+      result = searchHistory(fuse, history, searchQuery)
+      for (const item of result) {
+        const literal = literalMatchRanges(getSearchableText(item), searchQuery)
+        if (literal.length) ranges.set(item.id, literal)
       }
     }
 
