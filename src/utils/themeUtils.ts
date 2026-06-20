@@ -12,24 +12,32 @@ export function calculateTertiaryOpacity(baseOpacity: number): number {
   return Math.min(tertiary, 1.0)
 }
 
-export function getTertiaryBackgroundStyle(isDark: boolean, opacity: number) {
-  if (isDark) {
-    return opacity >= 1
-      ? { backgroundColor: 'rgb(56, 56, 56)' } // win11-bg-tertiary solid
-      : { backgroundColor: `rgba(56, 56, 56, ${opacity})` }
+/**
+ * Background colour for a card/chrome surface at a given opacity.
+ *
+ * These resolve through the themeable CSS variables (with the original Windows
+ * 11 values as fallbacks) rather than fixed rgb() literals, so cards and chrome
+ * re-skin with the active theme. The opacity slider is preserved via color-mix
+ * toward transparent; a fully opaque value skips the mix entirely.
+ */
+function surfaceStyle(colorVar: string, opacity: number) {
+  if (opacity >= 1) {
+    return { backgroundColor: colorVar }
   }
-  return opacity >= 1
-    ? { backgroundColor: 'rgb(229, 229, 229)' } // win11Light-bg-tertiary solid
-    : { backgroundColor: `rgba(229, 229, 229, ${opacity})` }
+  const pct = Math.round(Math.max(0, Math.min(1, opacity)) * 100)
+  return { backgroundColor: `color-mix(in srgb, ${colorVar} ${pct}%, transparent)` }
+}
+
+export function getTertiaryBackgroundStyle(isDark: boolean, opacity: number) {
+  return surfaceStyle(
+    isDark ? 'var(--w-bg-tertiary, #383838)' : 'var(--wl-bg-tertiary, #e5e5e5)',
+    opacity
+  )
 }
 
 export function getCardBackgroundStyle(isDark: boolean, opacity: number) {
-  if (isDark) {
-    return opacity >= 1
-      ? { backgroundColor: 'rgb(45, 45, 45)' } // win11-bg-card solid
-      : { backgroundColor: `rgba(45, 45, 45, ${opacity})` }
-  }
-  return opacity >= 1
-    ? { backgroundColor: 'rgb(255, 255, 255)' } // win11Light-bg-card solid
-    : { backgroundColor: `rgba(255, 255, 255, ${opacity})` }
+  return surfaceStyle(
+    isDark ? 'var(--w-bg-card, #2d2d2d)' : 'var(--wl-bg-card, #ffffff)',
+    opacity
+  )
 }
