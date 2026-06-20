@@ -359,7 +359,9 @@ export function ClipboardTab(props: {
       {/* Search Bar — appears when you press Ctrl+F or just start typing. The
           glass field floats over the list and animates in. */}
       {searchVisible && (
-        <div className="animate-in px-3 pb-2 pt-1">
+        // relative + z-index lifts this above the list so the filter dropdown,
+        // which overflows downward over the cards, paints on top of them.
+        <div className="animate-in relative z-30 px-3 pb-2 pt-1">
           <SearchBar
             ref={searchInputRef}
             value={searchQuery}
