@@ -966,7 +966,8 @@ function SettingsApp() {
             <div>
               <label className="text-sm font-medium">Rounded window corners</label>
               <p className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
-                Cleanest on compositors with transparency; off keeps a crisp square edge.
+                Only takes effect when window transparency is available — on GPUs where it's
+                off (e.g. some NVIDIA setups) the window stays squared.
               </p>
             </div>
             <Switch
