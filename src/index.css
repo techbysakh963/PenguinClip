@@ -281,6 +281,15 @@ body {
       inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
 
+  /* Solid popover surface for dropdown menus. Unlike .glass-panel, this is
+   * fully opaque (surface-3) so menu text stays readable and never lets the
+   * list bleed through — including on hardware where backdrop blur is weak. */
+  .menu-panel {
+    background: var(--surface-3);
+    border: 1px solid var(--surface-border-strong);
+    box-shadow: var(--shadow-lg);
+  }
+
   /* Full-bleed glass bar (sticky headers/toolbars). The content list scrolls
    * UNDER it, so its backdrop blur actually has content to lens — this is what
    * makes the glass read as real frosted glass instead of a flat fill. */

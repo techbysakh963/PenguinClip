@@ -66,7 +66,7 @@ export function ScopeMenu({ scope, onChange }: ScopeMenuProps) {
         <div
           role="menu"
           aria-label="Filter clipboard by type"
-          className="glass-panel absolute right-0 top-full z-30 mt-1.5 w-40 rounded-xl p-1 animate-in"
+          className="menu-panel absolute right-0 top-full z-30 mt-1.5 w-40 rounded-xl p-1 animate-in"
         >
           {SEARCH_SCOPES.map((def) => {
             const Icon = def.category ? CATEGORY_ICON[def.category] : List
