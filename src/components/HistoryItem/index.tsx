@@ -142,8 +142,8 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
     <div
       ref={setRefs}
       className={clsx(
-        // Base styles
-        'group relative rounded-[var(--radius-card)] cursor-pointer',
+        // Base styles ('clip-card' is a stable hook for theme-specific card CSS)
+        'clip-card group relative rounded-[var(--radius-card)] cursor-pointer',
         effectiveCompact ? 'p-2' : 'p-3',
         // Smooth, premium feel: lift slightly and cast a soft shadow on hover,
         // then settle back with a subtle press so clicks feel tactile.

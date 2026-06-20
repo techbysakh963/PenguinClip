@@ -101,6 +101,55 @@ const modern: ThemePack = {
   },
 }
 
+// ── Glass ── deep translucent backdrop with frosted panels and see-through
+// cards, so the whole window reads as glass — not just the cards.
+const glass: ThemePack = {
+  id: 'glass',
+  label: 'Glass',
+  blurb: 'Translucent, frosted, deep',
+  layout: { radius: [10, 16], font: 'ui', glass: true },
+  light: {
+    bgPrimary: '#d8e6f6',
+    bgSecondary: 'rgba(255, 255, 255, 0.62)',
+    bgTertiary: 'rgba(255, 255, 255, 0.45)',
+    bgCard: 'rgba(255, 255, 255, 0.55)',
+    bgCardHover: 'rgba(255, 255, 255, 0.74)',
+    textPrimary: '#11243f',
+    textSecondary: '#3b5371',
+    textTertiary: '#5d7290',
+    textDisabled: '#8fa3bb',
+    border: 'rgba(255, 255, 255, 0.65)',
+    borderSubtle: 'rgba(255, 255, 255, 0.45)',
+    surface0: '#d8e6f6',
+    surface1: 'rgba(255, 255, 255, 0.55)',
+    surface2: 'rgba(255, 255, 255, 0.42)',
+    surface3: 'rgba(255, 255, 255, 0.94)',
+    surfaceBorder: 'rgba(255, 255, 255, 0.6)',
+    surfaceBorderStrong: 'rgba(255, 255, 255, 0.78)',
+    glassBg: 'rgba(255, 255, 255, 0.5)',
+  },
+  dark: {
+    bgPrimary: '#0d1430',
+    bgSecondary: 'rgba(255, 255, 255, 0.08)',
+    bgTertiary: 'rgba(255, 255, 255, 0.12)',
+    bgCard: 'rgba(255, 255, 255, 0.07)',
+    bgCardHover: 'rgba(255, 255, 255, 0.13)',
+    textPrimary: '#eef2ff',
+    textSecondary: '#bcc5e4',
+    textTertiary: '#8b96bd',
+    textDisabled: '#5c6790',
+    border: 'rgba(255, 255, 255, 0.14)',
+    borderSubtle: 'rgba(255, 255, 255, 0.08)',
+    surface0: '#0d1430',
+    surface1: 'rgba(255, 255, 255, 0.07)',
+    surface2: 'rgba(255, 255, 255, 0.12)',
+    surface3: 'rgba(22, 30, 62, 0.94)',
+    surfaceBorder: 'rgba(255, 255, 255, 0.14)',
+    surfaceBorderStrong: 'rgba(255, 255, 255, 0.24)',
+    glassBg: 'rgba(255, 255, 255, 0.1)',
+  },
+}
+
 // ── Minimal ── flat, low-contrast, near-monochrome; no glass, gentle corners.
 const minimal: ThemePack = {
   id: 'minimal',
@@ -324,7 +373,7 @@ const terminal: ThemePack = {
   dark: terminalPalette,
 }
 
-export const THEME_PACKS: ThemePack[] = [modern, minimal, windows, gnome, kde, terminal]
+export const THEME_PACKS: ThemePack[] = [modern, glass, minimal, windows, gnome, kde, terminal]
 
 export const DEFAULT_THEME_ID = 'modern'
 

@@ -302,6 +302,13 @@ body {
     box-shadow: var(--shadow-lg);
   }
 
+  /* The Glass theme frosts the cards themselves (translucent + blur) so the
+   * whole window reads as layered glass, not just the search bar. */
+  :root[data-theme='glass'] .clip-card {
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+  }
+
   /* Themes can switch off in-app frosting (glass: false). The frosted surfaces
    * then render solid — no backdrop blur, opaque fills — so Minimal, GNOME and
    * Terminal read as flat designs rather than translucent ones. */
