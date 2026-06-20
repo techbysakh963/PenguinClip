@@ -482,7 +482,7 @@ export function ClipboardTab(props: {
                     <span className="timeline-header__label">{groupSection.label}</span>
                     <span className="timeline-header__count">{groupSection.items.length}</span>
                   </div>
-                  <div className="flex flex-col gap-2 pb-3">
+                  <div className="flex flex-col gap-[var(--list-gap,0.5rem)] pb-3">
                     {groupSection.items.map((item, i) => renderHistoryItem(item, start + i))}
                   </div>
                 </section>
@@ -491,7 +491,11 @@ export function ClipboardTab(props: {
           })()}
         </div>
       ) : (
-        <div className="flex flex-col gap-2 p-3" role="listbox" aria-label="Clipboard history">
+        <div
+          className="flex flex-col gap-[var(--list-gap,0.5rem)] p-3"
+          role="listbox"
+          aria-label="Clipboard history"
+        >
           {filteredHistory.map((item, index) => renderHistoryItem(item, index))}
         </div>
       )}

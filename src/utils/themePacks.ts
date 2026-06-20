@@ -51,6 +51,13 @@ export interface ThemeLayout {
   /** CSS background painted on the window shell (a gradient gives glass surfaces
    * something to refract and makes the whole window distinct); null = flat. */
   backdrop: string | null
+  /** List spacing density. Defaults to 'comfortable'. */
+  density?: 'comfortable' | 'compact' | 'dense'
+  /** Category-icon treatment: 'tile' = colour-tinted square (default), 'mono' =
+   * no tile, icon inherits the text colour (austere / terminal look). */
+  icon?: 'tile' | 'mono'
+  /** Motion feel: 'instant' removes card transitions for a snappy feel. */
+  motion?: 'smooth' | 'instant'
 }
 
 export interface ThemePack {
@@ -200,6 +207,7 @@ const minimal: ThemePack = {
     border: 'none',
     hover: 'none',
     backdrop: null,
+    icon: 'mono',
   },
   light: {
     bgPrimary: '#e9eaec',
@@ -267,6 +275,8 @@ const cyberpunk: ThemePack = {
       'radial-gradient(circle at 88% 16%, rgba(54,249,255,0.26), transparent 42%), ' +
       'radial-gradient(circle at 52% 100%, rgba(150,60,255,0.32), transparent 48%), ' +
       'var(--surface-0)',
+    density: 'compact',
+    motion: 'instant',
   },
   light: cyberpunkPalette,
   dark: cyberpunkPalette,
@@ -307,6 +317,9 @@ const terminal: ThemePack = {
     border: 'solid',
     hover: 'invert',
     backdrop: null,
+    density: 'dense',
+    icon: 'mono',
+    motion: 'instant',
   },
   light: terminalPalette,
   dark: terminalPalette,

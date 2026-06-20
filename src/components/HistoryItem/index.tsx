@@ -190,7 +190,7 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
         {/* Category icon — tinted by content type so the kind of item is
             readable at a glance. Color swatches keep showing the real colour. */}
         <div
-          className={clsx(iconContainerClasses, colorPreview && 'shadow-sm')}
+          className={clsx('clip-icon', iconContainerClasses, colorPreview && 'shadow-sm')}
           style={
             colorPreview && colorPreview.data
               ? { backgroundColor: colorPreview.data }

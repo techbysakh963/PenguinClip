@@ -369,6 +369,32 @@ body {
   }
   /* data-hover='none' keeps only the colour tint (still applied by the card). */
 
+  /* Density → spacing between cards (consumed by the list via --list-gap). */
+  :root {
+    --list-gap: 0.5rem;
+  }
+  :root[data-density='compact'] {
+    --list-gap: 0.375rem;
+  }
+  :root[data-density='dense'] {
+    --list-gap: 0.25rem;
+  }
+
+  /* Icon treatment. 'mono' drops the colour-tinted tile and lets the icon take
+   * the card's text colour — austere for Minimal, phosphor for Terminal. */
+  :root[data-icon='mono'] .clip-icon {
+    background: transparent !important;
+  }
+  :root[data-icon='mono'] .clip-icon svg {
+    color: currentColor !important;
+    opacity: 0.85;
+  }
+
+  /* Motion. 'instant' removes the card transitions for a snappy/terminal feel. */
+  :root[data-motion='instant'] .clip-card {
+    transition: none !important;
+  }
+
   /* Retro CRT: scanline overlay across the whole window (pointer-events off so
    * it never blocks clicks) for an unmistakable old-monitor look. */
   :root[data-theme='retro'] .app-shell::after {

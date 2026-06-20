@@ -142,6 +142,9 @@ export function applyTheme(themeId: string): void {
   root.dataset.shadow = theme.layout.shadow
   root.dataset.border = theme.layout.border
   root.dataset.hover = theme.layout.hover
+  root.dataset.density = theme.layout.density ?? 'comfortable'
+  root.dataset.icon = theme.layout.icon ?? 'tile'
+  root.dataset.motion = theme.layout.motion ?? 'smooth'
 }
 
 export function loadThemeId(): string {
