@@ -147,8 +147,9 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
         effectiveCompact ? 'p-2' : 'p-3',
         // Smooth, premium feel: lift slightly and cast a soft shadow on hover,
         // then settle back with a subtle press so clicks feel tactile.
-        '[transition:transform_var(--motion-base)_var(--ease-out),box-shadow_var(--motion-base)_var(--ease-out),background-color_var(--motion-fast)_var(--ease-out)]',
-        'hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:translate-y-0 active:scale-[0.99]',
+        '[transition:transform_var(--motion-base)_var(--ease-out),box-shadow_var(--motion-base)_var(--ease-out),background-color_var(--motion-fast)_var(--ease-out),border-color_var(--motion-fast)_var(--ease-out)]',
+        // Hover lift/shadow is theme-driven (see .clip-card data-hover CSS).
+        'active:translate-y-0 active:scale-[0.99]',
         // Skip layout/paint for off-screen rows so long histories stay cheap to
         // render, while keeping every row mounted (so keyboard focus and
         // scrollIntoView still work). contain-intrinsic-size reserves a
@@ -160,10 +161,8 @@ export const HistoryItem = forwardRef<HTMLDivElement, HistoryItemProps>(function
         pinnedAndFocused,
         // Otherwise default focused ring
         !pinnedAndFocused && isFocused ? `ring-1 ring-win11-bg-accent` : undefined,
-        // Dark mode styles
-        isDark
-          ? 'hover:bg-win11-bg-card-hover border border-win11-border-subtle'
-          : 'hover:bg-win11Light-bg-card-hover border border-win11Light-border',
+        // Hover background tint (border is theme-driven via .clip-card CSS)
+        isDark ? 'hover:bg-win11-bg-card-hover' : 'hover:bg-win11Light-bg-card-hover',
         // Pinned indicator
         item.pinned && !pinnedAndFocused && `ring-1 ring-win11-bg-accent`,
         // Focus styles

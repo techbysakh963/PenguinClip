@@ -249,7 +249,7 @@ body {
      * transparent and the corners are actually masked. Instead, frame the
      * rectangle with a crisp hairline border and a subtly lit top edge so the
      * square reads as intentional rather than abruptly cut. */
-    background: var(--surface-0);
+    background: var(--app-bg, var(--surface-0));
     box-shadow:
       inset 0 0 0 1px var(--surface-border-strong),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -301,6 +301,59 @@ body {
     border: 1px solid var(--surface-border-strong);
     box-shadow: var(--shadow-lg);
   }
+
+  /* Theme-driven card chrome. The resting background stays an inline style
+   * (opacity-aware); the shadow, border and hover behaviour are driven by each
+   * theme's data-* flags so themes feel structurally different, not just
+   * recoloured. Border colour is mode-aware to match each palette. */
+  .clip-card {
+    border: 1px solid var(--card-border-color, transparent);
+    box-shadow: var(--card-shadow, none);
+  }
+  :root:not(.dark) .clip-card {
+    --card-border-color: var(--wl-border, #e5e5e5);
+  }
+  :root.dark .clip-card {
+    --card-border-color: var(--w-border-subtle, #3a3a3a);
+  }
+  :root[data-border='none'] .clip-card {
+    --card-border-color: transparent;
+  }
+  :root:not(.dark)[data-border='solid'] .clip-card {
+    --card-border-color: var(--wl-border, #cfcfcf);
+  }
+  :root.dark[data-border='solid'] .clip-card {
+    --card-border-color: var(--w-border, #555555);
+  }
+
+  :root[data-shadow='none'] .clip-card {
+    --card-shadow: none;
+  }
+  :root[data-shadow='soft'] .clip-card {
+    --card-shadow: var(--shadow-sm);
+  }
+  :root[data-shadow='hard'] .clip-card {
+    --card-shadow:
+      0 1px 0 var(--surface-border-strong),
+      0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+  :root[data-shadow='glow'] .clip-card {
+    --card-shadow: 0 6px 22px rgba(0, 0, 0, 0.22);
+  }
+
+  :root[data-hover='lift'] .clip-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  :root[data-hover='glow'] .clip-card:hover {
+    box-shadow:
+      0 0 0 1px var(--accent-subtle),
+      0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+  :root[data-hover='invert'] .clip-card:hover {
+    border-color: var(--accent);
+  }
+  /* data-hover='none' keeps only the colour tint (still applied by the card). */
 
   /* The Glass theme frosts the cards themselves (translucent + blur) so the
    * whole window reads as layered glass, not just the search bar. */

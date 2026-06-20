@@ -77,8 +77,16 @@ export function paletteVarEntries(theme: ThemePack): [string, string][] {
   }
   push(darkPaletteVars(theme.dark))
   push(lightPaletteVars(theme.light))
+  // Corner radii. The cards read --radius-card and chrome reads the other radius
+  // tokens, so bind them all (the previous version only set --w-radius, which is
+  // why theme corners never reached the cards).
   entries.push(['--w-radius', `${control}px`])
   entries.push(['--w-radius-lg', `${card}px`])
+  entries.push(['--radius-control', `${control}px`])
+  entries.push(['--radius-card', `${card}px`])
+  entries.push(['--radius-menu', `${card}px`])
+  entries.push(['--radius-search', `${card + 2}px`])
+  entries.push(['--radius-window', `${card + 4}px`])
   entries.push(['--font-ui', font])
   return entries
 }
@@ -115,13 +123,25 @@ export function applyTheme(themeId: string): void {
     root.style.setProperty(name, value)
   }
 
+  // Window backdrop (a gradient gives glass surfaces something to refract and
+  // makes each theme's window distinct); falls back to the flat surface in CSS.
+  if (theme.layout.backdrop) {
+    root.style.setProperty('--app-bg', theme.layout.backdrop)
+  } else {
+    root.style.removeProperty('--app-bg')
+  }
+
   // Mode-specific surfaces need :root vs :root.dark, which only a stylesheet can
   // express, so they live in a managed <style>.
   styleElement().textContent = buildThemeCss(theme)
 
+  // Structural flags consumed by CSS (card shadow / border / hover behaviour).
   root.dataset.glass = theme.layout.glass ? 'on' : 'off'
   root.dataset.themeFont = theme.layout.font
   root.dataset.theme = theme.id
+  root.dataset.shadow = theme.layout.shadow
+  root.dataset.border = theme.layout.border
+  root.dataset.hover = theme.layout.hover
 }
 
 export function loadThemeId(): string {

@@ -32,6 +32,12 @@ export interface Palette {
 
 export type CornerStyle = 'rounded' | 'square'
 export type FontStyle = 'ui' | 'mono'
+/** Resting card elevation. */
+export type ShadowStyle = 'none' | 'soft' | 'hard' | 'glow'
+/** Card outline weight. */
+export type BorderStyle = 'none' | 'hairline' | 'solid'
+/** What a card does on hover. */
+export type HoverStyle = 'lift' | 'glow' | 'invert' | 'none'
 
 export interface ThemeLayout {
   /** Control/card corner radii, in px: [control, card]. */
@@ -39,6 +45,12 @@ export interface ThemeLayout {
   font: FontStyle
   /** Whether in-app frosted glass is used (off → solid surfaces). */
   glass: boolean
+  shadow: ShadowStyle
+  border: BorderStyle
+  hover: HoverStyle
+  /** CSS background painted on the window shell (a gradient gives glass surfaces
+   * something to refract and makes the whole window distinct); null = flat. */
+  backdrop: string | null
 }
 
 export interface ThemePack {
@@ -58,7 +70,15 @@ const modern: ThemePack = {
   id: 'modern',
   label: 'Modern',
   blurb: 'The signature PenguinClip look',
-  layout: { radius: [8, 12], font: 'ui', glass: true },
+  layout: {
+    radius: [11, 14],
+    font: 'ui',
+    glass: true,
+    shadow: 'none',
+    border: 'hairline',
+    hover: 'lift',
+    backdrop: null,
+  },
   light: {
     bgPrimary: '#f3f3f3',
     bgSecondary: '#ffffff',
@@ -107,7 +127,21 @@ const glass: ThemePack = {
   id: 'glass',
   label: 'Glass',
   blurb: 'Translucent, frosted, deep',
-  layout: { radius: [10, 16], font: 'ui', glass: true },
+  layout: {
+    radius: [12, 16],
+    font: 'ui',
+    glass: true,
+    shadow: 'glow',
+    border: 'hairline',
+    hover: 'glow',
+    // Colour blobs over the deep surface give the frosted cards content to
+    // refract — the whole point of glass.
+    backdrop:
+      'radial-gradient(circle at 18% 12%, rgba(122,134,255,0.55), transparent 42%), ' +
+      'radial-gradient(circle at 86% 22%, rgba(42,220,180,0.42), transparent 44%), ' +
+      'radial-gradient(circle at 62% 98%, rgba(196,92,255,0.48), transparent 50%), ' +
+      'var(--surface-0)',
+  },
   light: {
     bgPrimary: '#d8e6f6',
     bgSecondary: 'rgba(255, 255, 255, 0.62)',
@@ -155,7 +189,15 @@ const minimal: ThemePack = {
   id: 'minimal',
   label: 'Minimal',
   blurb: 'Flat, calm and low-contrast',
-  layout: { radius: [6, 8], font: 'ui', glass: false },
+  layout: {
+    radius: [6, 8],
+    font: 'ui',
+    glass: false,
+    shadow: 'none',
+    border: 'none',
+    hover: 'none',
+    backdrop: null,
+  },
   light: {
     bgPrimary: '#e9eaec',
     bgSecondary: '#f7f8f9',
@@ -203,7 +245,15 @@ const windows: ThemePack = {
   id: 'windows',
   label: 'Windows',
   blurb: 'Crisp Fluent design',
-  layout: { radius: [4, 8], font: 'ui', glass: true },
+  layout: {
+    radius: [4, 7],
+    font: 'ui',
+    glass: true,
+    shadow: 'hard',
+    border: 'solid',
+    hover: 'lift',
+    backdrop: null,
+  },
   light: {
     bgPrimary: '#e7eef7',
     bgSecondary: '#fbfdff',
@@ -251,7 +301,15 @@ const gnome: ThemePack = {
   id: 'gnome',
   label: 'GNOME',
   blurb: 'Adwaita-inspired and rounded',
-  layout: { radius: [9, 14], font: 'ui', glass: false },
+  layout: {
+    radius: [10, 16],
+    font: 'ui',
+    glass: false,
+    shadow: 'soft',
+    border: 'none',
+    hover: 'none',
+    backdrop: null,
+  },
   light: {
     bgPrimary: '#e9e7e4',
     bgSecondary: '#fbfaf9',
@@ -299,7 +357,15 @@ const kde: ThemePack = {
   id: 'kde',
   label: 'KDE',
   blurb: 'Breeze blue-greys',
-  layout: { radius: [5, 8], font: 'ui', glass: true },
+  layout: {
+    radius: [3, 5],
+    font: 'ui',
+    glass: false,
+    shadow: 'soft',
+    border: 'solid',
+    hover: 'lift',
+    backdrop: null,
+  },
   light: {
     bgPrimary: '#dfe6ec',
     bgSecondary: '#fbfcfd',
@@ -368,7 +434,15 @@ const terminal: ThemePack = {
   id: 'terminal',
   label: 'Terminal',
   blurb: 'Monospace, sharp, phosphor-green',
-  layout: { radius: MONO_RADIUS, font: 'mono', glass: false },
+  layout: {
+    radius: MONO_RADIUS,
+    font: 'mono',
+    glass: false,
+    shadow: 'none',
+    border: 'solid',
+    hover: 'invert',
+    backdrop: null,
+  },
   light: terminalPalette,
   dark: terminalPalette,
 }
