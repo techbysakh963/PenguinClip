@@ -222,13 +222,6 @@ function SettingsApp() {
     })
   }, [])
 
-  const selectTheme = useCallback((id: string) => {
-    setThemeId(id)
-    saveThemeId(id)
-    applyTheme(id)
-    emit('theme-changed', id).catch(() => {})
-  }, [])
-
   const [searchPrefs, setSearchPrefs] = useState<SearchPrefs>(loadSearchPrefs)
 
   const updateSearchPrefs = useCallback((patch: Partial<SearchPrefs>) => {
@@ -419,6 +412,20 @@ function SettingsApp() {
   const handleThemeModeChange = (mode: ThemeMode) => {
     updateSettings({ theme_mode: mode })
   }
+
+  const selectTheme = useCallback(
+    (id: string) => {
+      setThemeId(id)
+      saveThemeId(id)
+      applyTheme(id)
+      emit('theme-changed', id).catch(() => {})
+      // Intrinsically-dark themes (Cyberpunk, Terminal) force dark mode so the
+      // chrome matches the dark palette instead of staying half-light.
+      const pack = THEME_PACKS.find((t) => t.id === id)
+      if (pack?.forceDark) updateSettings({ theme_mode: 'dark' })
+    },
+    [updateSettings]
+  )
 
   const addExcludedPattern = () => {
     const pattern = newPattern.trim()
@@ -858,6 +865,7 @@ function SettingsApp() {
                   aria-pressed={active}
                   className={clsx(
                     'flex flex-col items-stretch gap-2 rounded-xl p-2 border text-left transition-all',
+                    'min-w-0 overflow-hidden',
                     active
                       ? 'border-[color:var(--accent)] ring-2 ring-[color:var(--accent)]'
                       : 'border-[color:var(--surface-border)] hover:border-[color:var(--surface-border-strong)]'
@@ -886,18 +894,18 @@ function SettingsApp() {
                       />
                     </div>
                   </div>
-                  <div className="px-0.5">
-                    <div className="text-xs font-medium flex items-center gap-1">
-                      {theme.label}
+                  <div className="px-0.5 min-w-0">
+                    <div className="text-xs font-medium flex items-center gap-1 min-w-0">
+                      <span className="truncate">{theme.label}</span>
                       {mono && (
-                        <span className="text-[9px] font-mono opacity-50 uppercase tracking-wide">
+                        <span className="text-[9px] font-mono opacity-50 uppercase tracking-wide flex-shrink-0">
                           mono
                         </span>
                       )}
                     </div>
                     <div
                       className={clsx(
-                        'text-[10px] leading-tight',
+                        'text-[10px] leading-tight break-words',
                         isDark ? 'text-gray-400' : 'text-gray-500'
                       )}
                     >
@@ -951,6 +959,21 @@ function SettingsApp() {
                 />
               </label>
             </div>
+          </div>
+
+          {/* Rounded window corners */}
+          <div className="flex items-center justify-between mt-6">
+            <div>
+              <label className="text-sm font-medium">Rounded window corners</label>
+              <p className={clsx('text-xs mt-0.5', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                Cleanest on compositors with transparency; off keeps a crisp square edge.
+              </p>
+            </div>
+            <Switch
+              checked={!!appearance.roundedCorners}
+              onChange={() => updateAppearance({ roundedCorners: !appearance.roundedCorners })}
+              isDark={isDark}
+            />
           </div>
         </section>
 
@@ -1566,7 +1589,7 @@ function SettingsApp() {
       {/* Footer */}
       <footer
         className={clsx(
-          'px-8 py-5 border-t flex items-center justify-between',
+          'px-8 py-2.5 border-t flex items-center justify-between',
           isDark ? 'border-white/5 bg-white/5' : 'border-white/30 bg-white/40'
         )}
       >
@@ -1575,7 +1598,7 @@ function SettingsApp() {
         </span>
         <button
           onClick={handleClose}
-          className="px-8 py-2.5 bg-win11-bg-accent hover:opacity-90 active:scale-95 text-white rounded-lg text-sm font-semibold shadow-sm transition-all"
+          className="px-7 py-2 bg-win11-bg-accent hover:opacity-90 active:scale-95 text-white rounded-lg text-sm font-semibold shadow-sm transition-all"
         >
           Done
         </button>

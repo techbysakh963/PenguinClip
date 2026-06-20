@@ -9,12 +9,16 @@
 export interface AppearanceTokens {
   /** Accent colour as #rrggbb. Drives active states, focus rings, primary actions. */
   accent: string
+  /** Round the main window's corners. Off by default (a squared opaque window
+   * avoids dark corner triangles on compositors without alpha). */
+  roundedCorners?: boolean
 }
 
 const STORAGE_KEY = 'penguinclip-appearance'
 
 export const DEFAULT_APPEARANCE: AppearanceTokens = {
   accent: '#0078d4',
+  roundedCorners: false,
 }
 
 /** Preset accent swatches offered in Settings. */
@@ -71,4 +75,6 @@ export function applyAppearance(tokens: AppearanceTokens): void {
   root.style.setProperty('--accent-hover', lighten(rgb, 0.12))
   root.style.setProperty('--accent-subtle', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.12)`)
   root.style.setProperty('--accent-ring', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`)
+
+  root.dataset.rounded = tokens.roundedCorners ? 'on' : 'off'
 }

@@ -61,6 +61,9 @@ export interface ThemePack {
   layout: ThemeLayout
   light: Palette
   dark: Palette
+  /** Intrinsically-dark themes (e.g. Cyberpunk, Terminal): selecting one forces
+   * the app into dark mode so the chrome matches. */
+  forceDark?: boolean
 }
 
 const MONO_RADIUS: [number, number] = [2, 3]
@@ -240,68 +243,6 @@ const minimal: ThemePack = {
   },
 }
 
-// ── Desktop ── clean native productivity look: flat, bordered, no glass.
-const desktop: ThemePack = {
-  id: 'desktop',
-  label: 'Desktop',
-  blurb: 'Clean native productivity',
-  layout: {
-    radius: [6, 8],
-    font: 'ui',
-    glass: false,
-    shadow: 'soft',
-    border: 'solid',
-    hover: 'lift',
-    backdrop: null,
-  },
-  light: {
-    bgPrimary: '#eceef0', bgSecondary: '#fbfcfd', bgTertiary: '#e0e3e6', bgCard: '#fbfcfd', bgCardHover: '#f1f3f5',
-    textPrimary: '#1f2328', textSecondary: '#54616e', textTertiary: '#727f8c', textDisabled: '#9aa5b1',
-    border: '#ccd2d9', borderSubtle: '#dde1e6',
-    surface0: '#eceef0', surface1: '#fbfcfd', surface2: '#f1f3f5', surface3: '#ffffff',
-    surfaceBorder: 'rgba(0, 0, 0, 0.10)', surfaceBorderStrong: 'rgba(0, 0, 0, 0.16)', glassBg: '#fbfcfd',
-  },
-  dark: {
-    bgPrimary: '#1c1f22', bgSecondary: '#26292d', bgTertiary: '#30343a', bgCard: '#26292d', bgCardHover: '#2f343a',
-    textPrimary: '#eceef0', textSecondary: '#aeb6bf', textTertiary: '#828b95', textDisabled: '#5b636c',
-    border: '#3a3f45', borderSubtle: '#2e3237',
-    surface0: '#1c1f22', surface1: '#26292d', surface2: '#30343a', surface3: '#26292d',
-    surfaceBorder: 'rgba(255, 255, 255, 0.10)', surfaceBorderStrong: 'rgba(255, 255, 255, 0.16)', glassBg: '#26292d',
-  },
-}
-
-// ── macOS ── Aqua vibrancy: translucent, rounded, soft.
-const macos: ThemePack = {
-  id: 'macos',
-  label: 'macOS',
-  blurb: 'Aqua vibrancy, rounded',
-  layout: {
-    radius: [8, 11],
-    font: 'ui',
-    glass: true,
-    shadow: 'soft',
-    border: 'hairline',
-    hover: 'lift',
-    backdrop: 'linear-gradient(180deg, rgba(255,255,255,0.06), transparent 38%), var(--surface-0)',
-  },
-  light: {
-    bgPrimary: '#e8e8ed', bgSecondary: 'rgba(255, 255, 255, 0.8)', bgTertiary: '#dcdce2',
-    bgCard: 'rgba(255, 255, 255, 0.78)', bgCardHover: 'rgba(255, 255, 255, 0.92)',
-    textPrimary: '#1d1d1f', textSecondary: '#55555a', textTertiary: '#7a7a80', textDisabled: '#a5a5aa',
-    border: 'rgba(0, 0, 0, 0.10)', borderSubtle: 'rgba(0, 0, 0, 0.06)',
-    surface0: '#e8e8ed', surface1: 'rgba(255, 255, 255, 0.78)', surface2: 'rgba(255, 255, 255, 0.6)', surface3: '#ffffff',
-    surfaceBorder: 'rgba(0, 0, 0, 0.10)', surfaceBorderStrong: 'rgba(0, 0, 0, 0.16)', glassBg: 'rgba(255, 255, 255, 0.7)',
-  },
-  dark: {
-    bgPrimary: '#1e1e22', bgSecondary: 'rgba(255, 255, 255, 0.07)', bgTertiary: 'rgba(255, 255, 255, 0.12)',
-    bgCard: 'rgba(255, 255, 255, 0.08)', bgCardHover: 'rgba(255, 255, 255, 0.13)',
-    textPrimary: '#f5f5f7', textSecondary: '#aeaeb2', textTertiary: '#8a8a8f', textDisabled: '#5c5c61',
-    border: 'rgba(255, 255, 255, 0.12)', borderSubtle: 'rgba(255, 255, 255, 0.07)',
-    surface0: '#1e1e22', surface1: 'rgba(255, 255, 255, 0.08)', surface2: 'rgba(255, 255, 255, 0.12)', surface3: '#2a2a2e',
-    surfaceBorder: 'rgba(255, 255, 255, 0.12)', surfaceBorderStrong: 'rgba(255, 255, 255, 0.2)', glassBg: 'rgba(40, 40, 45, 0.7)',
-  },
-}
-
 // ── Cyberpunk ── neon magenta & cyan on near-black (always dark).
 const cyberpunkPalette: Palette = {
   bgPrimary: '#0a0613', bgSecondary: '#140a26', bgTertiary: '#1d1036', bgCard: '#140a26', bgCardHover: '#1f1140',
@@ -329,31 +270,7 @@ const cyberpunk: ThemePack = {
   },
   light: cyberpunkPalette,
   dark: cyberpunkPalette,
-}
-
-// ── Retro ── amber CRT with scanlines, monospace (always dark).
-const retroPalette: Palette = {
-  bgPrimary: '#1a1305', bgSecondary: '#231a08', bgTertiary: '#2e220a', bgCard: '#231a08', bgCardHover: '#2e220a',
-  textPrimary: '#ffb000', textSecondary: '#d99000', textTertiary: '#a86f00', textDisabled: '#6b4a06',
-  border: '#7a5a14', borderSubtle: '#3a2a08',
-  surface0: '#1a1305', surface1: '#231a08', surface2: '#2e220a', surface3: '#231a08',
-  surfaceBorder: 'rgba(255, 176, 0, 0.22)', surfaceBorderStrong: 'rgba(255, 176, 0, 0.4)', glassBg: '#231a08',
-}
-const retro: ThemePack = {
-  id: 'retro',
-  label: 'Retro',
-  blurb: 'Amber CRT, scanlines',
-  layout: {
-    radius: [1, 2],
-    font: 'mono',
-    glass: false,
-    shadow: 'none',
-    border: 'solid',
-    hover: 'invert',
-    backdrop: 'var(--surface-0)',
-  },
-  light: retroPalette,
-  dark: retroPalette,
+  forceDark: true,
 }
 
 // ── Terminal ── monospace, sharp corners, phosphor-green on black. Always dark
@@ -393,9 +310,10 @@ const terminal: ThemePack = {
   },
   light: terminalPalette,
   dark: terminalPalette,
+  forceDark: true,
 }
 
-export const THEME_PACKS: ThemePack[] = [modern, glass, macos, minimal, desktop, cyberpunk, terminal, retro]
+export const THEME_PACKS: ThemePack[] = [modern, glass, minimal, cyberpunk, terminal]
 
 export const DEFAULT_THEME_ID = 'modern'
 
