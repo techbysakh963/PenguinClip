@@ -18,10 +18,6 @@
 [![100% Local](https://img.shields.io/badge/100%25-Local-success)](#privacy)
 [![No Telemetry](https://img.shields.io/badge/telemetry-none-success)](#privacy)
 
-<br>
-
-<img src="assets/screenshots/hero.png" alt="PenguinClip in action" width="720">
-
 </div>
 
 ---
@@ -74,7 +70,7 @@ Make it yours — **Modern**, **Glass**, **Minimal**, **Cyberpunk**, and **Termi
 
 <div align="center">
 
-<img src="assets/screenshots/themes.png" alt="PenguinClip themes: Modern, Glass, Minimal, Cyberpunk, Terminal" width="820">
+<img src="assets/screenshots/themes.png" alt="PenguinClip themes: Modern, Glass, Minimal, Cyberpunk, Glass Light, Terminal" width="680">
 
 </div>
 
