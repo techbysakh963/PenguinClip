@@ -6,6 +6,8 @@ import {
   searchHistory,
   regexMatchRanges,
   literalMatchRanges,
+  rankSearchResults,
+  type ScoredItem,
 } from './historySearch'
 
 function text(id: string, data: string): ClipboardItem {
@@ -132,5 +134,41 @@ describe('regexMatchRanges', () => {
 
   it('yields no ranges for an invalid pattern', () => {
     expect(regexMatchRanges('text', '[')).toEqual([])
+  })
+})
+
+describe('rankSearchResults', () => {
+  const NOW = new Date(2024, 5, 15, 12, 0, 0).getTime()
+  const recent = (id: string, score: number, extra: Partial<ClipboardItem> = {}): ScoredItem => ({
+    item: { ...text(id, id), timestamp: new Date(NOW).toISOString(), ...extra },
+    score,
+  })
+  const old = (id: string, score: number, extra: Partial<ClipboardItem> = {}): ScoredItem => ({
+    item: {
+      ...text(id, id),
+      timestamp: new Date(NOW - 1000 * 60 * 60 * 24 * 30).toISOString(), // 30 days
+      ...extra,
+    },
+    score,
+  })
+
+  it('floats pinned/favorited above better-scoring unpinned matches', () => {
+    const out = rankSearchResults(
+      [recent('plain', 0.05), recent('pin', 0.9, { pinned: true }), recent('fav', 0.8, { favorited: true })],
+      NOW
+    )
+    expect(out.slice(0, 2).map((i) => i.id).sort()).toEqual(['fav', 'pin'])
+    expect(out[2].id).toBe('plain')
+  })
+
+  it('orders better matches first when recency is equal', () => {
+    const out = rankSearchResults([recent('worse', 0.4), recent('better', 0.1)], NOW)
+    expect(out.map((i) => i.id)).toEqual(['better', 'worse'])
+  })
+
+  it('nudges a recent item above a slightly-better-scoring old one', () => {
+    // 0.30 recent vs 0.25 old: recency weight (0.35) overcomes the 0.05 gap.
+    const out = rankSearchResults([old('old', 0.25), recent('new', 0.3)], NOW)
+    expect(out.map((i) => i.id)).toEqual(['new', 'old'])
   })
 })

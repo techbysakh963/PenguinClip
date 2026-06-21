@@ -35,9 +35,48 @@ export function createHistoryFuse(history: ClipboardItem[]): Fuse<ClipboardItem>
   return new Fuse(history, FUSE_OPTIONS)
 }
 
+/** A matched item with its Fuse relevance score (0 = perfect, 1 = worst). */
+export interface ScoredItem {
+  item: ClipboardItem
+  score: number
+}
+
+// Recency decays with a 3-day half-life; weight keeps recency a nudge, not a
+// dominator, so a strong match still beats a weak-but-recent one.
+const RECENCY_HALF_LIFE_MS = 1000 * 60 * 60 * 24 * 3
+const RECENCY_WEIGHT = 0.35
+
+/** 1 for a just-copied item, decaying toward 0 as it ages. */
+function recencyScore(item: ClipboardItem, now: number): number {
+  const age = now - new Date(item.timestamp).getTime()
+  if (!Number.isFinite(age) || age <= 0) return 1
+  return Math.exp(-age / RECENCY_HALF_LIFE_MS)
+}
+
 /**
- * Fuzzy-searches history, returning matches ordered by relevance. An empty
- * query returns the full history unchanged (recency order preserved).
+ * Rank search matches by usefulness, not just fuzzy score: pinned/favorited
+ * items float to the top, then matches are ordered by relevance nudged by how
+ * recently they were copied. Pure and stable; lower combined value ranks first.
+ */
+export function rankSearchResults(scored: ScoredItem[], now: number = Date.now()): ClipboardItem[] {
+  return scored
+    .map((s, index) => ({ ...s, index }))
+    .sort((a, b) => {
+      const ka = a.item.pinned || a.item.favorited ? 0 : 1
+      const kb = b.item.pinned || b.item.favorited ? 0 : 1
+      if (ka !== kb) return ka - kb
+      const ra = a.score - RECENCY_WEIGHT * recencyScore(a.item, now)
+      const rb = b.score - RECENCY_WEIGHT * recencyScore(b.item, now)
+      if (ra !== rb) return ra - rb
+      return a.index - b.index // stable tie-break
+    })
+    .map((s) => s.item)
+}
+
+/**
+ * Fuzzy-searches history, returning matches ranked by relevance + recency, with
+ * pinned/favorited first. An empty query returns the full history unchanged
+ * (the backend's pinned-then-recency order).
  */
 export function searchHistory(
   fuse: Fuse<ClipboardItem>,
@@ -45,7 +84,8 @@ export function searchHistory(
   query: string
 ): ClipboardItem[] {
   if (!query) return history
-  return fuse.search(query).map((result) => result.item)
+  const scored = fuse.search(query).map((r) => ({ item: r.item, score: r.score ?? 1 }))
+  return rankSearchResults(scored)
 }
 
 /**
