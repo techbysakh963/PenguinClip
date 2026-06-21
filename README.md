@@ -1,160 +1,171 @@
 <div align="center">
 
-<img src="assets/penguinclip-logo.png" alt="PenguinClip Logo" width="120">
+<img src="assets/penguinclip-logo.png" alt="PenguinClip" width="120">
 
 # PenguinClip
 
-**Fast, private clipboard history for Linux.**
+### Fast, private clipboard history for Linux.
 
-Instant fuzzy search · image previews · privacy controls · crash-safe · 100% local. By **SAKH**.
+**The Windows Clipboard experience, reimagined for Linux.**
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.77+-orange.svg)
-![Tauri](https://img.shields.io/badge/tauri-v2-blue.svg)
-![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)
-![Security](https://img.shields.io/badge/security-hardened-green.svg)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/techbysakh963/PenguinClip)](https://github.com/techbysakh963/PenguinClip/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/techbysakh963/PenguinClip/total)](https://github.com/techbysakh963/PenguinClip/releases)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)](#installation)
+[![Display](https://img.shields.io/badge/display-Wayland%20%2B%20X11-blue)](#installation)
+[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-24C8DB)](https://tauri.app)
+[![Powered by Rust](https://img.shields.io/badge/powered%20by-Rust-orange)](https://www.rust-lang.org)
+[![100% Local](https://img.shields.io/badge/100%25-Local-success)](#privacy)
+[![No Telemetry](https://img.shields.io/badge/telemetry-none-success)](#privacy)
 
-*Works on Wayland & X11.*
+<br>
 
-Built with Rust + Tauri v2 + React + Tailwind CSS
-
-<img src="assets/screenshot.png" alt="PenguinClip Screenshot" width="600">
+<img src="assets/screenshot.png" alt="PenguinClip in action" width="720">
 
 </div>
 
 ---
 
-## What is PenguinClip?
+## Why PenguinClip?
 
-PenguinClip is a native clipboard history manager for Linux that's fast, private, and easy on memory. Copy anything — text, rich text, or images — and bring it back instantly with `Super+V`.
+Press **`Super+V`**, find anything you've ever copied, and paste it — in seconds. PenguinClip brings the clipboard history you know from Windows to Linux, with a faster search and a cleaner design, and **nothing ever leaves your machine**.
 
-### Why PenguinClip
+✓ **Find anything you've copied in seconds**
+✓ **100% local and private** — no accounts, no cloud, no telemetry
+✓ **Works on Wayland and X11**
+✓ **Keyboard-first** — search, navigate, and paste without the mouse
+✓ **Themeable and customizable**
+✓ **No subscriptions, no sign-up, no tracking**
 
-- **Instant fuzzy search** — find anything you've copied, typos and all.
-- **Private by design** — 100% local, no telemetry. Exclusion rules and a recording-pause keep sensitive content out of your history.
-- **Light on memory** — images are thumbnailed in the UI and kept on disk, so idle RAM stays low even with a large history.
-- **Crash-safe** — history is written atomically and recovers from corruption instead of silently losing your data.
-- **Works everywhere** — GNOME, KDE, COSMIC, Sway, Hyprland — on Wayland or X11.
-- **Security-hardened** — built with privacy and supply-chain safety as defaults (details below).
+---
 
-### Security hardening
+## See it in action
 
-| Area | Before (Upstream) | After (PenguinClip) |
-|---|---|---|
-| **Installation** | `curl \| bash` with silent sudo | Step-by-step installer, explicit confirmation for every privileged action |
-| **Package repos** | Silently adds Cloudsmith APT/DNF repo | No automatic repo addition; direct .deb/.rpm download only |
-| **Permissions** | Silent udev/ACL/module changes | Fully explained, opt-in permission setup |
-| **GIF Integration** | Hardcoded Tenor API key, always active | Opt-in; user must provide their own API key |
-| **Content Security** | CSP disabled (`null`) | Restrictive CSP with domain whitelist |
-| **CI/CD** | Unpinned GitHub Actions (supply chain risk) | All actions pinned to immutable commit SHAs |
-| **URL Downloads** | Any URL accepted for GIF download | HTTPS-only with domain whitelist (SSRF prevention) |
-| **Security Audits** | `continue-on-error: true` | Security audits block the build on failure |
-| **API Keys** | Hardcoded in source | Removed; no embedded credentials |
-| **Autostart** | Desktop entry injection possible | Input validation on executable paths |
+<div align="center">
 
-For the complete audit, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
+<img src="assets/demo.gif" alt="PenguinClip workflow: Super+V, search, Enter to paste" width="640">
+
+<sub><b>Super+V → type → pick a result → Enter → pasted.</b></sub>
+
+</div>
 
 ---
 
 ## Features
 
-### Clipboard
-- **Wayland & X11 Support** — Uses OS-level shortcuts and `uinput` for paste simulation
-- **Global Hotkey** — Press `Super+V` to open instantly
-- **Smart Positioning** — Window follows your mouse cursor across monitors
-- **Pinning** — Keep important items at the top
-- **Favorites** — Star items to save them in a dedicated Favorites tab
-- **Categories** — Auto-detects content type (URL, Email, Code, Color, Phone) with colored badges
-- **Rich Media** — Supports images, text, rich text, and more
-- **Fuzzy Search** — Typo-tolerant, relevance-ranked search (regex mode still available)
-- **Terminal Paste** — Automatically sends `Ctrl+Shift+V` when pasting into terminal emulators (30+ terminals supported)
+### 🔍 Instant search
+Fuzzy search across your entire history with **match highlighting** and **smart relevance ranking**, so the result you want is the first one you see.
 
-### Extras
-- **GIF Integration** (opt-in) — Search and paste GIFs (requires your own Tenor API key)
-- **Emoji Picker** — Built-in searchable emoji keyboard (`Super+.`)
-- **Kaomoji & Symbols** — Japanese emoticons and special characters
+### 🗂️ Timeline & smart categories
+History auto-groups by **Today / Yesterday / Last 7 Days / Older**, and PenguinClip recognizes **links, code, colors, numbers, emails, and images** automatically — filter to exactly the type you need.
 
-### Privacy
-- **Exclusion Rules** — Regex patterns whose matches are never recorded (e.g. passwords, card numbers) — see [docs/PRIVACY.md](docs/PRIVACY.md)
-- **Pause Recording** — Tray toggle to stop capturing temporarily (incognito)
-- **Auto-delete** — Configurable history expiration; pinned/favorited items are kept
+### ⌨️ Keyboard-first
+**Search, navigate, and paste without touching the mouse.** Type to search, arrow through results, press Enter to paste.
 
-### Settings
-- **Glassmorphism UI** — Settings window matches the clipboard's glass design
-- **Setup Wizard** — First-run wizard for permissions, shortcuts, and autostart
-- **History Size** — Adjustable max items
-- **Background Opacity** — Customize window transparency for both light and dark themes
-- **Diagnostics Export** — One-click report for troubleshooting (no clipboard content) — see [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)
-- **Update Check** — Notifies when a newer release is available (updates stay with your package manager)
+### 🔒 Privacy-first
+**Local-only storage. No telemetry. No cloud.** Exclude sensitive patterns so they're never recorded.
 
-### Under the Hood
-- **Native Rust Backend** — Minimal resource usage
-- **Disk-backed image store** — Image thumbnails stay in memory; full images live on disk, keeping idle RAM low (see [docs/PERFORMANCE.md](docs/PERFORMANCE.md))
-- **Crash-safe storage** — History is written atomically and recovers from corruption with a backup
-- **Structured logging** — Rotating logs with a panic-capturing crash handler
-- **Privacy Focused** — History stored locally, no telemetry, no tracking
-- **Security Hardened** — See the audit report for details
+### 🎨 Themes
+Make it yours — **Modern**, **Glass**, **Minimal**, **Cyberpunk**, and **Terminal**, each with light and dark modes and a custom accent color.
+
+---
+
+## Themes
+
+<div align="center">
+
+<img src="assets/screenshots/themes.png" alt="PenguinClip themes: Modern, Glass, Minimal, Cyberpunk, Terminal" width="820">
+
+</div>
 
 ---
 
 ## Installation
 
-### Download from Releases (Recommended)
+Download the latest **`.deb`**, **`.rpm`**, or **`.AppImage`** from the **[Releases page](https://github.com/techbysakh963/PenguinClip/releases/latest)**.
 
-Download the latest `.deb`, `.rpm`, or `.AppImage` from the [Releases Page](https://github.com/techbysakh963/PenguinClip/releases).
-
-<details>
-<summary><b>Debian / Ubuntu / Pop!_OS / Linux Mint</b></summary>
+<details open>
+<summary><b>Debian / Ubuntu (.deb)</b></summary>
 
 ```bash
-sudo apt install ./penguinclip_1.0.0_amd64.deb
+sudo apt install ./penguinclip_1.2.1_amd64.deb
 ```
+</details>
+
+<details>
+<summary><b>Fedora / openSUSE (.rpm)</b></summary>
+
+```bash
+sudo dnf install ./penguinclip-1.2.1-1.x86_64.rpm
+```
+</details>
+
+<details>
+<summary><b>AppImage (any distro)</b></summary>
+
+```bash
+chmod +x penguinclip_1.2.1_amd64.AppImage
+./penguinclip_1.2.1_amd64.AppImage
+```
+</details>
+
+> **Auto-paste permission (optional):** to paste directly into apps, PenguinClip needs `/dev/uinput` access. Without it, items still copy to your clipboard — you just press Ctrl+V yourself. The first-run Setup Wizard can configure this, or run:
+> ```bash
+> sudo setfacl -m u:$USER:rw /dev/uinput
+> ```
+
+---
+
+## Usage
+
+| Hotkey | Action |
+| :--- | :--- |
+| **`Super+V`** | Open clipboard history |
+| **`Super+.`** | Open emoji picker |
+| **`Ctrl+Alt+V`** | Alternative shortcut |
+| **`↑ / ↓ / Tab`** | Navigate items |
+| **`Enter`** | Paste selected item |
+| **`Esc`** | Close window |
+
+Type while the window is open to search instantly. Pin or favorite items to keep them; delete or clear what you don't need.
+
+**Tabs:** Clipboard · Favorites · GIFs · Emoji · Kaomoji · Symbols
+
+---
+
+## Privacy
+
+PenguinClip is **private by design**:
+
+- **Everything stays on your machine** — clipboard history is stored locally, never uploaded.
+- **No telemetry, no analytics, no accounts.**
+- **No external network calls** without an explicit opt-in.
+- **Exclusion rules** let you keep matching content (passwords, tokens) out of history entirely.
+
+100% local · MIT licensed · Developed by **SAKH**.
+
+---
+
+<details>
+<summary><b>GIF search (opt-in, bring your own key)</b></summary>
+
+GIF search is **disabled by default** and never bundled with a key. To enable it, add your own [Tenor API key](https://developers.google.com/tenor/guides/quickstart) in **Settings → GIF Integration**. When enabled, search queries go to Google's Tenor API (your IP and search terms are visible to Google).
 
 </details>
 
 <details>
-<summary><b>Fedora / openSUSE / RHEL</b></summary>
+<summary><b>Security</b></summary>
 
-```bash
-sudo dnf install ./penguinclip-1.0.0-1.x86_64.rpm
-```
+- All clipboard data stored locally; no telemetry or analytics.
+- No external API calls without explicit opt-in.
+- Restrictive Content Security Policy.
+- CI/CD actions pinned to immutable commit SHAs.
+- Full audit: [SECURITY_AUDIT.md](SECURITY_AUDIT.md) · Report issues: [.github/SECURITY.md](.github/SECURITY.md)
 
 </details>
 
 <details>
-<summary><b>AppImage (Any Distro)</b></summary>
-
-```bash
-chmod +x penguinclip_1.0.0_amd64.AppImage
-./penguinclip_1.0.0_amd64.AppImage
-```
-
-</details>
-
-### Paste Permissions (Optional)
-
-PenguinClip needs `/dev/uinput` access to auto-paste. Without it, items are copied to clipboard but won't auto-paste into apps.
-
-```bash
-# Grant uinput access for auto-paste
-sudo setfacl -m u:$USER:rw /dev/uinput
-```
-
-The app's Setup Wizard can also configure this for you on first run.
-
-### Install Script
-
-```bash
-# Download, review, then run
-curl -fsSLO https://raw.githubusercontent.com/techbysakh963/PenguinClip/main/scripts/install.sh
-less install.sh
-bash install.sh
-```
-
-> The installer **refuses** to run when piped from `curl`. This is intentional.
-
-<details>
-<summary><b>Build from Source</b></summary>
+<summary><b>Build from source</b></summary>
 
 ```bash
 git clone https://github.com/techbysakh963/PenguinClip.git
@@ -169,67 +180,18 @@ sudo make install
 
 **Requirements:** Rust 1.77+, Node.js 20+
 
+There's also a review-then-run install script:
+```bash
+curl -fsSLO https://raw.githubusercontent.com/techbysakh963/PenguinClip/main/scripts/install.sh
+less install.sh
+bash install.sh
+```
+> The installer **refuses** to run when piped from `curl`. This is intentional.
+
 </details>
 
----
-
-## Usage
-
-| Hotkey | Action |
-| :--- | :--- |
-| **`Super+V`** | Open Clipboard History |
-| **`Super+.`** | Open Emoji Picker |
-| **`Ctrl+Alt+V`** | Alternative shortcut |
-| **`Esc`** | Close Window |
-| **`Up / Down / Tab`** | Navigate Items |
-| **`Enter`** | Paste Selected Item |
-
-### Tabs
-
-- **Clipboard** — Full history with pin, star, delete, and smart actions
-- **Favorites** — Starred items for quick access
-- **GIFs** — Search and paste GIFs (opt-in, requires Tenor API key)
-- **Emoji** — Searchable emoji keyboard
-- **Kaomoji** — Japanese emoticons
-- **Symbols** — Special characters and symbols
-
----
-
-## GIF Integration (Opt-In)
-
-GIF search is **disabled by default**. To enable it:
-
-1. Get a free Tenor API key from [Google Tenor](https://developers.google.com/tenor/guides/quickstart)
-2. Open Settings > GIF Integration
-3. Enter your API key
-
-**Privacy note:** When enabled, search queries are sent to Google's Tenor API. Your IP address and search terms are visible to Google.
-
----
-
-## Security
-
-- Full security audit: [SECURITY_AUDIT.md](SECURITY_AUDIT.md)
-- Report vulnerabilities: See [.github/SECURITY.md](.github/SECURITY.md)
-- No telemetry or analytics
-- No external API calls without explicit opt-in
-- All clipboard data stored locally
-- Restrictive Content Security Policy
-- All CI/CD actions pinned to immutable commit SHAs
-
----
-
-## Attribution
-
-PenguinClip is a hardened fork of [Windows-11-Clipboard-History-For-Linux](https://github.com/techbysakh963/Windows-11-Clipboard-History-For-Linux), originally created by [Gustavo Sett](https://github.com/gustavosett) and contributors.
-
-The original project is licensed under the MIT License. This fork maintains the same license and preserves full attribution to the original authors.
-
-See the [original contributors](https://github.com/techbysakh963/Windows-11-Clipboard-History-For-Linux#contributors-) for the complete list.
-
----
-
-## Development
+<details>
+<summary><b>Development</b></summary>
 
 ```bash
 git clone https://github.com/techbysakh963/PenguinClip.git
@@ -247,11 +209,22 @@ make dev
 | `make lint` | Run linters |
 | `make check-deps` | Verify dependencies |
 
+**Stack:** Tauri v2 · Rust · React + TypeScript · Tailwind CSS.
+
+</details>
+
+<details>
+<summary><b>Attribution</b></summary>
+
+PenguinClip is a hardened, redesigned fork of [Windows-11-Clipboard-History-For-Linux](https://github.com/techbysakh963/Windows-11-Clipboard-History-For-Linux), originally created by [Gustavo Sett](https://github.com/gustavosett) and contributors, under the MIT License. This fork preserves the same license and full attribution to the original authors.
+
+</details>
+
 ---
 
 ## License
 
-MIT License — See [LICENSE](LICENSE)
+MIT License — see [LICENSE](LICENSE).
 
-Original work: Copyright (c) 2024 Windows 11 Clipboard History For Linux Contributors
-Fork modifications: Copyright (c) 2025-2026 PenguinClip Contributors (Developed by SAKH)
+Original work © 2024 Windows 11 Clipboard History For Linux Contributors.
+Fork modifications © 2025–2026 PenguinClip Contributors — Developed by **SAKH**.
