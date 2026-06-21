@@ -20,7 +20,7 @@
 
 <br>
 
-<img src="assets/screenshot.png" alt="PenguinClip in action" width="720">
+<img src="assets/screenshots/hero.png" alt="PenguinClip in action" width="720">
 
 </div>
 
@@ -43,7 +43,7 @@ Press **`Super+V`**, find anything you've ever copied, and paste it — in secon
 
 <div align="center">
 
-<img src="assets/demo.gif" alt="PenguinClip workflow: Super+V, search, Enter to paste" width="640">
+<img src="assets/screenshots/demo.gif" alt="PenguinClip workflow: Super+V, search, Enter to paste" width="640">
 
 <sub><b>Super+V → type → pick a result → Enter → pasted.</b></sub>
 
