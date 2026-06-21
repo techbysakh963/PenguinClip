@@ -310,6 +310,27 @@ const TERMINAL_WM_CLASSES: &[&str] = &[
     "ptyxis",             // GNOME Ptyxis terminal
 ];
 
+/// True if a WM_CLASS value names a terminal emulator.
+///
+/// `classes_lower` must be the WM_CLASS *value* (the instance/class strings),
+/// lowercased — never the raw `xprop` line, whose "WM_CLASS(STRING)" header
+/// contains "string" and would spuriously match the short "st" entry, marking
+/// every window a terminal. Single-token names match a whole alphanumeric token
+/// (so "st" doesn't match "string"); dotted/hyphenated ids match as a substring.
+fn wm_class_is_terminal(classes_lower: &str) -> bool {
+    let tokens: Vec<&str> = classes_lower
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|s| !s.is_empty())
+        .collect();
+    TERMINAL_WM_CLASSES.iter().any(|t| {
+        if t.contains('.') || t.contains('-') {
+            classes_lower.contains(t)
+        } else {
+            tokens.iter().any(|tok| tok == t)
+        }
+    })
+}
+
 /// Get WM_CLASS using xdotool to get window ID, then xprop to read WM_CLASS
 fn is_terminal_via_xdotool() -> Result<bool, String> {
     // Step 1: Get active window ID via xdotool
@@ -339,10 +360,13 @@ fn is_terminal_via_xdotool() -> Result<bool, String> {
         return Err("xprop WM_CLASS query failed".to_string());
     }
 
-    let wm_class = String::from_utf8_lossy(&prop_output.stdout).to_lowercase();
-    debug!("focused window WM_CLASS (xprop): {}", wm_class.trim());
+    // Match only the value after '=' ("instance", "class") — NOT the whole line,
+    // whose "WM_CLASS(STRING)" header contains "string" and matched "st".
+    let raw = String::from_utf8_lossy(&prop_output.stdout).to_lowercase();
+    let value = raw.split('=').nth(1).unwrap_or("");
+    debug!("focused window WM_CLASS (xprop): {}", value.trim());
 
-    Ok(TERMINAL_WM_CLASSES.iter().any(|t| wm_class.contains(t)))
+    Ok(wm_class_is_terminal(value))
 }
 
 /// Get WM_CLASS by querying X11 directly, walking up parent windows if needed
@@ -382,7 +406,7 @@ fn is_terminal_via_x11() -> Result<bool, String> {
             let wm_class_raw = String::from_utf8_lossy(&reply.value).to_lowercase();
             debug!("window {} WM_CLASS (x11): {}", window, wm_class_raw);
 
-            if TERMINAL_WM_CLASSES.iter().any(|t| wm_class_raw.contains(t)) {
+            if wm_class_is_terminal(&wm_class_raw) {
                 return Ok(true);
             }
             // Found a WM_CLASS but it's not a terminal
@@ -453,4 +477,38 @@ pub fn x11_robust_activate(title: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::wm_class_is_terminal;
+
+    #[test]
+    fn detects_terminals() {
+        for v in [
+            "\"gnome-terminal-server\", \"gnome-terminal\"",
+            "\"konsole\", \"konsole\"",
+            "\"st\", \"st\"",
+            "\"xterm\", \"xterm\"",
+            "\"org.gnome.console\", \"org.gnome.console\"",
+            "\"alacritty\", \"alacritty\"",
+        ] {
+            assert!(wm_class_is_terminal(v), "should be terminal: {v}");
+        }
+    }
+
+    #[test]
+    fn does_not_match_editors_or_the_xprop_string_header() {
+        for v in [
+            "\"code\", \"code\"",            // VS Code
+            "\"kate\", \"kate\"",            // Kate
+            "\"gedit\", \"gedit\"",          // gedit
+            "\"gnome-text-editor\", \"org.gnome.texteditor\"",
+            "\"navigator\", \"firefox\"",    // browser
+            "(string) = \"code\", \"code\"", // 'st' must NOT match "string"
+            "string",
+        ] {
+            assert!(!wm_class_is_terminal(v), "should NOT be terminal: {v}");
+        }
+    }
 }
