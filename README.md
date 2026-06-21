@@ -70,7 +70,7 @@ Make it yours — **Modern**, **Glass**, **Minimal**, **Cyberpunk**, and **Termi
 
 <div align="center">
 
-<img src="assets/screenshots/themes.png" alt="PenguinClip themes: Modern, Glass, Minimal, Cyberpunk, Glass Light, Terminal" width="880">
+<img src="assets/screenshots/themes.png" alt="PenguinClip themes: Modern, Glass, Minimal, Cyberpunk, Glass Light, Terminal" width="960">
 
 </div>
 
