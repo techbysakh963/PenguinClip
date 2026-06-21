@@ -48,12 +48,23 @@ pub fn restore_focused_window() -> Result<(), String> {
 
     debug!("restoring focus to window: {}", window_id);
 
+    // Primary: ask the window manager to activate the window via EWMH
+    // _NET_ACTIVE_WINDOW. This is the method WMs honour even with focus-stealing
+    // prevention, and — crucially — it routes keyboard focus into the app's real
+    // input widget. Raw SetInputFocus alone is unreliable for GTK apps (e.g. text
+    // editors) under Mutter, so the synthetic paste keystroke would land nowhere
+    // and the paste silently failed while terminals/browsers still worked.
+    if let Err(e) = x11_activate_window_by_id(window_id) {
+        warn!("EWMH activate failed, relying on SetInputFocus: {}", e);
+    }
+
+    // Fallback/reinforcement: also set input focus directly. Helps simple or
+    // override-redirect windows and WMs that ignore _NET_ACTIVE_WINDOW.
     let conn = get_x11_connection()?;
-
-    conn.set_input_focus(InputFocus::PARENT, window_id, x11rb::CURRENT_TIME)
-        .map_err(|e| format!("Set focus failed: {}", e))?;
-
-    conn.flush().map_err(|e| format!("Flush failed: {}", e))?;
+    if let Err(e) = conn.set_input_focus(InputFocus::PARENT, window_id, x11rb::CURRENT_TIME) {
+        warn!("SetInputFocus failed: {}", e);
+    }
+    let _ = conn.flush();
 
     // Small delay to ensure the Window Manager processes the focus change
     // before we attempt to simulate keystrokes
