@@ -84,7 +84,7 @@ Download the latest **`.deb`**, **`.rpm`**, or **`.AppImage`** from the **[Relea
 <summary><b>Debian / Ubuntu (.deb)</b></summary>
 
 ```bash
-sudo apt install ./penguinclip_1.2.1_amd64.deb
+sudo apt install ./penguinclip_1.2.2_amd64.deb
 ```
 </details>
 
@@ -92,7 +92,7 @@ sudo apt install ./penguinclip_1.2.1_amd64.deb
 <summary><b>Fedora / openSUSE (.rpm)</b></summary>
 
 ```bash
-sudo dnf install ./penguinclip-1.2.1-1.x86_64.rpm
+sudo dnf install ./penguinclip-1.2.2-1.x86_64.rpm
 ```
 </details>
 
@@ -100,8 +100,8 @@ sudo dnf install ./penguinclip-1.2.1-1.x86_64.rpm
 <summary><b>AppImage (any distro)</b></summary>
 
 ```bash
-chmod +x penguinclip_1.2.1_amd64.AppImage
-./penguinclip_1.2.1_amd64.AppImage
+chmod +x penguinclip_1.2.2_amd64.AppImage
+./penguinclip_1.2.2_amd64.AppImage
 ```
 </details>
 
