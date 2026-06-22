@@ -500,9 +500,9 @@ mod tests {
     #[test]
     fn does_not_match_editors_or_the_xprop_string_header() {
         for v in [
-            "\"code\", \"code\"",            // VS Code
-            "\"kate\", \"kate\"",            // Kate
-            "\"gedit\", \"gedit\"",          // gedit
+            "\"code\", \"code\"",   // VS Code
+            "\"kate\", \"kate\"",   // Kate
+            "\"gedit\", \"gedit\"", // gedit
             "\"gnome-text-editor\", \"org.gnome.texteditor\"",
             "\"navigator\", \"firefox\"",    // browser
             "(string) = \"code\", \"code\"", // 'st' must NOT match "string"
